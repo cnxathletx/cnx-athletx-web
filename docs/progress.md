@@ -9,6 +9,7 @@ Last updated: 2026-02-25
 - Workers local development now validates both API health and D1 connectivity through `/api/health` and `/api/health/db`.
 - Worker deployment is now live on `workers.dev` and both health endpoints are reachable in production.
 - GitHub Actions CI/CD workflow is configured for lint, build, Pages deploy, and Workers deploy on `main`.
+- GitHub Actions deployment was verified on `main` with successful Pages and Worker jobs.
 - `RESEND_API_KEY` has been uploaded to Cloudflare Worker secrets (top-level and production environments).
 - Cloudflare Access policy setup for path-specific admin protection is pending manual Zero Trust setup plus a custom domain/active zone.
 

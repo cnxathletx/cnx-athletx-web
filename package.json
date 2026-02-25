@@ -1,0 +1,20 @@
+{
+  "name": "cnx-athletx",
+  "version": "0.1.0",
+  "private": true,
+  "workspaces": [
+    "packages/*"
+  ],
+  "scripts": {
+    "dev:web": "npm run dev -w @cnx-athletx/web",
+    "dev:api": "npm run dev -w @cnx-athletx/api",
+    "build:web": "npm run build -w @cnx-athletx/web",
+    "build:api": "npm run build -w @cnx-athletx/api",
+    "build": "npm run build:web && npm run build:api",
+    "deploy:web": "npm run build:web && CLOUDFLARE_ACCOUNT_ID=0ccff0e0abbbf8d1395557afe2cf9a42 npx wrangler pages deploy packages/web/dist --project-name cnx-athletx-web",
+    "deploy:api": "CLOUDFLARE_ACCOUNT_ID=0ccff0e0abbbf8d1395557afe2cf9a42 npm run deploy -w @cnx-athletx/api",
+    "deploy": "npm run deploy:web && npm run deploy:api",
+    "lint": "npm run lint --workspaces --if-present",
+    "typecheck": "npm run typecheck --workspaces --if-present"
+  }
+}

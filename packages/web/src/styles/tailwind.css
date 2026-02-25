@@ -1,0 +1,81 @@
+@import 'tailwindcss';
+
+:root {
+  --bg: #0a0a0a;
+  --fg: #f4f3ee;
+  --primary: #3a8563;
+  --primary-light: #4a9b73;
+  --primary-dark: #2f6b4f;
+  --accent: #d4ad4a;
+  --accent-light: #e0bf60;
+  --sage: #9bbfac;
+  --sand: #1a1a1a;
+  --surface: #141414;
+  --surface-alt: #1e1e1e;
+  --muted: #a0a0a0;
+  --error: #ef4444;
+  --success: #22c55e;
+  --footer-bg: #111111;
+
+  --shadow-sm: none;
+  --shadow-md: none;
+  --shadow-lg: none;
+  --card-ring: rgb(255 255 255 / 0.05);
+}
+
+:root.light {
+  --bg: #f4f3ee;
+  --fg: #1a1a1a;
+  --primary: #2f6b4f;
+  --primary-light: #3a8563;
+  --primary-dark: #245539;
+  --accent: #c59a2d;
+  --accent-light: #d4ad4a;
+  --sage: #8aae9b;
+  --sand: #d9cdbf;
+  --surface: #ffffff;
+  --surface-alt: #f4f3ee;
+  --muted: #6b7280;
+  --error: #dc2626;
+  --success: #16a34a;
+  --footer-bg: #1a1a1a;
+
+  --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+  --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+  --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
+  --card-ring: transparent;
+}
+
+@theme {
+  --font-sans: 'Inter', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+
+  --color-background: var(--bg);
+  --color-foreground: var(--fg);
+  --color-primary: var(--primary);
+  --color-primary-light: var(--primary-light);
+  --color-primary-dark: var(--primary-dark);
+  --color-accent: var(--accent);
+  --color-accent-light: var(--accent-light);
+  --color-sage: var(--sage);
+  --color-sand: var(--sand);
+  --color-surface: var(--surface);
+  --color-surface-alt: var(--surface-alt);
+  --color-muted: var(--muted);
+  --color-error: var(--error);
+  --color-success: var(--success);
+  --color-footer-bg: var(--footer-bg);
+
+  --shadow-sm: var(--shadow-sm);
+  --shadow-md: var(--shadow-md);
+  --shadow-lg: var(--shadow-lg);
+}
+
+@utility text-display-1 {
+  font-size: 2.5rem;
+  line-height: 1.1;
+}
+
+@utility text-display-2 {
+  font-size: 2rem;
+  line-height: 1.2;
+}

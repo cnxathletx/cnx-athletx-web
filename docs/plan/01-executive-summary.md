@@ -8,14 +8,14 @@ CNX AthletX is a lean ecommerce platform for selling plant-based protein powder 
 
 | Version | Scope | Target |
 |---------|-------|--------|
-| **v1** | Full storefront + manual PromptPay checkout + admin dashboard + Resend emails + customer accounts (magic link auth, order history, faster checkout). 2 SKUs (500g, 1000g). No payment gateway. | MVP Launch |
+| **v1** | Full storefront + manual PromptPay checkout + admin dashboard + discount codes + Resend emails + customer accounts (magic link auth, order history, faster checkout). 2 SKUs (500g, 1000g). No payment gateway. | MVP Launch |
 | **v1.5** | Payment proof image upload (R2 storage), order auto-expiry (24h unpaid), admin email resend button, basic analytics dashboard, brand story video embed on homepage | Fast Follow |
-| **v2** | 2C2P payment gateway integration, automated payment confirmation, discount codes, additional SKUs, Thai language support, saved addresses | Growth |
+| **v2** | 2C2P payment gateway integration, automated payment confirmation, additional SKUs, Thai language support, saved addresses | Growth |
 
 ### Non-Goals (v1)
 - No payment gateway integration
 - No automated bank confirmation
-- No promotions/discount engine
+- No advanced promotions engine (stacking rules, bundles, or automatic campaign logic)
 - No complex inventory beyond stock count
 - No saved addresses management (pre-fill from last order only)
 

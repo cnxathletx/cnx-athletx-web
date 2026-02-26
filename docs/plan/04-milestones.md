@@ -100,15 +100,19 @@
    - Create order + order_items in single D1 batch
    - Return order ID + payment instructions
 5. Implement idempotency key handling (prevent duplicate orders)
-6. Build Payment Instructions page:
+6. Implement discount code support:
+   - Add discount code input on cart/checkout
+   - Validate code on backend during checkout
+   - Return discount amount + adjusted order total
+7. Build Payment Instructions page:
    - Display PromptPay QR code (static image from owner)
    - Show bank transfer details
    - Show order reference (large, copyable)
    - Show amount to transfer
-7. Build Checkout Stepper component
-8. Build Order Confirmation page
-9. Implement `GET /api/orders/:id` — public order status (sanitized)
-10. Build Order Status page with timeline tracker
+8. Build Checkout Stepper component
+9. Build Order Confirmation page
+10. Implement `GET /api/orders/:id` — public order status (sanitized)
+11. Build Order Status page with timeline tracker
 
 **Acceptance Criteria:**
 - [ ] Adding product to cart updates cart icon count badge
@@ -117,6 +121,8 @@
 - [ ] Submitting checkout creates order in D1 with `status = 'pending_payment'`
 - [ ] Inventory `reserved_count` increases by ordered quantity
 - [ ] Duplicate submission with same idempotency key returns existing order (not 201)
+- [ ] Applying a valid discount code returns reduced order total in both API response and UI summary
+- [ ] Invalid or expired discount code returns 422 with clear validation message
 - [ ] Insufficient stock returns 422 error with clear message
 - [ ] Payment Instructions page shows QR code, bank details, order reference, amount
 - [ ] Order Status page shows current status in visual timeline

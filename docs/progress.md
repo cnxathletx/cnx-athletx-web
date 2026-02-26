@@ -1,6 +1,6 @@
 # CNX AthletX Implementation Progress
 
-Last updated: 2026-02-25
+Last updated: 2026-02-26
 
 ## Summary
 
@@ -12,6 +12,7 @@ Last updated: 2026-02-25
 - GitHub Actions deployment was verified on `main` with successful Pages and Worker jobs.
 - `RESEND_API_KEY` has been uploaded to Cloudflare Worker secrets (top-level and production environments).
 - Cloudflare Access policy setup for path-specific admin protection is pending manual Zero Trust setup plus a custom domain/active zone.
+- Product scope is updated so discount codes are now included in v1 and tracked in Phase 3.
 
 ## Milestones Checklist
 
@@ -48,6 +49,7 @@ Last updated: 2026-02-25
 - [ ] Implement Pinia cart store with localStorage persistence
 - [ ] Build Cart and Checkout pages with validation and summary
 - [ ] Implement `POST /api/checkout` with atomic stock reservation and idempotency
+- [ ] Implement discount code validation and adjusted totals in checkout API + UI
 - [ ] Build payment instructions, order confirmation, and order status pages
 
 ### Phase 4 — Payment Proof Submission

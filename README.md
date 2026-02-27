@@ -15,7 +15,7 @@ A full-stack monorepo featuring a Vue frontend and logic-driven API.
 npm ci
 
 # Run development servers
-npm run dev:web   # Frontend at 0.0.0.0:5173
+npm run dev:web   # Frontend at 0.0.0.0:5171
 npm run dev:api   # API at port 8787
 ```
 

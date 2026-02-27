@@ -1,14 +1,17 @@
 <script setup lang="ts">
-import { ref, computed } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useCartStore } from '../stores/cart'
 import { formatPrice } from '../api/products'
 import { submitCheckout, CheckoutError } from '../api/checkout'
+import { fetchLastAddress } from '../api/auth'
 import PrimaryButton from '../components/ui/PrimaryButton.vue'
 import CheckoutStepper from '../components/ui/CheckoutStepper.vue'
+import { useAuthStore } from '../stores/auth'
 
 const router = useRouter()
 const cart = useCartStore()
+const auth = useAuthStore()
 
 // Redirect if cart is empty
 if (cart.items.length === 0) {
@@ -54,6 +57,31 @@ function validate(): boolean {
 
 const canSubmit = computed(() => cart.items.length > 0 && !submitting.value)
 
+onMounted(async () => {
+  if (!auth.initialized) {
+    await auth.init()
+  }
+
+  if (!auth.user) return
+
+  if (!form.value.name) form.value.name = auth.user.name ?? ''
+  if (!form.value.email) form.value.email = auth.user.email
+  if (!form.value.phone) form.value.phone = auth.user.phone ?? ''
+
+  try {
+    const address = await fetchLastAddress()
+    if (!address) return
+
+    if (!form.value.line1) form.value.line1 = address.line1
+    if (!form.value.line2) form.value.line2 = address.line2 ?? ''
+    if (!form.value.district) form.value.district = address.district
+    if (!form.value.province) form.value.province = address.province
+    if (!form.value.postal_code) form.value.postal_code = address.postal_code
+  } catch {
+    // Ignore prefill failures.
+  }
+})
+
 async function handleSubmit() {
   if (!validate() || !canSubmit.value) return
 
@@ -84,6 +112,7 @@ async function handleSubmit() {
 
     // Store checkout result for payment page
     sessionStorage.setItem('cnx-last-order', JSON.stringify(result))
+    sessionStorage.setItem('cnx-last-checkout-email', form.value.email.trim().toLowerCase())
 
     // Clear cart
     cart.clearCart()
@@ -145,13 +174,15 @@ async function handleSubmit() {
                 <input
                   v-model="form.email"
                   type="email"
+                  :disabled="!!auth.user"
                   :class="[
-                    'w-full rounded-md border px-4 py-3 text-sm bg-surface-alt text-foreground placeholder:text-muted transition-colors focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent',
+                    'w-full rounded-md border px-4 py-3 text-sm bg-surface-alt text-foreground placeholder:text-muted transition-colors focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent disabled:opacity-70 disabled:cursor-not-allowed',
                     fieldErrors.email ? 'border-error' : 'border-sand',
                   ]"
                   placeholder="you@example.com"
                 />
                 <p v-if="fieldErrors.email" class="mt-1 text-xs text-error">{{ fieldErrors.email }}</p>
+                <p v-else-if="auth.user" class="mt-1 text-xs text-muted">Using your account email.</p>
               </div>
             </div>
             <div class="max-w-sm">

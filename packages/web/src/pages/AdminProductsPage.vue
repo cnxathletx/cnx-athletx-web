@@ -1,0 +1,291 @@
+<script setup lang="ts">
+import { computed, onMounted, reactive, ref } from 'vue'
+import {
+  createAdminProduct,
+  fetchAdminProducts,
+  updateAdminProduct,
+  type AdminProduct,
+  type CreateAdminProductPayload,
+  type UpdateAdminProductPayload,
+  AdminApiErrorResponse,
+} from '../api/admin'
+import PrimaryButton from '../components/ui/PrimaryButton.vue'
+import SecondaryButton from '../components/ui/SecondaryButton.vue'
+
+const loading = ref(true)
+const error = ref('')
+const products = ref<AdminProduct[]>([])
+
+const createLoading = ref(false)
+const createError = ref('')
+const createSuccess = ref('')
+
+const editLoading = ref(false)
+const editError = ref('')
+const editSuccess = ref('')
+const editingId = ref<number | null>(null)
+
+const createForm = reactive<CreateAdminProductPayload>({
+  slug: '',
+  name: '',
+  description: '',
+  price_thb: 89900,
+  weight_g: 500,
+  image_url: '',
+  active: true,
+  stock_count: 0,
+})
+
+const editForm = reactive<Required<UpdateAdminProductPayload>>({
+  slug: '',
+  name: '',
+  description: '',
+  price_thb: 0,
+  weight_g: 0,
+  image_url: '',
+  active: true,
+})
+
+const sortedProducts = computed(() => [...products.value].sort((a, b) => a.id - b.id))
+
+async function loadProducts() {
+  loading.value = true
+  error.value = ''
+  try {
+    products.value = await fetchAdminProducts()
+  } catch (err) {
+    if (err instanceof AdminApiErrorResponse) {
+      error.value = err.message
+    } else {
+      error.value = 'Unable to load products.'
+    }
+  } finally {
+    loading.value = false
+  }
+}
+
+function resetCreateForm() {
+  createForm.slug = ''
+  createForm.name = ''
+  createForm.description = ''
+  createForm.price_thb = 89900
+  createForm.weight_g = 500
+  createForm.image_url = ''
+  createForm.active = true
+  createForm.stock_count = 0
+}
+
+async function submitCreate() {
+  createError.value = ''
+  createSuccess.value = ''
+  createLoading.value = true
+
+  try {
+    const product = await createAdminProduct({
+      ...createForm,
+      slug: createForm.slug.trim().toLowerCase(),
+      name: createForm.name.trim(),
+      description: createForm.description.trim(),
+      image_url: createForm.image_url.trim(),
+    })
+    products.value.push(product)
+    createSuccess.value = 'Product created.'
+    resetCreateForm()
+  } catch (err) {
+    if (err instanceof AdminApiErrorResponse) {
+      createError.value = err.message
+    } else {
+      createError.value = 'Failed to create product.'
+    }
+  } finally {
+    createLoading.value = false
+  }
+}
+
+function startEdit(product: AdminProduct) {
+  editingId.value = product.id
+  editError.value = ''
+  editSuccess.value = ''
+
+  editForm.slug = product.slug
+  editForm.name = product.name
+  editForm.description = product.description
+  editForm.price_thb = product.price_thb
+  editForm.weight_g = product.weight_g
+  editForm.image_url = product.image_url
+  editForm.active = product.active
+}
+
+function cancelEdit() {
+  editingId.value = null
+  editError.value = ''
+  editSuccess.value = ''
+}
+
+async function submitEdit() {
+  if (editingId.value === null) return
+
+  editError.value = ''
+  editSuccess.value = ''
+  editLoading.value = true
+
+  try {
+    const payload: UpdateAdminProductPayload = {
+      slug: editForm.slug.trim().toLowerCase(),
+      name: editForm.name.trim(),
+      description: editForm.description.trim(),
+      price_thb: Number(editForm.price_thb),
+      weight_g: Number(editForm.weight_g),
+      image_url: editForm.image_url.trim(),
+      active: editForm.active,
+    }
+
+    const updated = await updateAdminProduct(editingId.value, payload)
+
+    products.value = products.value.map((product) =>
+      product.id === editingId.value ? updated : product
+    )
+
+    editSuccess.value = 'Product updated.'
+  } catch (err) {
+    if (err instanceof AdminApiErrorResponse) {
+      editError.value = err.message
+    } else {
+      editError.value = 'Failed to update product.'
+    }
+  } finally {
+    editLoading.value = false
+  }
+}
+
+function formatMoney(value: number): string {
+  return `฿${(value / 100).toLocaleString()}`
+}
+
+onMounted(async () => {
+  await loadProducts()
+})
+</script>
+
+<template>
+  <div class="bg-background min-h-[60vh]">
+    <div class="mx-auto max-w-[1280px] px-4 sm:px-6 lg:px-8 py-8 sm:py-12 pb-16 space-y-6">
+      <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <div>
+          <h1 class="text-3xl sm:text-4xl font-bold text-foreground">Admin Products</h1>
+          <p class="text-sm text-muted mt-1">Create, edit, and archive product catalog entries.</p>
+        </div>
+        <div class="flex items-center gap-2">
+          <RouterLink to="/admin/orders"><SecondaryButton size="sm">Orders</SecondaryButton></RouterLink>
+          <RouterLink to="/admin/inventory"><SecondaryButton size="sm">Inventory</SecondaryButton></RouterLink>
+        </div>
+      </div>
+
+      <div class="bg-surface rounded-lg ring-1 ring-[var(--card-ring)] p-4 sm:p-6 space-y-4">
+        <h2 class="text-xl font-bold text-foreground">Create Product</h2>
+
+        <div v-if="createError" class="bg-error/10 border border-error/30 rounded-md p-3 text-sm text-error">{{ createError }}</div>
+        <div v-if="createSuccess" class="bg-primary/10 border border-primary/30 rounded-md p-3 text-sm text-primary">{{ createSuccess }}</div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <input v-model="createForm.slug" type="text" placeholder="Slug (plant-protein-500g)" class="rounded-md border border-sand px-4 py-3 text-sm bg-surface-alt text-foreground placeholder:text-muted focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent" />
+          <input v-model="createForm.name" type="text" placeholder="Name" class="rounded-md border border-sand px-4 py-3 text-sm bg-surface-alt text-foreground placeholder:text-muted focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent" />
+          <input v-model.number="createForm.price_thb" type="number" min="1" step="1" placeholder="Price (satang)" class="rounded-md border border-sand px-4 py-3 text-sm bg-surface-alt text-foreground placeholder:text-muted focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent" />
+          <input v-model.number="createForm.weight_g" type="number" min="1" step="1" placeholder="Weight (g)" class="rounded-md border border-sand px-4 py-3 text-sm bg-surface-alt text-foreground placeholder:text-muted focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent" />
+          <input v-model.number="createForm.stock_count" type="number" min="0" step="1" placeholder="Initial stock" class="rounded-md border border-sand px-4 py-3 text-sm bg-surface-alt text-foreground placeholder:text-muted focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent" />
+          <input v-model="createForm.image_url" type="url" placeholder="Image URL" class="rounded-md border border-sand px-4 py-3 text-sm bg-surface-alt text-foreground placeholder:text-muted focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent" />
+        </div>
+
+        <textarea
+          v-model="createForm.description"
+          rows="4"
+          placeholder="Description"
+          class="w-full rounded-md border border-sand px-4 py-3 text-sm bg-surface-alt text-foreground placeholder:text-muted focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
+        />
+
+        <label class="inline-flex items-center gap-2 text-sm text-foreground">
+          <input v-model="createForm.active" type="checkbox" class="h-4 w-4 rounded border-sand bg-surface-alt text-primary focus:ring-primary" />
+          Active product
+        </label>
+
+        <PrimaryButton :disabled="createLoading" @click="submitCreate">Create Product</PrimaryButton>
+      </div>
+
+      <div v-if="loading" class="space-y-3 animate-pulse">
+        <div class="h-20 bg-muted/10 rounded" />
+        <div class="h-20 bg-muted/10 rounded" />
+      </div>
+      <div v-else-if="error" class="bg-error/10 border border-error/30 rounded-md p-4 text-sm text-error">{{ error }}</div>
+      <div v-else class="space-y-4">
+        <div
+          v-for="product in sortedProducts"
+          :key="product.id"
+          class="bg-surface rounded-lg ring-1 ring-[var(--card-ring)] p-4 sm:p-6 space-y-4"
+        >
+          <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+            <div>
+              <h3 class="text-lg font-semibold text-foreground">{{ product.name }}</h3>
+              <p class="text-xs font-mono text-muted">ID {{ product.id }} · {{ product.slug }}</p>
+            </div>
+            <div class="text-right">
+              <p class="text-sm font-semibold" :class="product.active ? 'text-primary' : 'text-muted'">
+                {{ product.active ? 'Active' : 'Inactive' }}
+              </p>
+              <p class="text-xs text-muted">{{ formatMoney(product.price_thb) }} · {{ product.weight_g }}g</p>
+            </div>
+          </div>
+
+          <p class="text-sm text-muted">{{ product.description }}</p>
+
+          <div class="grid grid-cols-3 gap-3 text-sm">
+            <div class="bg-surface-alt rounded-md p-3">
+              <p class="text-muted">Stock</p>
+              <p class="text-foreground font-bold">{{ product.stock_count }}</p>
+            </div>
+            <div class="bg-surface-alt rounded-md p-3">
+              <p class="text-muted">Reserved</p>
+              <p class="text-foreground font-bold">{{ product.reserved_count }}</p>
+            </div>
+            <div class="bg-surface-alt rounded-md p-3">
+              <p class="text-muted">Available</p>
+              <p class="text-foreground font-bold">{{ product.available_count }}</p>
+            </div>
+          </div>
+
+          <div v-if="editingId === product.id" class="space-y-3 border-t border-sand/60 pt-4">
+            <div v-if="editError" class="bg-error/10 border border-error/30 rounded-md p-3 text-sm text-error">{{ editError }}</div>
+            <div v-if="editSuccess" class="bg-primary/10 border border-primary/30 rounded-md p-3 text-sm text-primary">{{ editSuccess }}</div>
+
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <input v-model="editForm.slug" type="text" class="rounded-md border border-sand px-4 py-3 text-sm bg-surface-alt text-foreground focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent" />
+              <input v-model="editForm.name" type="text" class="rounded-md border border-sand px-4 py-3 text-sm bg-surface-alt text-foreground focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent" />
+              <input v-model.number="editForm.price_thb" type="number" min="1" step="1" class="rounded-md border border-sand px-4 py-3 text-sm bg-surface-alt text-foreground focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent" />
+              <input v-model.number="editForm.weight_g" type="number" min="1" step="1" class="rounded-md border border-sand px-4 py-3 text-sm bg-surface-alt text-foreground focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent" />
+              <input v-model="editForm.image_url" type="url" class="sm:col-span-2 rounded-md border border-sand px-4 py-3 text-sm bg-surface-alt text-foreground focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent" />
+            </div>
+
+            <textarea
+              v-model="editForm.description"
+              rows="4"
+              class="w-full rounded-md border border-sand px-4 py-3 text-sm bg-surface-alt text-foreground focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
+            />
+
+            <label class="inline-flex items-center gap-2 text-sm text-foreground">
+              <input v-model="editForm.active" type="checkbox" class="h-4 w-4 rounded border-sand bg-surface-alt text-primary focus:ring-primary" />
+              Active product
+            </label>
+
+            <div class="flex gap-2">
+              <PrimaryButton :disabled="editLoading" @click="submitEdit">Save</PrimaryButton>
+              <SecondaryButton :disabled="editLoading" @click="cancelEdit">Cancel</SecondaryButton>
+            </div>
+          </div>
+
+          <div v-else class="border-t border-sand/60 pt-4">
+            <SecondaryButton size="sm" @click="startEdit(product)">Edit Product</SecondaryButton>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</template>

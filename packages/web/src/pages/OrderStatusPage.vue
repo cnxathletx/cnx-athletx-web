@@ -25,14 +25,24 @@ const statusSteps = computed(() => {
   if (!order.value) return []
 
   const steps = [
-    { key: 'pending', label: 'Order Placed', description: 'Your order has been submitted' },
-    { key: 'confirmed', label: 'Payment Confirmed', description: 'Your payment has been verified' },
+    { key: 'pending_payment', label: 'Order Placed', description: 'Awaiting payment and verification' },
+    { key: 'paid', label: 'Payment Confirmed', description: 'Your payment has been verified' },
+    { key: 'packed', label: 'Packed', description: 'Your order is packed and ready for shipment' },
     { key: 'shipped', label: 'Shipped', description: 'Your order is on its way' },
     { key: 'delivered', label: 'Delivered', description: 'Your order has been delivered' },
   ]
 
-  const statusOrder = ['pending', 'confirmed', 'shipped', 'delivered']
+  const statusOrder = ['pending_payment', 'paid', 'packed', 'shipped', 'delivered']
   const currentIndex = statusOrder.indexOf(order.value.status)
+
+  if (currentIndex === -1) {
+    return steps.map((step, index) => ({
+      ...step,
+      completed: index === 0,
+      current: false,
+      upcoming: index > 0,
+    }))
+  }
 
   return steps.map((step, index) => ({
     ...step,
@@ -56,12 +66,12 @@ const formattedDate = computed(() => {
 const statusLabel = computed(() => {
   if (!order.value) return ''
   const labels: Record<string, string> = {
-    pending: 'Awaiting Payment',
-    confirmed: 'Payment Confirmed',
+    pending_payment: 'Awaiting Payment',
+    paid: 'Payment Confirmed',
+    packed: 'Packed',
     shipped: 'Shipped',
     delivered: 'Delivered',
     cancelled: 'Cancelled',
-    expired: 'Expired',
   }
   return labels[order.value.status] || order.value.status
 })
@@ -69,14 +79,25 @@ const statusLabel = computed(() => {
 const statusColor = computed(() => {
   if (!order.value) return ''
   const colors: Record<string, string> = {
-    pending: 'bg-accent/15 text-accent',
-    confirmed: 'bg-primary/15 text-primary',
+    pending_payment: 'bg-accent/15 text-accent',
+    paid: 'bg-primary/15 text-primary',
+    packed: 'bg-primary/15 text-primary',
     shipped: 'bg-primary/15 text-primary',
     delivered: 'bg-primary/15 text-primary',
     cancelled: 'bg-error/15 text-error',
-    expired: 'bg-muted/15 text-muted',
   }
   return colors[order.value.status] || 'bg-muted/15 text-muted'
+})
+
+const paymentProofDate = computed(() => {
+  if (!order.value?.latest_payment_proof) return ''
+  return new Date(order.value.latest_payment_proof.submitted_at).toLocaleString('en-US', {
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+  })
 })
 </script>
 
@@ -132,9 +153,9 @@ const statusColor = computed(() => {
                   :class="[
                     'w-8 h-8 rounded-full flex items-center justify-center shrink-0 transition-colors',
                     step.completed
-                      ? 'bg-primary text-surface'
+                      ? 'bg-primary text-background'
                       : step.current
-                        ? 'bg-primary text-surface ring-4 ring-primary/30'
+                        ? 'bg-primary text-background ring-4 ring-primary/30'
                         : 'bg-muted/20 text-muted',
                   ]"
                 >
@@ -167,6 +188,34 @@ const statusColor = computed(() => {
               </div>
             </div>
           </div>
+        </div>
+
+        <!-- Payment Proof Status -->
+        <div
+          v-if="order.payment_submitted"
+          class="bg-primary/10 border border-primary/30 rounded-lg p-6 space-y-2"
+        >
+          <h2 class="text-xl font-bold text-foreground">Payment Proof Submitted</h2>
+          <p class="text-sm text-muted">We received your payment proof and will verify it shortly.</p>
+          <p
+            v-if="order.latest_payment_proof"
+            class="text-sm text-muted"
+          >
+            Reference:
+            <span class="font-mono text-foreground">{{ order.latest_payment_proof.proof_value }}</span>
+            on {{ paymentProofDate }}
+          </p>
+        </div>
+
+        <div
+          v-else-if="order.status === 'pending_payment'"
+          class="bg-accent/10 border border-accent/30 rounded-lg p-6 space-y-3"
+        >
+          <h2 class="text-xl font-bold text-foreground">Payment Pending</h2>
+          <p class="text-sm text-muted">Complete payment and submit your transfer reference to speed up verification.</p>
+          <RouterLink :to="`/order/${orderId}/payment`" class="inline-block text-primary font-semibold hover:underline underline-offset-4">
+            Go to Payment Instructions
+          </RouterLink>
         </div>
 
         <!-- Shipment Info -->

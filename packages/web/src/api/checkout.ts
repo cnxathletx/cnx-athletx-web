@@ -42,6 +42,12 @@ export interface ApiOrderItem {
   line_total_thb: number
 }
 
+export interface ApiPaymentProof {
+  proof_type: 'reference' | 'image_url'
+  proof_value: string
+  submitted_at: string
+}
+
 export interface ApiOrder {
   id: string
   status: string
@@ -53,16 +59,19 @@ export interface ApiOrder {
   items: ApiOrderItem[]
   shipment: { carrier: string; tracking_number: string; shipped_at: string } | null
   payment_submitted: boolean
+  latest_payment_proof: ApiPaymentProof | null
 }
 
 export interface ApiError {
   error: string
   details?: { field: string; message: string }[]
+  current_status?: string
 }
 
 export async function submitCheckout(payload: CheckoutPayload): Promise<CheckoutResponse> {
   const res = await fetch(apiUrl('/api/checkout'), {
     method: 'POST',
+    credentials: 'include',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(payload),
   })
@@ -78,13 +87,38 @@ export async function submitCheckout(payload: CheckoutPayload): Promise<Checkout
 }
 
 export async function fetchOrder(orderId: string): Promise<ApiOrder> {
-  const res = await fetch(apiUrl(`/api/orders/${encodeURIComponent(orderId)}`))
+  const res = await fetch(apiUrl(`/api/orders/${encodeURIComponent(orderId)}`), {
+    credentials: 'include',
+  })
 
   if (res.status === 404) throw new Error('Order not found')
   if (!res.ok) throw new Error('Failed to fetch order')
 
   const data = (await res.json()) as { order: ApiOrder }
   return data.order
+}
+
+export interface SubmitPaymentProofResponse {
+  success: boolean
+  message: string
+}
+
+export async function submitPaymentProof(orderId: string, proofValue: string): Promise<SubmitPaymentProofResponse> {
+  const res = await fetch(apiUrl(`/api/orders/${encodeURIComponent(orderId)}/payment-proof`), {
+    method: 'POST',
+    credentials: 'include',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ proof_value: proofValue }),
+  })
+
+  const data = (await res.json()) as SubmitPaymentProofResponse | ApiError
+
+  if (!res.ok) {
+    const err = data as ApiError
+    throw new CheckoutError(err.error, res.status, err.details)
+  }
+
+  return data as SubmitPaymentProofResponse
 }
 
 export class CheckoutError extends Error {

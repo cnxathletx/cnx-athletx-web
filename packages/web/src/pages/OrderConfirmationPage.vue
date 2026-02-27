@@ -2,9 +2,11 @@
 import { ref, onMounted } from 'vue'
 import { useRoute } from 'vue-router'
 import { fetchOrder, type ApiOrder } from '../api/checkout'
+import { AuthApiErrorResponse, requestMagicLink } from '../api/auth'
 import PrimaryButton from '../components/ui/PrimaryButton.vue'
 import SecondaryButton from '../components/ui/SecondaryButton.vue'
 import CheckoutStepper from '../components/ui/CheckoutStepper.vue'
+import { useAuthStore } from '../stores/auth'
 
 const route = useRoute()
 const orderId = route.params.id as string
@@ -12,11 +14,22 @@ const orderId = route.params.id as string
 const order = ref<ApiOrder | null>(null)
 const loading = ref(true)
 const error = ref('')
+const auth = useAuthStore()
+const checkoutEmail = ref('')
+const accountPromptError = ref('')
+const accountPromptSuccess = ref('')
+const sendingAccountLink = ref(false)
 
 onMounted(async () => {
   try {
+    if (!auth.initialized) {
+      await auth.init()
+    }
+
     order.value = await fetchOrder(orderId)
-    // Clear checkout data from sessionStorage
+    checkoutEmail.value = sessionStorage.getItem('cnx-last-checkout-email') ?? ''
+
+    // Clear checkout order payload from sessionStorage.
     sessionStorage.removeItem('cnx-last-order')
   } catch {
     error.value = 'Order not found.'
@@ -24,6 +37,31 @@ onMounted(async () => {
     loading.value = false
   }
 })
+
+async function sendAccountLink() {
+  accountPromptError.value = ''
+  accountPromptSuccess.value = ''
+
+  const email = checkoutEmail.value.trim().toLowerCase()
+  if (!email) {
+    accountPromptError.value = 'Checkout email not available for this order.'
+    return
+  }
+
+  sendingAccountLink.value = true
+  try {
+    const result = await requestMagicLink(email)
+    accountPromptSuccess.value = result.message
+  } catch (err) {
+    if (err instanceof AuthApiErrorResponse) {
+      accountPromptError.value = err.message
+    } else {
+      accountPromptError.value = 'Unable to send login link right now.'
+    }
+  } finally {
+    sendingAccountLink.value = false
+  }
+}
 </script>
 
 <template>
@@ -138,6 +176,23 @@ onMounted(async () => {
               </div>
             </li>
           </ol>
+        </div>
+
+        <div
+          v-if="!auth.user && checkoutEmail"
+          class="bg-primary/10 border border-primary/30 rounded-lg p-6 space-y-3"
+        >
+          <h2 class="text-xl font-bold text-foreground">Create an Account to Track Orders</h2>
+          <p class="text-sm text-muted">
+            We can create your account with
+            <span class="font-medium text-foreground">{{ checkoutEmail }}</span>
+            and link your past guest orders automatically.
+          </p>
+          <p v-if="accountPromptError" class="text-sm text-error">{{ accountPromptError }}</p>
+          <p v-if="accountPromptSuccess" class="text-sm text-primary">{{ accountPromptSuccess }}</p>
+          <PrimaryButton size="sm" :disabled="sendingAccountLink" @click="sendAccountLink">
+            {{ sendingAccountLink ? 'Sending...' : 'Send Account Login Link' }}
+          </PrimaryButton>
         </div>
 
         <!-- Actions -->

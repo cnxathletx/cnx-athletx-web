@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ref, onMounted, computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { fetchOrder, type CheckoutResponse, type ApiOrder } from '../api/checkout'
+import { fetchOrder, submitPaymentProof, CheckoutError, type CheckoutResponse, type ApiOrder } from '../api/checkout'
 import PrimaryButton from '../components/ui/PrimaryButton.vue'
 import SecondaryButton from '../components/ui/SecondaryButton.vue'
 import CheckoutStepper from '../components/ui/CheckoutStepper.vue'
@@ -15,6 +15,23 @@ const checkoutResult = ref<CheckoutResponse | null>(null)
 const loading = ref(true)
 const error = ref('')
 const copied = ref('')
+const proofValue = ref('')
+const proofSubmitting = ref(false)
+const proofSuccess = ref('')
+const proofError = ref('')
+
+const statusLabelMap: Record<string, string> = {
+  pending_payment: 'Awaiting Payment',
+  paid: 'Paid',
+  packed: 'Packed',
+  shipped: 'Shipped',
+  delivered: 'Delivered',
+  cancelled: 'Cancelled',
+}
+
+async function loadOrder() {
+  order.value = await fetchOrder(orderId)
+}
 
 onMounted(async () => {
   // Try to get payment instructions from sessionStorage (set during checkout)
@@ -32,7 +49,7 @@ onMounted(async () => {
 
   // Always fetch fresh order data
   try {
-    order.value = await fetchOrder(orderId)
+    await loadOrder()
   } catch {
     error.value = 'Order not found. Please check your order ID.'
   } finally {
@@ -58,6 +75,56 @@ async function copyToClipboard(text: string, label: string) {
 
 function goToConfirmation() {
   router.push(`/order/${orderId}/confirmation`)
+}
+
+const canSubmitProof = computed(() => order.value?.status === 'pending_payment')
+
+const latestProofDateDisplay = computed(() => {
+  if (!order.value?.latest_payment_proof) return ''
+  return new Date(order.value.latest_payment_proof.submitted_at).toLocaleString('en-US', {
+    year: 'numeric',
+    month: 'short',
+    day: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+  })
+})
+
+const orderStatusLabel = computed(() => {
+  if (!order.value) return ''
+  return statusLabelMap[order.value.status] ?? order.value.status
+})
+
+async function handleSubmitProof() {
+  proofError.value = ''
+  proofSuccess.value = ''
+
+  if (!canSubmitProof.value) {
+    proofError.value = `Payment proof cannot be submitted once order is ${orderStatusLabel.value.toLowerCase()}.`
+    return
+  }
+
+  const value = proofValue.value.trim()
+  if (value.length < 5 || value.length > 100) {
+    proofError.value = 'Reference must be between 5 and 100 characters.'
+    return
+  }
+
+  proofSubmitting.value = true
+  try {
+    const result = await submitPaymentProof(orderId, value)
+    proofSuccess.value = result.message
+    proofValue.value = ''
+    await loadOrder()
+  } catch (err) {
+    if (err instanceof CheckoutError) {
+      proofError.value = err.message
+    } else {
+      proofError.value = 'Failed to submit payment proof. Please try again.'
+    }
+  } finally {
+    proofSubmitting.value = false
+  }
 }
 </script>
 
@@ -205,6 +272,59 @@ function goToConfirmation() {
                 Payment instructions were shown after checkout. If you need them again,
                 please check your email or contact us.
               </p>
+            </div>
+
+            <!-- Payment Proof -->
+            <div class="bg-surface rounded-lg ring-1 ring-[var(--card-ring)] p-6 space-y-4">
+              <div>
+                <h2 class="text-xl font-bold text-foreground">Submit Payment Proof</h2>
+                <p class="text-sm text-muted mt-1">
+                  Submit your transfer reference so we can verify payment faster.
+                </p>
+              </div>
+
+              <div
+                v-if="order.payment_submitted && order.latest_payment_proof"
+                class="rounded-md border border-primary/30 bg-primary/10 px-4 py-3 text-sm"
+              >
+                <p class="font-semibold text-foreground">Latest proof submitted</p>
+                <p class="text-muted mt-1">
+                  Reference:
+                  <span class="font-mono text-foreground">{{ order.latest_payment_proof.proof_value }}</span>
+                </p>
+                <p class="text-muted">Submitted: {{ latestProofDateDisplay }}</p>
+              </div>
+
+              <div
+                v-if="!canSubmitProof"
+                class="rounded-md border border-muted/30 bg-surface-alt px-4 py-3 text-sm text-muted"
+              >
+                Proof submission is unavailable while order is
+                <span class="font-semibold text-foreground">{{ orderStatusLabel }}</span>.
+              </div>
+
+              <form v-else class="space-y-3" @submit.prevent="handleSubmitProof">
+                <div>
+                  <label for="proof-value" class="block text-sm font-medium text-foreground mb-1">
+                    Transfer Reference
+                  </label>
+                  <input
+                    id="proof-value"
+                    v-model="proofValue"
+                    type="text"
+                    maxlength="100"
+                    placeholder="TXN20260211083045"
+                    class="w-full rounded-md border border-sand px-4 py-3 text-sm bg-surface-alt text-foreground placeholder:text-muted transition-colors focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
+                  />
+                </div>
+
+                <p v-if="proofError" class="text-sm text-error">{{ proofError }}</p>
+                <p v-if="proofSuccess" class="text-sm text-primary">{{ proofSuccess }}</p>
+
+                <PrimaryButton :disabled="proofSubmitting" size="md">
+                  {{ proofSubmitting ? 'Submitting...' : (order.payment_submitted ? 'Submit Updated Reference' : 'Submit Payment Proof') }}
+                </PrimaryButton>
+              </form>
             </div>
           </div>
 

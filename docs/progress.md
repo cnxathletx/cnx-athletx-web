@@ -17,7 +17,7 @@ Last updated: 2026-02-27
 - Vue Router installed and configured with routes for `/`, `/shop`, `/product/:slug`.
 - `useTheme` composable handles dark/light toggle with localStorage persistence.
 - Status pill and warning CSS variables added to tailwind.css for both themes.
-- Dev server port updated to 5174.
+- Dev server port updated to 5171.
 - Phase 2 complete: D1 schema applied (all tables with indexes), seed data loaded (2 products, inventory, site settings).
 - Product API endpoints live: `GET /api/products` (list with stock), `GET /api/products/:slug` (detail with 404/400 handling).
 - CORS middleware added to Workers (preflight + response headers).
@@ -34,6 +34,22 @@ Last updated: 2026-02-27
 - Order status page with visual timeline tracker, shipment details, and item breakdown.
 - Order lookup page for tracking by order ID.
 - Vue Router updated with routes for `/cart`, `/checkout`, `/order/status`, `/order/:id/payment`, `/order/:id/confirmation`, `/order/:id`.
+- Phase 4 complete: `POST /api/orders/:id/payment-proof` accepts transfer references and stores rows in `payment_proofs`.
+- Payment instructions page now includes a payment proof submission form with validation, submission feedback, and latest submitted reference display.
+- Public order status now shows payment proof submission details (status indicator + latest reference/timestamp).
+- Admin order detail endpoint and view added: `GET /api/admin/orders/:id` powers `/admin/orders/:id` (legacy `/admin/order/:id` redirects) and includes payment proof details.
+- Theme primary palette updated from green to product-label gold tones for CTA and highlight consistency.
+- Phase 6 scope expanded to include admin product catalog management (`GET/POST/PATCH /api/admin/products` + admin product list/edit UI).
+- Phase 5 complete: magic-link authentication endpoints (`/api/auth/request-link`, `/api/auth/verify`, `/api/auth/logout`, `/api/auth/me`) and account endpoints (`/api/account/orders`, `/api/account/last-address`, `/api/account/profile`) are implemented.
+- Frontend auth flow is live: `/login`, `/auth/verify`, `/account`, navbar auth state, checkout prefill for logged-in users, and post-checkout account-link prompt for guests.
+- D1 schema migration was re-run remotely for both `cnx-athletx-dev` and `cnx-athletx-prod`, and `RESEND_API_KEY` was re-synced to Worker secrets for default and production environments.
+- Phase 6 implementation is now in place:
+  - Admin orders list page (`/admin/orders`) with filtering, search, and pagination.
+  - Admin order detail page (`/admin/orders/:id`) with fulfillment actions (mark paid, pack, ship, cancel), payment proofs, shipment details, and audit log.
+  - Admin inventory page (`/admin/inventory`) with stock adjustments wired to `PATCH /api/admin/inventory/:productId`.
+  - Admin products page (`/admin/products`) with create/edit/archive workflows.
+  - Admin product APIs implemented: `GET /api/admin/products`, `POST /api/admin/products`, `PATCH /api/admin/products/:id`.
+  - Legacy route `/admin/order/:id` now redirects to `/admin/orders/:id`.
 
 ## Milestones Checklist
 
@@ -75,21 +91,23 @@ Last updated: 2026-02-27
 
 ### Phase 4 — Payment Proof Submission
 
-- [ ] Implement `POST /api/orders/:id/payment-proof`
-- [ ] Build payment proof form on payment instructions page
-- [ ] Persist payment proof records and expose proof status in order status
-- [ ] Show payment proof details in admin order detail view
+- [x] Implement `POST /api/orders/:id/payment-proof`
+- [x] Build payment proof form on payment instructions page
+- [x] Persist payment proof records and expose proof status in order status
+- [x] Show payment proof details in admin order detail view
 
 ### Phase 5 — Customer Accounts (Magic Link Auth)
 
-- [ ] Add `users`, `magic_links`, and `sessions` tables and `orders.user_id`
-- [ ] Implement auth/session endpoints for request-link, verify, logout, and me
-- [ ] Build login, verify, and account dashboard pages
-- [ ] Add authenticated checkout prefill and account-linked order history APIs
+- [x] Add `users`, `magic_links`, and `sessions` tables and `orders.user_id`
+- [x] Implement auth/session endpoints for request-link, verify, logout, and me
+- [x] Build login, verify, and account dashboard pages
+- [x] Add authenticated checkout prefill and account-linked order history APIs
 
 ### Phase 6 — Admin Dashboard + Fulfillment Workflow
 
-- [ ] Build admin orders list with filtering, search, and pagination
-- [ ] Build admin order detail actions and status transition UI
-- [ ] Implement admin order management and inventory APIs
-- [ ] Add audit logging and inventory adjustment flows
+- [x] Build admin orders list with filtering, search, and pagination
+- [x] Build admin order detail actions and status transition UI
+- [x] Implement admin order management and inventory APIs
+- [x] Add audit logging and inventory adjustment flows
+- [x] Build admin products page (list, create/edit, active/inactive toggle)
+- [x] Implement admin product catalog APIs (`GET /api/admin/products`, `POST /api/admin/products`, `PATCH /api/admin/products/:id`)

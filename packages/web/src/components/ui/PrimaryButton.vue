@@ -17,7 +17,7 @@ defineProps<{
       'disabled:opacity-50 disabled:cursor-not-allowed disabled:active:scale-100',
       variant === 'inverse'
         ? 'bg-surface text-primary hover:bg-surface/90'
-        : 'bg-primary text-surface hover:bg-primary-dark',
+        : 'bg-primary text-background hover:bg-primary-dark',
       size === 'sm' ? 'px-4 py-2 text-sm' : size === 'lg' ? 'px-8 py-4 text-lg' : 'px-6 py-3 text-base',
       fullWidth ? 'w-full' : '',
     ]"

@@ -102,6 +102,7 @@ CREATE INDEX IF NOT EXISTS idx_orders_status ON orders(status);
 CREATE INDEX IF NOT EXISTS idx_orders_customer_email ON orders(customer_email);
 CREATE INDEX IF NOT EXISTS idx_orders_idempotency_key ON orders(idempotency_key);
 CREATE INDEX IF NOT EXISTS idx_orders_created_at ON orders(created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_orders_user_id ON orders(user_id);
 
 -- order_items table
 CREATE TABLE IF NOT EXISTS order_items (

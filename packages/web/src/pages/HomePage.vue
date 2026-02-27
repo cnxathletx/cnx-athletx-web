@@ -284,7 +284,7 @@ onMounted(async () => {
     <!-- ============ CTA BANNER ============ -->
     <section class="bg-primary">
       <div class="mx-auto max-w-[1280px] px-4 sm:px-6 lg:px-8 py-16 text-center space-y-6">
-        <h2 class="text-3xl sm:text-4xl font-bold text-surface">
+        <h2 class="text-3xl sm:text-4xl font-bold text-background">
           Ready to fuel your next session?
         </h2>
         <RouterLink to="/shop">

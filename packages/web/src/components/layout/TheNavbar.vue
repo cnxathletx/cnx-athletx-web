@@ -1,15 +1,24 @@
 <script setup lang="ts">
 import { ref } from 'vue'
-import { RouterLink } from 'vue-router'
+import { RouterLink, useRouter } from 'vue-router'
 import { useTheme } from '../../composables/useTheme'
 import { useCartStore } from '../../stores/cart'
+import { useAuthStore } from '../../stores/auth'
 
 const { isDark, toggle } = useTheme()
 const cart = useCartStore()
+const auth = useAuthStore()
+const router = useRouter()
 const mobileOpen = ref(false)
 
 function closeMobile() {
   mobileOpen.value = false
+}
+
+async function handleLogout() {
+  await auth.logout()
+  closeMobile()
+  await router.push('/')
 }
 </script>
 
@@ -47,6 +56,33 @@ function closeMobile() {
 
         <!-- Actions: Theme Toggle + Cart + Mobile Menu -->
         <div class="flex items-center space-x-2">
+          <RouterLink
+            v-if="!auth.loading && !auth.isAuthenticated"
+            to="/login"
+            class="hidden md:inline-flex text-sm font-semibold text-foreground hover:text-primary transition-colors px-2 py-1"
+          >
+            Log In
+          </RouterLink>
+
+          <RouterLink
+            v-if="!auth.loading && auth.isAuthenticated"
+            to="/account"
+            class="hidden md:inline-flex items-center gap-2 px-2 py-1 text-sm font-semibold text-foreground hover:text-primary transition-colors"
+          >
+            <span class="w-7 h-7 rounded-full bg-primary text-background flex items-center justify-center text-xs font-bold">
+              {{ auth.displayInitial }}
+            </span>
+            Account
+          </RouterLink>
+
+          <button
+            v-if="!auth.loading && auth.isAuthenticated"
+            class="hidden md:inline-flex text-sm font-semibold text-muted hover:text-error transition-colors px-2 py-1"
+            @click="handleLogout"
+          >
+            Log Out
+          </button>
+
           <!-- Theme Toggle -->
           <button
             @click="toggle"
@@ -95,7 +131,7 @@ function closeMobile() {
             <!-- Count Badge -->
             <span
               v-if="cart.totalItems > 0"
-              class="absolute -top-1 -right-1 bg-primary text-surface text-xs font-bold rounded-full w-5 h-5 flex items-center justify-center"
+              class="absolute -top-1 -right-1 bg-primary text-background text-xs font-bold rounded-full w-5 h-5 flex items-center justify-center"
             >
               {{ cart.totalItems > 9 ? '9+' : cart.totalItems }}
             </span>
@@ -225,6 +261,32 @@ function closeMobile() {
           >
             Track Order
           </RouterLink>
+
+          <RouterLink
+            v-if="!auth.loading && !auth.isAuthenticated"
+            to="/login"
+            @click="closeMobile"
+            class="text-lg font-semibold text-foreground hover:text-primary hover:bg-surface-alt px-3 py-3 rounded-md transition-colors"
+          >
+            Log In
+          </RouterLink>
+
+          <RouterLink
+            v-if="!auth.loading && auth.isAuthenticated"
+            to="/account"
+            @click="closeMobile"
+            class="text-lg font-semibold text-foreground hover:text-primary hover:bg-surface-alt px-3 py-3 rounded-md transition-colors"
+          >
+            My Account
+          </RouterLink>
+
+          <button
+            v-if="!auth.loading && auth.isAuthenticated"
+            class="text-left text-lg font-semibold text-error hover:bg-surface-alt px-3 py-3 rounded-md transition-colors"
+            @click="handleLogout"
+          >
+            Log Out
+          </button>
         </nav>
       </div>
     </div>

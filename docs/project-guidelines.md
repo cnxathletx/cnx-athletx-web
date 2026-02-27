@@ -15,7 +15,7 @@ Treat `packages/web/dist` and `.wrangler/` as generated artifacts; do not edit t
 Run from repo root unless noted.
 
 - `npm ci`: install workspace dependencies cleanly.
-- `npm run dev:web`: run Vite dev server on `0.0.0.0:5173`.
+- `npm run dev:web`: run Vite dev server on `0.0.0.0:5171`.
 - `npm run dev:api`: run Worker locally with Wrangler on port `8787`.
 - `npm run typecheck`: run strict TypeScript checks across workspaces.
 - `npm run build`: build validation for both web and api packages.

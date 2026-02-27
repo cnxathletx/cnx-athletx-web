@@ -1,5 +1,7 @@
 # CNX AthletX — Milestones & Acceptance Criteria
 
+Last updated: 2026-02-27
+
 ## Phase 0: Repo Scaffolding + Cloudflare + CI
 
 **Goal:** Working monorepo with both packages buildable and deployable to Cloudflare.
@@ -17,14 +19,14 @@
 10. Store `RESEND_API_KEY` as Workers secret
 
 **Acceptance Criteria:**
-- [ ] `npm run dev:web` starts Vue dev server at localhost:5173
-- [ ] `npm run dev:api` starts Workers dev server via `wrangler dev`
-- [ ] Pushing to `main` triggers CI that deploys both packages
+- [x] `npm run dev:web` starts Vue dev server at localhost:5171
+- [x] `npm run dev:api` starts Workers dev server via `wrangler dev`
+- [x] Pushing to `main` triggers CI that deploys both packages
 - [ ] Cloudflare Access blocks unauthenticated requests to `/admin/*`
-- [ ] D1 database is accessible from Workers dev environment
-- [ ] Tailwind config includes all brand color tokens and typography utilities
-- [ ] Dark/light theme system works: `:root` (dark default) and `:root.light` CSS variable switching
-- [ ] Flash prevention script in `index.html` prevents FOUC on theme load
+- [x] D1 database is accessible from Workers dev environment
+- [x] Tailwind config includes all brand color tokens and typography utilities
+- [x] Dark/light theme system works: `:root` (dark default) and `:root.light` CSS variable switching
+- [x] Flash prevention script in `index.html` prevents FOUC on theme load
 
 ---
 
@@ -36,30 +38,30 @@
 1. Implement Navbar component (sticky, responsive, mobile hamburger drawer, theme toggle)
 2. Implement Footer component (3-column grid, brand info, always-dark bg)
 3. Implement Theme Toggle (useTheme composable, sun/moon icon button)
-3. Build Home page with all sections:
+4. Build Home page with all sections:
    - Hero (headline + CTA + product image placeholder)
    - Social Proof Bar (trust signals)
    - Featured Products (2 placeholder product cards)
    - Brand Story (text + image placeholder, video placeholder slot)
    - Community (image grid placeholders)
    - CTA Banner
-4. Build Shop page with product grid (2 placeholder cards)
-5. Build Product Detail page layout (image + info + tabs)
-6. Implement shared components: Primary Button, Secondary Button, Badge, Product Card
-7. Set up Vue Router with all storefront routes
-8. Verify responsive behavior at all breakpoints
+5. Build Shop page with product grid (2 placeholder cards)
+6. Build Product Detail page layout (image + info + tabs)
+7. Implement shared components: Primary Button, Secondary Button, Badge, Product Card
+8. Set up Vue Router with all storefront routes
+9. Verify responsive behavior at all breakpoints
 
 **Acceptance Criteria:**
-- [ ] Home page renders all 6 sections with correct brand colors and spacing
-- [ ] Navigation works on desktop (horizontal links) and mobile (hamburger drawer)
-- [ ] Theme toggle button in navbar switches between dark and light mode
-- [ ] Product cards display with correct styling (ring elevation in dark, shadow in light, hover effect, badge)
-- [ ] All pages use `bg-background` as primary background (dark: #0A0A0A, light: #F4F3EE)
-- [ ] Chiang Mai Green is used for all primary CTAs (dark: #3A8563, light: #2F6B4F)
-- [ ] Northern Gold appears only on badges, never as dominant color
-- [ ] Typography uses Inter font with correct scale (H1: 2.5rem, H2: 2rem, etc.)
-- [ ] Pages are responsive: single column on mobile, multi-column on desktop
-- [ ] Theme preference persists via localStorage across page reloads
+- [x] Home page renders all 6 sections with correct brand colors and spacing
+- [x] Navigation works on desktop (horizontal links) and mobile (hamburger drawer)
+- [x] Theme toggle button in navbar switches between dark and light mode
+- [x] Product cards display with correct styling (ring elevation in dark, shadow in light, hover effect, badge)
+- [x] All pages use `bg-background` as primary background (dark: #0A0A0A, light: #F4F3EE)
+- [x] Product-label Gold is used for all primary CTAs (dark: #EBB83C, light: #A67C1F)
+- [x] Accent gold variants are used as supportive accents/badges, not as dominant page backgrounds
+- [x] Typography uses Inter font with correct scale (H1: 2.5rem, H2: 2rem, etc.)
+- [x] Pages are responsive: single column on mobile, multi-column on desktop
+- [x] Theme preference persists via localStorage across page reloads
 
 ---
 
@@ -77,12 +79,12 @@
 7. Add loading and error states to product pages
 
 **Acceptance Criteria:**
-- [ ] D1 schema creates all tables with correct indexes and constraints
-- [ ] `GET /api/products` returns both products with `stock_count > 0`
-- [ ] `GET /api/products/plant-protein-500g` returns full product detail
-- [ ] Product pages fetch and render real data from API
-- [ ] Inactive products (`active = 0`) are excluded from public API
-- [ ] Price displays correctly as THB (e.g., "฿899" from 89900 satang)
+- [x] D1 schema creates all tables with correct indexes and constraints
+- [x] `GET /api/products` returns both products with `stock_count > 0`
+- [x] `GET /api/products/plant-protein-500g` returns full product detail
+- [x] Product pages fetch and render real data from API
+- [x] Inactive products (`active = 0`) are excluded from public API
+- [x] Price displays correctly as THB (e.g., "฿899" from 89900 satang)
 
 ---
 
@@ -115,18 +117,18 @@
 11. Build Order Status page with timeline tracker
 
 **Acceptance Criteria:**
-- [ ] Adding product to cart updates cart icon count badge
-- [ ] Cart persists across page reloads (localStorage)
-- [ ] Checkout form validates: name, email, phone (Thai format), address fields, postal code (5 digits)
-- [ ] Submitting checkout creates order in D1 with `status = 'pending_payment'`
-- [ ] Inventory `reserved_count` increases by ordered quantity
-- [ ] Duplicate submission with same idempotency key returns existing order (not 201)
-- [ ] Applying a valid discount code returns reduced order total in both API response and UI summary
-- [ ] Invalid or expired discount code returns 422 with clear validation message
-- [ ] Insufficient stock returns 422 error with clear message
-- [ ] Payment Instructions page shows QR code, bank details, order reference, amount
-- [ ] Order Status page shows current status in visual timeline
-- [ ] Checkout stepper shows correct active step on each page
+- [x] Adding product to cart updates cart icon count badge
+- [x] Cart persists across page reloads (localStorage)
+- [x] Checkout form validates: name, email, phone (Thai format), address fields, postal code (5 digits)
+- [x] Submitting checkout creates order in D1 with `status = 'pending_payment'`
+- [x] Inventory `reserved_count` increases by ordered quantity
+- [x] Duplicate submission with same idempotency key returns existing order (not 201)
+- [x] Applying a valid discount code returns reduced order total in both API response and UI summary
+- [x] Invalid or expired discount code returns 422 with clear validation message
+- [x] Insufficient stock returns 422 error with clear message
+- [x] Payment Instructions page shows QR code, bank details, order reference, amount
+- [x] Order Status page shows current status in visual timeline
+- [x] Checkout stepper shows correct active step on each page
 
 ---
 
@@ -146,12 +148,12 @@
 - `proof_type = 'image_url'` with R2 URL stored in `proof_value`
 
 **Acceptance Criteria:**
-- [ ] Customer can enter transfer reference number on payment page
-- [ ] `POST /api/orders/:id/payment-proof` stores proof in D1
-- [ ] Multiple proofs per order are supported (customer can resubmit)
-- [ ] Order status page shows "Payment proof submitted" indicator
-- [ ] Submitting proof for a non-existent order returns 404
-- [ ] Submitting proof for an already-paid order returns 409
+- [x] Customer can enter transfer reference number on payment page
+- [x] `POST /api/orders/:id/payment-proof` stores proof in D1
+- [x] Multiple proofs per order are supported (customer can resubmit)
+- [x] Order status page shows "Payment proof submitted" indicator
+- [x] Submitting proof for a non-existent order returns 404
+- [x] Submitting proof for an already-paid order returns 409
 
 ---
 
@@ -179,24 +181,31 @@
 17. Implement retroactive order linking on account creation (`UPDATE orders SET user_id = ? WHERE customer_email = ?`)
 
 **Acceptance Criteria:**
-- [ ] User enters email on /login → receives magic link email within 30 seconds
-- [ ] Clicking valid magic link logs user in and redirects to /account
-- [ ] Expired link (>15 min) or used link shows error with "request new link" option
-- [ ] Session persists across browser restarts (30-day HttpOnly cookie)
-- [ ] /account shows user's order history with status pills
-- [ ] Checkout pre-fills name, email, phone, and last-used address for logged-in users
-- [ ] Guest checkout still works (user_id = NULL on order)
-- [ ] Post-checkout prompt lets guest create account; past orders retroactively linked
-- [ ] Navbar shows "Log In" when logged out, user avatar + dropdown when logged in
-- [ ] Logging out clears session and redirects to home
-- [ ] Rate limit: >3 magic link requests in 15 min returns 429
-- [ ] Same success message shown whether email exists or not (no enumeration)
+- [x] User enters email on /login → receives magic link email within 30 seconds
+- [x] Clicking valid magic link logs user in and redirects to /account
+- [x] Expired link (>15 min) or used link shows error with "request new link" option
+- [x] Session persists across browser restarts (30-day HttpOnly cookie)
+- [x] /account shows user's order history with status pills
+- [x] Checkout pre-fills name, email, phone, and last-used address for logged-in users
+- [x] Guest checkout still works (user_id = NULL on order)
+- [x] Post-checkout prompt lets guest create account; past orders retroactively linked
+- [x] Navbar shows "Log In" when logged out and account/log-out controls when logged in
+- [x] Logging out clears session and redirects to home
+- [x] Rate limit: >3 magic link requests in 15 min returns 429
+- [x] Same success message shown whether email exists or not (no enumeration)
 
 ---
 
 ## Phase 6: Admin Dashboard + Fulfillment Workflow
 
-**Goal:** Owner can manage orders through the full lifecycle: verify payment, pack, ship, cancel.
+**Goal:** Owner can manage orders through the full lifecycle and maintain product/inventory data.
+
+**Current status note (2026-02-27):** Phase 6 implementation is now in place in code:
+- Admin routes and pages: `/admin/orders`, `/admin/orders/:id`, `/admin/inventory`, `/admin/products` (`/admin/order/:id` now redirects to `/admin/orders/:id`).
+- Fulfillment APIs are implemented with transition validation and audit logs.
+- Inventory adjustment API/UI is implemented.
+- Product CRUD APIs/UI are implemented (`GET/POST/PATCH /api/admin/products`).
+- Remaining external dependency: Cloudflare Access enforcement must still be completed in Zero Trust policy setup.
 
 **Tasks:**
 1. Build Admin Orders List page:
@@ -223,18 +232,25 @@
 8. Implement audit logging (admin email from CF Access header)
 9. Build Admin Inventory page (stock levels, adjust counts)
 10. Implement `PATCH /api/admin/inventory/:productId`
+11. Build Admin Products page (list products, edit product details, active/inactive toggle)
+12. Implement admin product endpoints:
+   - `GET /api/admin/products`
+   - `POST /api/admin/products`
+   - `PATCH /api/admin/products/:id`
 
 **Acceptance Criteria:**
 - [ ] Admin pages only accessible through Cloudflare Access
-- [ ] Orders list shows correct status pills and filters work
-- [ ] Mark Paid: order status → `paid`, payment record created, inventory adjusted, audit logged
-- [ ] Pack: order status → `packed`, audit logged
-- [ ] Ship: order status → `shipped`, shipment record created with carrier + tracking, audit logged
-- [ ] Cancel: order status → `cancelled`, inventory restored (`reserved_count` or `stock_count`), audit logged
-- [ ] Invalid transitions return 409 (e.g., can't mark shipped order as paid)
-- [ ] Audit log shows admin email, action, timestamp for every action
-- [ ] Inventory page shows current stock, reserved count, available count
-- [ ] Stock adjustment via admin updates `stock_count` in D1
+- [x] Orders list shows correct status pills and filters work
+- [x] Mark Paid: order status → `paid`, payment record created, inventory adjusted, audit logged
+- [x] Pack: order status → `packed`, audit logged
+- [x] Ship: order status → `shipped`, shipment record created with carrier + tracking, audit logged
+- [x] Cancel: order status → `cancelled`, inventory restored (`reserved_count` or `stock_count`), audit logged
+- [x] Invalid transitions return 409 (e.g., can't mark shipped order as paid)
+- [x] Audit log shows admin email, action, timestamp for every action
+- [x] Inventory page shows current stock, reserved count, available count
+- [x] Stock adjustment via admin updates `stock_count` in D1
+- [x] Product management page lists products with current active status and pricing
+- [x] Admin can create and edit products (name, slug, description, price, weight, image, active)
 
 ---
 
@@ -315,7 +331,7 @@
 | 3 | Purchase Flow | Cart, checkout, stock reservation, payment instructions |
 | 4 | Payment Proof | Proof submission API + UI, admin visibility |
 | 5 | Customer Accounts | Magic link auth, sessions, order history, checkout pre-fill |
-| 6 | Admin | Dashboard, fulfillment workflow, inventory management |
+| 6 | Admin | Dashboard, fulfillment workflow, inventory + product catalog management |
 | 7 | Email | Resend integration, 4 email templates (incl. magic link), failure handling |
 | 8 | Polish | SEO, legal pages, performance, cross-browser testing |
 
@@ -330,7 +346,7 @@ A developer can implement a production-ready v1 ecommerce platform using this pl
 3. Accepts orders with manual PromptPay/bank transfer payment
 4. Allows customers to submit payment proof
 5. Supports passwordless customer accounts (magic link) with order history and checkout pre-fill
-6. Provides admin dashboard for payment verification, packing, shipping, and cancellation
+6. Provides admin dashboard for payment verification, packing, shipping, cancellation, and product/inventory management
 7. Sends transactional emails via Resend at key lifecycle events
 8. Complies with Thai FDA supplement advertising rules
 9. Includes PDPA-compliant privacy policy

@@ -26,9 +26,9 @@ const steps = [
               :class="[
                 'w-9 h-9 sm:w-10 sm:h-10 rounded-full flex items-center justify-center font-semibold text-sm shrink-0 transition-colors',
                 step.number < currentStep
-                  ? 'bg-primary text-surface'
+                  ? 'bg-primary text-background'
                   : step.number === currentStep
-                    ? 'bg-primary text-surface ring-4 ring-primary/30'
+                    ? 'bg-primary text-background ring-4 ring-primary/30'
                     : 'bg-muted/20 text-muted',
               ]"
             >

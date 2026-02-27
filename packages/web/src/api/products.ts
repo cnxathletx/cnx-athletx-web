@@ -1,3 +1,5 @@
+import { apiUrl } from './client'
+
 export interface ApiProduct {
   id: number
   slug: string
@@ -10,14 +12,14 @@ export interface ApiProduct {
 }
 
 export async function fetchProducts(): Promise<ApiProduct[]> {
-  const res = await fetch('/api/products')
+  const res = await fetch(apiUrl('/api/products'))
   if (!res.ok) throw new Error('Failed to fetch products')
   const data = (await res.json()) as { products: ApiProduct[] }
   return data.products
 }
 
 export async function fetchProductBySlug(slug: string): Promise<ApiProduct> {
-  const res = await fetch(`/api/products/${encodeURIComponent(slug)}`)
+  const res = await fetch(apiUrl(`/api/products/${encodeURIComponent(slug)}`))
   if (res.status === 404) throw new Error('Product not found')
   if (!res.ok) throw new Error('Failed to fetch product')
   const data = (await res.json()) as { product: ApiProduct }

@@ -1,3 +1,5 @@
+import { apiUrl } from './client'
+
 export interface CheckoutPayload {
   items: { product_id: number; quantity: number }[]
   customer: {
@@ -59,7 +61,7 @@ export interface ApiError {
 }
 
 export async function submitCheckout(payload: CheckoutPayload): Promise<CheckoutResponse> {
-  const res = await fetch('/api/checkout', {
+  const res = await fetch(apiUrl('/api/checkout'), {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(payload),
@@ -76,7 +78,7 @@ export async function submitCheckout(payload: CheckoutPayload): Promise<Checkout
 }
 
 export async function fetchOrder(orderId: string): Promise<ApiOrder> {
-  const res = await fetch(`/api/orders/${encodeURIComponent(orderId)}`)
+  const res = await fetch(apiUrl(`/api/orders/${encodeURIComponent(orderId)}`))
 
   if (res.status === 404) throw new Error('Order not found')
   if (!res.ok) throw new Error('Failed to fetch order')

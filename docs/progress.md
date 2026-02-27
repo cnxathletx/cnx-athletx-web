@@ -50,6 +50,9 @@ Last updated: 2026-02-27
   - Admin products page (`/admin/products`) with create/edit/archive workflows.
   - Admin product APIs implemented: `GET /api/admin/products`, `POST /api/admin/products`, `PATCH /api/admin/products/:id`.
   - Legacy route `/admin/order/:id` now redirects to `/admin/orders/:id`.
+- Legal pages added and routed:
+  - Privacy Policy page at `/privacy`
+  - Terms of Service page at `/terms`
 
 ## Milestones Checklist
 
@@ -111,3 +114,8 @@ Last updated: 2026-02-27
 - [x] Add audit logging and inventory adjustment flows
 - [x] Build admin products page (list, create/edit, active/inactive toggle)
 - [x] Implement admin product catalog APIs (`GET /api/admin/products`, `POST /api/admin/products`, `PATCH /api/admin/products/:id`)
+
+### Phase 8 — Polish (Legal Pages)
+
+- [x] Privacy Policy page exists with PDPA-required sections
+- [x] Terms of Service page exists with payment, shipping, and return terms

@@ -310,8 +310,8 @@ Last updated: 2026-02-27
 - [ ] Product pages have correct OG meta tags (title, description, image, price)
 - [ ] Google Rich Results Test validates Product JSON-LD
 - [ ] `robots.txt` disallows `/admin/` and `/api/admin/`
-- [ ] Privacy Policy page exists with PDPA-required content sections
-- [ ] Terms of Service page exists with payment terms, shipping, returns
+- [x] Privacy Policy page exists with PDPA-required content sections
+- [x] Terms of Service page exists with payment terms, shipping, returns
 - [ ] Footer includes supplement disclaimer
 - [ ] Lighthouse Performance score >= 90
 - [ ] Lighthouse Accessibility score = 100

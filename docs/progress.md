@@ -1,6 +1,6 @@
 # CNX AthletX Implementation Progress
 
-Last updated: 2026-02-26
+Last updated: 2026-02-27
 
 ## Summary
 
@@ -13,6 +13,27 @@ Last updated: 2026-02-26
 - `RESEND_API_KEY` has been uploaded to Cloudflare Worker secrets (top-level and production environments).
 - Cloudflare Access policy setup for path-specific admin protection is pending manual Zero Trust setup plus a custom domain/active zone.
 - Product scope is updated so discount codes are now included in v1 and tracked in Phase 3.
+- Phase 1 UI scaffolds are complete: Navbar (sticky, responsive, mobile drawer, theme toggle), Footer (always-dark, 3-column), Home page (6 sections), Shop page, Product Detail page (with tabs), and shared UI components (PrimaryButton, SecondaryButton, GhostButton, AppBadge, ProductCard).
+- Vue Router installed and configured with routes for `/`, `/shop`, `/product/:slug`.
+- `useTheme` composable handles dark/light toggle with localStorage persistence.
+- Status pill and warning CSS variables added to tailwind.css for both themes.
+- Dev server port updated to 5174.
+- Phase 2 complete: D1 schema applied (all tables with indexes), seed data loaded (2 products, inventory, site settings).
+- Product API endpoints live: `GET /api/products` (list with stock), `GET /api/products/:slug` (detail with 404/400 handling).
+- CORS middleware added to Workers (preflight + response headers).
+- Frontend now fetches real API data: Shop and Product Detail pages have loading skeletons and error states.
+- Vite dev proxy configured to forward `/api` requests to Workers on port 8787.
+- `discount_codes` table added to schema for Phase 3 discount code support.
+- Phase 3 complete: Pinia cart store with localStorage persistence, full checkout flow implemented.
+- `POST /api/checkout` endpoint with atomic stock reservation (D1 batch), idempotency keys, discount code validation, shipping calculation, and PromptPay QR URL generation.
+- `GET /api/orders/:id` endpoint returns order details, items, shipment, and payment proof status.
+- Cart page with quantity controls, item removal, and order summary sidebar.
+- Checkout page with contact info, Thai address, discount code input, client-side validation, and API error mapping.
+- Payment instructions page showing PromptPay QR, bank transfer details, copy-to-clipboard, and order summary.
+- Order confirmation page with success state, order details, and "What's Next" steps.
+- Order status page with visual timeline tracker, shipment details, and item breakdown.
+- Order lookup page for tracking by order ID.
+- Vue Router updated with routes for `/cart`, `/checkout`, `/order/status`, `/order/:id/payment`, `/order/:id/confirmation`, `/order/:id`.
 
 ## Milestones Checklist
 
@@ -32,25 +53,25 @@ Last updated: 2026-02-26
 
 ### Phase 1 — Tailwind Theme + Home/Shop UI Scaffolds
 
-- [ ] Implement Navbar, Footer, and Theme Toggle UI components
-- [ ] Build Home, Shop, and Product Detail page scaffolds
-- [ ] Add shared UI components (buttons, badges, product cards)
-- [ ] Set up Vue Router storefront routes and responsive behavior
+- [x] Implement Navbar, Footer, and Theme Toggle UI components
+- [x] Build Home, Shop, and Product Detail page scaffolds
+- [x] Add shared UI components (buttons, badges, product cards)
+- [x] Set up Vue Router storefront routes and responsive behavior
 
 ### Phase 2 — D1 Schema + Product APIs + Seeded Products
 
-- [ ] Create and apply D1 schema SQL and seed SQL for initial products
-- [ ] Implement `GET /api/products` and `GET /api/products/:slug`
-- [ ] Add CORS middleware for local development
-- [ ] Connect frontend product pages to API with loading and error states
+- [x] Create and apply D1 schema SQL and seed SQL for initial products
+- [x] Implement `GET /api/products` and `GET /api/products/:slug`
+- [x] Add CORS middleware for local development
+- [x] Connect frontend product pages to API with loading and error states
 
 ### Phase 3 — Cart + Checkout + Payment Instructions UI
 
-- [ ] Implement Pinia cart store with localStorage persistence
-- [ ] Build Cart and Checkout pages with validation and summary
-- [ ] Implement `POST /api/checkout` with atomic stock reservation and idempotency
-- [ ] Implement discount code validation and adjusted totals in checkout API + UI
-- [ ] Build payment instructions, order confirmation, and order status pages
+- [x] Implement Pinia cart store with localStorage persistence
+- [x] Build Cart and Checkout pages with validation and summary
+- [x] Implement `POST /api/checkout` with atomic stock reservation and idempotency
+- [x] Implement discount code validation and adjusted totals in checkout API + UI
+- [x] Build payment instructions, order confirmation, and order status pages
 
 ### Phase 4 — Payment Proof Submission
 

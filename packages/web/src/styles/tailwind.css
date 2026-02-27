@@ -70,6 +70,42 @@
   --shadow-lg: var(--shadow-lg);
 }
 
+/* Status pill colors */
+:root {
+  --status-pending-bg: rgb(120 53 15 / 0.5);
+  --status-pending-text: #fcd34d;
+  --status-paid-bg: rgb(30 58 138 / 0.5);
+  --status-paid-text: #93c5fd;
+  --status-packed-bg: rgb(88 28 135 / 0.5);
+  --status-packed-text: #d8b4fe;
+  --status-delivered-bg: rgb(20 83 45 / 0.5);
+  --status-delivered-text: #86efac;
+  --status-cancelled-bg: rgb(127 29 29 / 0.5);
+  --status-cancelled-text: #fca5a5;
+
+  --warning-bg: rgb(120 53 15 / 0.15);
+  --warning-border: rgb(217 119 6 / 0.3);
+  --warning-text: #fcd34d;
+}
+
+:root.light {
+  --status-pending-bg: #fef3c7;
+  --status-pending-text: #92400e;
+  --status-paid-bg: #dbeafe;
+  --status-paid-text: #1e3a8a;
+  --status-packed-bg: #f3e8ff;
+  --status-packed-text: #581c87;
+  --status-delivered-bg: #dcfce7;
+  --status-delivered-text: #14532d;
+  --status-cancelled-bg: #fee2e2;
+  --status-cancelled-text: #7f1d1d;
+
+  --warning-bg: #fffbeb;
+  --warning-border: #fde68a;
+  --warning-text: #92400e;
+}
+
+/* Typography Utilities */
 @utility text-display-1 {
   font-size: 2.5rem;
   line-height: 1.1;

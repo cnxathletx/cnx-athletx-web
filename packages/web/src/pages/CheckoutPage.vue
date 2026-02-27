@@ -22,7 +22,6 @@ if (cart.items.length === 0) {
 const form = ref({
   name: '',
   email: '',
-  phone: '',
   line1: '',
   line2: '',
   district: '',
@@ -31,6 +30,26 @@ const form = ref({
   discount_code: '',
 })
 
+const phoneCountryCode = ref('+66')
+const phoneLocalNumber = ref('')
+
+const phoneCountryOptions = [
+  { value: '+66', label: 'TH +66' },
+  { value: '+1', label: 'US/CA +1' },
+  { value: '+44', label: 'UK +44' },
+  { value: '+61', label: 'AU +61' },
+  { value: '+65', label: 'SG +65' },
+  { value: '+60', label: 'MY +60' },
+  { value: '+49', label: 'DE +49' },
+  { value: '+33', label: 'FR +33' },
+  { value: '+39', label: 'IT +39' },
+  { value: '+81', label: 'JP +81' },
+  { value: '+82', label: 'KR +82' },
+  { value: '+84', label: 'VN +84' },
+  { value: '+86', label: 'CN +86' },
+  { value: '+91', label: 'IN +91' },
+]
+
 const submitting = ref(false)
 const apiError = ref('')
 const fieldErrors = ref<Record<string, string>>({})
@@ -38,14 +57,67 @@ const fieldErrors = ref<Record<string, string>>({})
 // Generate idempotency key once per page load
 const idempotencyKey = crypto.randomUUID()
 
+function digitsOnly(value: string): string {
+  return value.replace(/\D+/g, '')
+}
+
+function normalizePhoneForSubmit(): string {
+  const digits = digitsOnly(phoneLocalNumber.value)
+  if (!digits) return ''
+
+  if (phoneCountryCode.value === '+66') {
+    const thaiLocal = digits.startsWith('0') ? digits.slice(1) : digits
+    return `+66${thaiLocal}`
+  }
+
+  return `${phoneCountryCode.value}${digits}`
+}
+
+function setPhoneFromExisting(phone: string): void {
+  const trimmed = phone.trim()
+  if (!trimmed) {
+    phoneCountryCode.value = '+66'
+    phoneLocalNumber.value = ''
+    return
+  }
+
+  if (trimmed.startsWith('0')) {
+    phoneCountryCode.value = '+66'
+    phoneLocalNumber.value = trimmed
+    return
+  }
+
+  if (!trimmed.startsWith('+')) {
+    phoneCountryCode.value = '+66'
+    phoneLocalNumber.value = digitsOnly(trimmed)
+    return
+  }
+
+  const optionsByPrefix = [...phoneCountryOptions].sort((a, b) => b.value.length - a.value.length)
+  const matched = optionsByPrefix.find((option) => trimmed.startsWith(option.value))
+
+  if (matched) {
+    phoneCountryCode.value = matched.value
+    phoneLocalNumber.value = digitsOnly(trimmed.slice(matched.value.length))
+    return
+  }
+
+  phoneCountryCode.value = '+66'
+  phoneLocalNumber.value = digitsOnly(trimmed)
+}
+
+function sanitizePhoneInput() {
+  phoneLocalNumber.value = digitsOnly(phoneLocalNumber.value)
+}
+
 // Validation
 function validate(): boolean {
   const errors: Record<string, string> = {}
+  const normalizedPhone = normalizePhoneForSubmit()
 
   if (form.value.name.trim().length < 2) errors.name = 'Name must be at least 2 characters'
   if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.value.email)) errors.email = 'Enter a valid email'
-  if (!/^(\+66|0)[0-9]{9}$/.test(form.value.phone))
-    errors.phone = 'Enter a valid Thai phone (e.g. 0812345678)'
+  if (!/^\+[1-9][0-9]{6,14}$/.test(normalizedPhone)) errors.phone = 'Enter a valid phone number'
   if (form.value.line1.trim().length < 5) errors.line1 = 'Address must be at least 5 characters'
   if (!form.value.district.trim()) errors.district = 'District is required'
   if (!form.value.province.trim()) errors.province = 'Province is required'
@@ -66,7 +138,7 @@ onMounted(async () => {
 
   if (!form.value.name) form.value.name = auth.user.name ?? ''
   if (!form.value.email) form.value.email = auth.user.email
-  if (!form.value.phone) form.value.phone = auth.user.phone ?? ''
+  if (auth.user.phone) setPhoneFromExisting(auth.user.phone)
 
   try {
     const address = await fetchLastAddress()
@@ -89,6 +161,7 @@ async function handleSubmit() {
   apiError.value = ''
 
   try {
+    const normalizedPhone = normalizePhoneForSubmit()
     const result = await submitCheckout({
       items: cart.items.map((item) => ({
         product_id: item.productId,
@@ -97,7 +170,7 @@ async function handleSubmit() {
       customer: {
         name: form.value.name.trim(),
         email: form.value.email.trim().toLowerCase(),
-        phone: form.value.phone.trim(),
+        phone: normalizedPhone,
         address: {
           line1: form.value.line1.trim(),
           line2: form.value.line2.trim(),
@@ -187,15 +260,27 @@ async function handleSubmit() {
             </div>
             <div class="max-w-sm">
               <label class="block text-sm font-medium text-foreground mb-1">Phone Number</label>
-              <input
-                v-model="form.phone"
-                type="tel"
-                :class="[
-                  'w-full rounded-md border px-4 py-3 text-sm bg-surface-alt text-foreground placeholder:text-muted transition-colors focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent',
-                  fieldErrors.phone ? 'border-error' : 'border-sand',
-                ]"
-                placeholder="0812345678"
-              />
+              <div class="flex gap-2">
+                <select
+                  v-model="phoneCountryCode"
+                  class="rounded-md border border-sand px-3 py-3 text-sm bg-surface-alt text-foreground transition-colors focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
+                >
+                  <option v-for="option in phoneCountryOptions" :key="option.value" :value="option.value">
+                    {{ option.label }}
+                  </option>
+                </select>
+                <input
+                  v-model="phoneLocalNumber"
+                  type="tel"
+                  inputmode="numeric"
+                  :class="[
+                    'flex-1 rounded-md border px-4 py-3 text-sm bg-surface-alt text-foreground placeholder:text-muted transition-colors focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent',
+                    fieldErrors.phone ? 'border-error' : 'border-sand',
+                  ]"
+                  :placeholder="phoneCountryCode === '+66' ? '0812345678' : 'Phone number'"
+                  @input="sanitizePhoneInput"
+                />
+              </div>
               <p v-if="fieldErrors.phone" class="mt-1 text-xs text-error">{{ fieldErrors.phone }}</p>
             </div>
           </div>

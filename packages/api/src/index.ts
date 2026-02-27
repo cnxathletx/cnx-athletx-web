@@ -102,8 +102,9 @@ function isValidEmail(email: string): boolean {
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)
 }
 
-function isValidThaiPhone(phone: string): boolean {
-  return /^(\+66|0)[0-9]{9}$/.test(phone)
+function isValidPhoneNumber(phone: string): boolean {
+  const normalized = phone.trim()
+  return /^(\+66|0)[0-9]{9}$/.test(normalized) || /^\+[1-9][0-9]{6,14}$/.test(normalized)
 }
 
 function parseCookie(cookieHeader: string | null, name: string): string | null {
@@ -424,8 +425,8 @@ function validateProfileBody(body: unknown): { errors: ValidationError[]; data: 
       errors.push({ field: 'phone', message: 'phone must be a string' })
     } else {
       const trimmed = b.phone.trim()
-      if (!isValidThaiPhone(trimmed)) {
-        errors.push({ field: 'phone', message: 'phone must be a valid Thai phone number' })
+      if (!isValidPhoneNumber(trimmed)) {
+        errors.push({ field: 'phone', message: 'phone must be a valid phone number' })
       } else {
         phone = trimmed
       }
@@ -898,10 +899,10 @@ function validateCheckoutBody(body: unknown): { errors: ValidationError[]; data:
       errors.push({ field: 'customer.email', message: 'email must be a valid email address' })
     }
 
-    if (typeof c.phone !== 'string' || !/^(\+66|0)[0-9]{9}$/.test(c.phone)) {
+    if (typeof c.phone !== 'string' || !isValidPhoneNumber(c.phone)) {
       errors.push({
         field: 'customer.phone',
-        message: 'phone must be a valid Thai phone number (e.g. 0812345678 or +66812345678)',
+        message: 'phone must be a valid phone number (e.g. +66812345678)',
       })
     }
 

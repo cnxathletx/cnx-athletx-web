@@ -88,8 +88,8 @@ async function saveProfile() {
     saveError.value = 'Name must be between 2 and 100 characters.'
     return
   }
-  if (!/^(\+66|0)[0-9]{9}$/.test(nextPhone)) {
-    saveError.value = 'Phone must be a valid Thai phone number.'
+  if (!/^(\+66|0)[0-9]{9}$/.test(nextPhone) && !/^\+[1-9][0-9]{6,14}$/.test(nextPhone)) {
+    saveError.value = 'Phone must be a valid phone number (e.g. +66812345678).'
     return
   }
 

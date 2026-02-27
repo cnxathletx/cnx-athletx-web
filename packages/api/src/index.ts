@@ -1591,12 +1591,16 @@ function isValidProductSlug(slug: string): boolean {
 
 function isValidProductImageUrl(value: string): boolean {
   if (value.startsWith('/')) {
-    return value.length <= 500 && !/\s/.test(value)
+    return value.length <= 2000000 && !/\s/.test(value)
+  }
+
+  if (/^data:image\/(png|jpe?g|webp|gif);base64,[A-Za-z0-9+/=]+$/i.test(value)) {
+    return value.length <= 2000000
   }
 
   try {
     const url = new URL(value)
-    return (url.protocol === 'http:' || url.protocol === 'https:') && value.length <= 500
+    return (url.protocol === 'http:' || url.protocol === 'https:') && value.length <= 2000000
   } catch {
     return false
   }
@@ -1634,10 +1638,13 @@ function validateCreateProductBody(body: unknown): { errors: ValidationError[]; 
   if (!Number.isInteger(weight) || weight <= 0 || weight > 50000) {
     errors.push({ field: 'weight_g', message: 'weight_g must be a positive integer up to 50000' })
   }
-  if (imageUrl.length < 2 || imageUrl.length > 500) {
-    errors.push({ field: 'image_url', message: 'image_url must be between 2 and 500 characters' })
+  if (imageUrl.length < 2 || imageUrl.length > 2000000) {
+    errors.push({ field: 'image_url', message: 'image_url must be between 2 and 2000000 characters' })
   } else if (!isValidProductImageUrl(imageUrl)) {
-    errors.push({ field: 'image_url', message: 'image_url must be an absolute URL or root-relative path' })
+    errors.push({
+      field: 'image_url',
+      message: 'image_url must be an absolute URL, root-relative path, or data image URL',
+    })
   }
   if (!Number.isInteger(stockCount) || stockCount < 0 || stockCount > 1000000) {
     errors.push({ field: 'stock_count', message: 'stock_count must be an integer between 0 and 1000000' })
@@ -1739,10 +1746,13 @@ function validateUpdateProductBody(body: unknown): { errors: ValidationError[]; 
       errors.push({ field: 'image_url', message: 'image_url must be a string' })
     } else {
       const imageUrl = b.image_url.trim()
-      if (imageUrl.length < 2 || imageUrl.length > 500) {
-        errors.push({ field: 'image_url', message: 'image_url must be between 2 and 500 characters' })
+      if (imageUrl.length < 2 || imageUrl.length > 2000000) {
+        errors.push({ field: 'image_url', message: 'image_url must be between 2 and 2000000 characters' })
       } else if (!isValidProductImageUrl(imageUrl)) {
-        errors.push({ field: 'image_url', message: 'image_url must be an absolute URL or root-relative path' })
+        errors.push({
+          field: 'image_url',
+          message: 'image_url must be an absolute URL, root-relative path, or data image URL',
+        })
       } else {
         data.image_url = imageUrl
       }

@@ -22,6 +22,7 @@ const relatedProduct = ref<ApiProduct | null>(null)
 const loading = ref(true)
 const error = ref('')
 const quantity = ref(1)
+const productImageError = ref(false)
 
 const activeTab = ref<'nutrition' | 'ingredients' | 'howToUse'>('nutrition')
 
@@ -53,6 +54,7 @@ async function loadProduct(slug: string) {
   error.value = ''
   quantity.value = 1
   activeTab.value = 'nutrition'
+  productImageError.value = false
 
   try {
     product.value = await fetchProductBySlug(slug)
@@ -157,7 +159,15 @@ watch(
           <div
             class="aspect-square rounded-lg overflow-hidden bg-surface ring-1 ring-[var(--card-ring)]"
           >
+            <img
+              v-if="product.image_url && !productImageError"
+              :src="product.image_url"
+              :alt="product.name"
+              class="w-full h-full object-cover"
+              @error="productImageError = true"
+            />
             <div
+              v-else
               class="w-full h-full bg-gradient-to-br from-primary/15 via-sage/10 to-accent/5 flex items-center justify-center"
             >
               <div class="text-center space-y-3">

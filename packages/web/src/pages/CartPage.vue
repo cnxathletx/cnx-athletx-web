@@ -59,9 +59,16 @@ function decrement(productId: number, current: number) {
             <!-- Product Image -->
             <RouterLink :to="`/product/${item.slug}`" class="shrink-0">
               <div
-                class="w-24 h-24 rounded-md bg-gradient-to-br from-primary/15 via-sage/10 to-primary/5 flex items-center justify-center"
+                class="w-24 h-24 rounded-md bg-gradient-to-br from-primary/15 via-sage/10 to-primary/5 flex items-center justify-center overflow-hidden"
               >
+                <img
+                  v-if="item.imageUrl"
+                  :src="item.imageUrl"
+                  :alt="item.name"
+                  class="w-full h-full object-cover"
+                />
                 <svg
+                  v-else
                   class="w-10 h-10 text-muted/30"
                   fill="none"
                   stroke="currentColor"

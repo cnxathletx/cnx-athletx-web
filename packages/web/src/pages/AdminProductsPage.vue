@@ -12,6 +12,9 @@ import {
 import PrimaryButton from '../components/ui/PrimaryButton.vue'
 import SecondaryButton from '../components/ui/SecondaryButton.vue'
 
+const IMAGE_UPLOAD_MAX_BYTES = 1_500_000
+const ALLOWED_IMAGE_TYPES = new Set(['image/jpeg', 'image/png', 'image/webp', 'image/gif'])
+
 const loading = ref(true)
 const error = ref('')
 const products = ref<AdminProduct[]>([])
@@ -19,10 +22,14 @@ const products = ref<AdminProduct[]>([])
 const createLoading = ref(false)
 const createError = ref('')
 const createSuccess = ref('')
+const createImageUploading = ref(false)
+const createImageError = ref('')
 
 const editLoading = ref(false)
 const editError = ref('')
 const editSuccess = ref('')
+const editImageUploading = ref(false)
+const editImageError = ref('')
 const editingId = ref<number | null>(null)
 
 const createForm = reactive<CreateAdminProductPayload>({
@@ -47,6 +54,8 @@ const editForm = reactive<Required<UpdateAdminProductPayload>>({
 })
 
 const sortedProducts = computed(() => [...products.value].sort((a, b) => a.id - b.id))
+const createImagePreview = computed(() => createForm.image_url.trim())
+const editImagePreview = computed(() => editForm.image_url.trim())
 
 async function loadProducts() {
   loading.value = true
@@ -73,6 +82,87 @@ function resetCreateForm() {
   createForm.image_url = ''
   createForm.active = true
   createForm.stock_count = 0
+  createImageError.value = ''
+}
+
+function validateImageFile(file: File): string | null {
+  if (!ALLOWED_IMAGE_TYPES.has(file.type)) {
+    return 'Use JPG, PNG, WEBP, or GIF image files.'
+  }
+
+  if (file.size > IMAGE_UPLOAD_MAX_BYTES) {
+    return 'Image file is too large. Maximum size is 1.5 MB.'
+  }
+
+  return null
+}
+
+function readFileAsDataUrl(file: File): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader()
+    reader.onload = () => {
+      if (typeof reader.result === 'string') {
+        resolve(reader.result)
+      } else {
+        reject(new Error('Failed to read image data'))
+      }
+    }
+    reader.onerror = () => reject(new Error('Failed to read image data'))
+    reader.readAsDataURL(file)
+  })
+}
+
+async function handleImagePick(file: File, mode: 'create' | 'edit') {
+  const fileError = validateImageFile(file)
+
+  if (mode === 'create') {
+    createImageError.value = fileError ?? ''
+    if (fileError) return
+    createImageUploading.value = true
+  } else {
+    editImageError.value = fileError ?? ''
+    if (fileError) return
+    editImageUploading.value = true
+  }
+
+  try {
+    const dataUrl = await readFileAsDataUrl(file)
+    if (mode === 'create') {
+      createForm.image_url = dataUrl
+    } else {
+      editForm.image_url = dataUrl
+    }
+  } catch {
+    if (mode === 'create') {
+      createImageError.value = 'Unable to process selected image.'
+    } else {
+      editImageError.value = 'Unable to process selected image.'
+    }
+  } finally {
+    if (mode === 'create') {
+      createImageUploading.value = false
+    } else {
+      editImageUploading.value = false
+    }
+  }
+}
+
+async function onCreateImageSelected(event: Event) {
+  const input = event.target as HTMLInputElement
+  const file = input.files?.[0]
+  if (file) {
+    await handleImagePick(file, 'create')
+  }
+  input.value = ''
+}
+
+async function onEditImageSelected(event: Event) {
+  const input = event.target as HTMLInputElement
+  const file = input.files?.[0]
+  if (file) {
+    await handleImagePick(file, 'edit')
+  }
+  input.value = ''
 }
 
 async function submitCreate() {
@@ -106,6 +196,7 @@ function startEdit(product: AdminProduct) {
   editingId.value = product.id
   editError.value = ''
   editSuccess.value = ''
+  editImageError.value = ''
 
   editForm.slug = product.slug
   editForm.name = product.name
@@ -120,6 +211,7 @@ function cancelEdit() {
   editingId.value = null
   editError.value = ''
   editSuccess.value = ''
+  editImageError.value = ''
 }
 
 async function submitEdit() {
@@ -142,9 +234,7 @@ async function submitEdit() {
 
     const updated = await updateAdminProduct(editingId.value, payload)
 
-    products.value = products.value.map((product) =>
-      product.id === editingId.value ? updated : product
-    )
+    products.value = products.value.map((product) => (product.id === editingId.value ? updated : product))
 
     editSuccess.value = 'Product updated.'
   } catch (err) {
@@ -193,7 +283,25 @@ onMounted(async () => {
           <input v-model.number="createForm.price_thb" type="number" min="1" step="1" placeholder="Price (satang)" class="rounded-md border border-sand px-4 py-3 text-sm bg-surface-alt text-foreground placeholder:text-muted focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent" />
           <input v-model.number="createForm.weight_g" type="number" min="1" step="1" placeholder="Weight (g)" class="rounded-md border border-sand px-4 py-3 text-sm bg-surface-alt text-foreground placeholder:text-muted focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent" />
           <input v-model.number="createForm.stock_count" type="number" min="0" step="1" placeholder="Initial stock" class="rounded-md border border-sand px-4 py-3 text-sm bg-surface-alt text-foreground placeholder:text-muted focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent" />
-          <input v-model="createForm.image_url" type="url" placeholder="Image URL" class="rounded-md border border-sand px-4 py-3 text-sm bg-surface-alt text-foreground placeholder:text-muted focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent" />
+          <input v-model="createForm.image_url" type="text" placeholder="Image URL, /path, or data:image" class="rounded-md border border-sand px-4 py-3 text-sm bg-surface-alt text-foreground placeholder:text-muted focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent" />
+        </div>
+
+        <div class="space-y-2">
+          <label class="block text-sm font-medium text-foreground">Upload Product Image</label>
+          <input
+            type="file"
+            accept="image/png,image/jpeg,image/webp,image/gif"
+            class="block w-full text-sm text-muted file:mr-3 file:rounded-md file:border-0 file:bg-primary file:px-4 file:py-2 file:text-sm file:font-semibold file:text-background hover:file:bg-primary-dark"
+            @change="onCreateImageSelected"
+          />
+          <p class="text-xs text-muted">Accepted: JPG, PNG, WEBP, GIF. Max file size: 1.5 MB.</p>
+          <p v-if="createImageUploading" class="text-xs text-primary">Processing image...</p>
+          <p v-if="createImageError" class="text-xs text-error">{{ createImageError }}</p>
+        </div>
+
+        <div v-if="createImagePreview" class="rounded-md border border-sand p-3 bg-surface-alt">
+          <p class="text-xs text-muted mb-2">Image preview</p>
+          <img :src="createImagePreview" alt="Create product preview" class="w-32 h-32 object-cover rounded-md ring-1 ring-[var(--card-ring)]" />
         </div>
 
         <textarea
@@ -208,7 +316,7 @@ onMounted(async () => {
           Active product
         </label>
 
-        <PrimaryButton :disabled="createLoading" @click="submitCreate">Create Product</PrimaryButton>
+        <PrimaryButton :disabled="createLoading || createImageUploading" @click="submitCreate">Create Product</PrimaryButton>
       </div>
 
       <div v-if="loading" class="space-y-3 animate-pulse">
@@ -223,9 +331,17 @@ onMounted(async () => {
           class="bg-surface rounded-lg ring-1 ring-[var(--card-ring)] p-4 sm:p-6 space-y-4"
         >
           <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-            <div>
-              <h3 class="text-lg font-semibold text-foreground">{{ product.name }}</h3>
-              <p class="text-xs font-mono text-muted">ID {{ product.id }} · {{ product.slug }}</p>
+            <div class="flex items-center gap-3">
+              <img
+                v-if="product.image_url"
+                :src="product.image_url"
+                alt="Product thumbnail"
+                class="w-12 h-12 rounded-md object-cover ring-1 ring-[var(--card-ring)]"
+              />
+              <div>
+                <h3 class="text-lg font-semibold text-foreground">{{ product.name }}</h3>
+                <p class="text-xs font-mono text-muted">ID {{ product.id }} · {{ product.slug }}</p>
+              </div>
             </div>
             <div class="text-right">
               <p class="text-sm font-semibold" :class="product.active ? 'text-primary' : 'text-muted'">
@@ -261,7 +377,25 @@ onMounted(async () => {
               <input v-model="editForm.name" type="text" class="rounded-md border border-sand px-4 py-3 text-sm bg-surface-alt text-foreground focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent" />
               <input v-model.number="editForm.price_thb" type="number" min="1" step="1" class="rounded-md border border-sand px-4 py-3 text-sm bg-surface-alt text-foreground focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent" />
               <input v-model.number="editForm.weight_g" type="number" min="1" step="1" class="rounded-md border border-sand px-4 py-3 text-sm bg-surface-alt text-foreground focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent" />
-              <input v-model="editForm.image_url" type="url" class="sm:col-span-2 rounded-md border border-sand px-4 py-3 text-sm bg-surface-alt text-foreground focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent" />
+              <input v-model="editForm.image_url" type="text" class="sm:col-span-2 rounded-md border border-sand px-4 py-3 text-sm bg-surface-alt text-foreground focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent" />
+            </div>
+
+            <div class="space-y-2">
+              <label class="block text-sm font-medium text-foreground">Upload Product Image</label>
+              <input
+                type="file"
+                accept="image/png,image/jpeg,image/webp,image/gif"
+                class="block w-full text-sm text-muted file:mr-3 file:rounded-md file:border-0 file:bg-primary file:px-4 file:py-2 file:text-sm file:font-semibold file:text-background hover:file:bg-primary-dark"
+                @change="onEditImageSelected"
+              />
+              <p class="text-xs text-muted">Accepted: JPG, PNG, WEBP, GIF. Max file size: 1.5 MB.</p>
+              <p v-if="editImageUploading" class="text-xs text-primary">Processing image...</p>
+              <p v-if="editImageError" class="text-xs text-error">{{ editImageError }}</p>
+            </div>
+
+            <div v-if="editImagePreview" class="rounded-md border border-sand p-3 bg-surface-alt">
+              <p class="text-xs text-muted mb-2">Image preview</p>
+              <img :src="editImagePreview" alt="Edit product preview" class="w-32 h-32 object-cover rounded-md ring-1 ring-[var(--card-ring)]" />
             </div>
 
             <textarea
@@ -276,8 +410,8 @@ onMounted(async () => {
             </label>
 
             <div class="flex gap-2">
-              <PrimaryButton :disabled="editLoading" @click="submitEdit">Save</PrimaryButton>
-              <SecondaryButton :disabled="editLoading" @click="cancelEdit">Cancel</SecondaryButton>
+              <PrimaryButton :disabled="editLoading || editImageUploading" @click="submitEdit">Save</PrimaryButton>
+              <SecondaryButton :disabled="editLoading || editImageUploading" @click="cancelEdit">Cancel</SecondaryButton>
             </div>
           </div>
 

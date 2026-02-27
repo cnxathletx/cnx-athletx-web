@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { ref, watch } from 'vue'
 import { RouterLink } from 'vue-router'
 import AppBadge from './AppBadge.vue'
 import PrimaryButton from './PrimaryButton.vue'
@@ -16,6 +17,14 @@ const props = defineProps<{
 }>()
 
 const cart = useCartStore()
+const imageLoadError = ref(false)
+
+watch(
+  () => props.imageUrl,
+  () => {
+    imageLoadError.value = false
+  }
+)
 
 function addToCart() {
   cart.addItem({
@@ -36,7 +45,15 @@ function addToCart() {
     <!-- Image Container -->
     <RouterLink :to="`/product/${slug}`" class="block">
       <div class="aspect-[4/3] overflow-hidden bg-sand relative">
+        <img
+          v-if="imageUrl && !imageLoadError"
+          :src="imageUrl"
+          :alt="name"
+          class="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
+          @error="imageLoadError = true"
+        />
         <div
+          v-else
           class="w-full h-full bg-gradient-to-br from-primary/20 via-sage/15 to-primary/10 flex items-center justify-center transition-transform duration-300 group-hover:scale-105"
         >
           <svg

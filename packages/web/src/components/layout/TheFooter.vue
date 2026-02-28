@@ -3,14 +3,14 @@ import { RouterLink } from 'vue-router'
 </script>
 
 <template>
-  <footer class="bg-footer-bg text-[#F4F3EE]/80">
+  <footer class="bg-footer-bg text-foreground/80">
     <!-- Main Footer Content -->
     <div class="mx-auto max-w-[1280px] px-4 sm:px-6 lg:px-8 py-16 sm:py-20">
       <div class="grid grid-cols-1 md:grid-cols-3 gap-12">
         <!-- Brand Info -->
         <div class="space-y-4">
           <div class="flex items-center gap-2">
-            <span class="text-xl font-bold tracking-tight text-[#F4F3EE]">CNX</span>
+            <span class="text-xl font-bold tracking-tight text-foreground">CNX</span>
             <span class="text-xl font-bold tracking-tight text-primary">AthletX</span>
           </div>
           <p class="text-sm leading-relaxed">
@@ -21,29 +21,29 @@ import { RouterLink } from 'vue-router'
 
         <!-- Quick Links -->
         <div class="space-y-4">
-          <h3 class="text-[#F4F3EE] font-semibold">Quick Links</h3>
+          <h3 class="text-foreground font-semibold">Quick Links</h3>
           <nav class="flex flex-col space-y-2">
             <RouterLink
               to="/shop"
-              class="text-sm hover:text-[#F4F3EE] transition-colors"
+              class="text-sm hover:text-foreground transition-colors"
             >
               Shop
             </RouterLink>
             <RouterLink
               to="/order/status"
-              class="text-sm hover:text-[#F4F3EE] transition-colors"
+              class="text-sm hover:text-foreground transition-colors"
             >
               Track Order
             </RouterLink>
             <RouterLink
               to="/privacy"
-              class="text-sm hover:text-[#F4F3EE] transition-colors"
+              class="text-sm hover:text-foreground transition-colors"
             >
               Privacy Policy
             </RouterLink>
             <RouterLink
               to="/terms"
-              class="text-sm hover:text-[#F4F3EE] transition-colors"
+              class="text-sm hover:text-foreground transition-colors"
             >
               Terms of Service
             </RouterLink>
@@ -52,14 +52,14 @@ import { RouterLink } from 'vue-router'
 
         <!-- Contact Info -->
         <div class="space-y-4">
-          <h3 class="text-[#F4F3EE] font-semibold">Contact</h3>
+          <h3 class="text-foreground font-semibold">Contact</h3>
           <div class="space-y-2 text-sm">
             <p>Chiang Mai, Thailand</p>
             <p>contact@cnxathletx.com</p>
             <div class="flex space-x-4 pt-2">
               <a
                 href="#"
-                class="hover:text-[#F4F3EE] transition-colors"
+                class="hover:text-foreground transition-colors"
                 aria-label="Instagram"
               >
                 <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
@@ -70,7 +70,7 @@ import { RouterLink } from 'vue-router'
               </a>
               <a
                 href="#"
-                class="hover:text-[#F4F3EE] transition-colors"
+                class="hover:text-foreground transition-colors"
                 aria-label="Facebook"
               >
                 <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
@@ -86,17 +86,17 @@ import { RouterLink } from 'vue-router'
     </div>
 
     <!-- Bottom Bar -->
-    <div class="border-t border-[#F4F3EE]/20">
+    <div class="border-t border-foreground/20">
       <div class="mx-auto max-w-[1280px] px-4 sm:px-6 lg:px-8 py-6">
         <div
           class="flex flex-col md:flex-row justify-between items-center space-y-2 md:space-y-0 text-sm"
         >
           <p>&copy; 2026 CNX AthletX. All rights reserved.</p>
           <div class="flex space-x-6">
-            <RouterLink to="/privacy" class="hover:text-[#F4F3EE] transition-colors">
+            <RouterLink to="/privacy" class="hover:text-foreground transition-colors">
               Privacy
             </RouterLink>
-            <RouterLink to="/terms" class="hover:text-[#F4F3EE] transition-colors">
+            <RouterLink to="/terms" class="hover:text-foreground transition-colors">
               Terms
             </RouterLink>
           </div>

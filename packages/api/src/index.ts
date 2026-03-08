@@ -4,6 +4,7 @@ import { generateULID } from './lib/ulid'
 interface Env {
   DB: D1Database
   RESEND_API_KEY?: string
+  ALLOWED_ORIGINS?: string
 }
 
 const router = Router()
@@ -485,7 +486,8 @@ router.post('/api/auth/request-link', async (request: Request, env: Env) => {
 
     const callerOrigin = request.headers.get('Origin')
     const fallbackOrigin = new URL(request.url).origin
-    const appOrigin = callerOrigin ?? fallbackOrigin
+    const allowedOrigins = env.ALLOWED_ORIGINS ? env.ALLOWED_ORIGINS.split(',') : []
+    const appOrigin = callerOrigin && allowedOrigins.includes(callerOrigin) ? callerOrigin : fallbackOrigin
     const magicLinkUrl = `${appOrigin}/auth/verify?token=${token}`
 
     await sendMagicLinkEmail(env, data.email, magicLinkUrl)

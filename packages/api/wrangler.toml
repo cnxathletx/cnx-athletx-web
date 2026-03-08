@@ -13,6 +13,9 @@ preview_database_id = "805d023a-2d77-4aef-95eb-164a82201962"
 [env.production]
 name = "cnx-athletx-api"
 
+[env.production.vars]
+ALLOWED_ORIGINS = "https://cnxathletx.com,https://www.cnxathletx.com"
+
 [[env.production.d1_databases]]
 binding = "DB"
 database_name = "cnx-athletx-prod"

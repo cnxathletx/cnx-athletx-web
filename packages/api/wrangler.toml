@@ -22,5 +22,17 @@ database_name = "cnx-athletx-prod"
 database_id = "63f96854-8d6f-49c5-a9c3-b5e8b90f2cae"
 preview_database_id = "63f96854-8d6f-49c5-a9c3-b5e8b90f2cae"
 
+[env.preview]
+name = "cnx-athletx-api-preview"
+
+[env.preview.vars]
+ALLOWED_ORIGINS = "https://cnx-athletx-web.pages.dev"
+
+[[env.preview.d1_databases]]
+binding = "DB"
+database_name = "cnx-athletx-dev"
+database_id = "805d023a-2d77-4aef-95eb-164a82201962"
+preview_database_id = "805d023a-2d77-4aef-95eb-164a82201962"
+
 [observability]
 enabled = true

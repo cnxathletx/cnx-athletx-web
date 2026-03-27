@@ -1,53 +1,62 @@
 @import 'tailwindcss';
 
 :root {
-  --bg: #0a0a0a;
-  --fg: #f4f3ee;
-  --primary: #ebb83c;
-  --primary-light: #f7dd6e;
-  --primary-dark: #c9972a;
-  --accent: #caab56;
-  --accent-light: #f9ea89;
-  --sage: #8c7d46;
-  --sand: #1a1a1a;
-  --surface: #141414;
-  --surface-alt: #1e1e1e;
-  --muted: #a0a0a0;
+  --bg: #221b19;
+  --fg: #efe2d1;
+  --primary: #efe2d1;
+  --primary-light: #f7ecde;
+  --primary-dark: #d7c2aa;
+  --accent: #a3ab83;
+  --accent-light: #bcc4a0;
+  --sage: #8c9370;
+  --sand: #3a2e29;
+  --surface: #2b221f;
+  --surface-alt: #342824;
+  --muted: #b8ab99;
   --error: #ef4444;
-  --success: #22c55e;
-  --footer-bg: #111111;
+  --success: #a3ab83;
+  --footer-bg: #1f1816;
+  --signal: #c93a33;
+  --signal-soft: rgb(201 58 51 / 0.16);
 
-  --shadow-sm: none;
-  --shadow-md: none;
-  --shadow-lg: none;
-  --card-ring: rgb(255 255 255 / 0.05);
+  --shadow-sm: 0 12px 30px rgb(0 0 0 / 0.14);
+  --shadow-md: 0 20px 60px rgb(0 0 0 / 0.22);
+  --shadow-lg: 0 28px 90px rgb(0 0 0 / 0.3);
+  --card-ring: rgb(239 226 209 / 0.1);
+  --grid-line: rgb(239 226 209 / 0.08);
+  --panel-wash: rgb(255 255 255 / 0.02);
 }
 
 :root.light {
-  --bg: #f4f3ee;
-  --fg: #1a1a1a;
-  --primary: #a67c1f;
-  --primary-light: #c9972a;
-  --primary-dark: #7b5c14;
-  --accent: #b99642;
-  --accent-light: #e9cd5c;
-  --sage: #9f8f54;
-  --sand: #d9cdbf;
-  --surface: #ffffff;
-  --surface-alt: #f4f3ee;
-  --muted: #6b7280;
+  --bg: #f3ede2;
+  --fg: #2b221f;
+  --primary: #2b221f;
+  --primary-light: #4d3d36;
+  --primary-dark: #1d1715;
+  --accent: #7b8460;
+  --accent-light: #98a27b;
+  --sage: #8f9770;
+  --sand: #dccfbe;
+  --surface: #fff9f0;
+  --surface-alt: #efe4d6;
+  --muted: #786b5f;
   --error: #dc2626;
-  --success: #16a34a;
-  --footer-bg: #e8dece;
+  --success: #6f7754;
+  --footer-bg: #e5d8c8;
+  --signal: #b34139;
+  --signal-soft: rgb(179 65 57 / 0.12);
 
   --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
-  --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
-  --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
-  --card-ring: transparent;
+  --shadow-md: 0 16px 40px rgb(43 34 31 / 0.12);
+  --shadow-lg: 0 28px 70px rgb(43 34 31 / 0.18);
+  --card-ring: rgb(43 34 31 / 0.08);
+  --grid-line: rgb(43 34 31 / 0.08);
+  --panel-wash: rgb(43 34 31 / 0.02);
 }
 
 @theme {
   --font-sans: 'Inter', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  --font-brand: 'Montserrat', 'Arial Narrow', 'Arial', sans-serif;
 
   --color-background: var(--bg);
   --color-foreground: var(--fg);
@@ -64,6 +73,8 @@
   --color-error: var(--error);
   --color-success: var(--success);
   --color-footer-bg: var(--footer-bg);
+  --color-signal: var(--signal);
+  --color-signal-soft: var(--signal-soft);
 
   --shadow-sm: var(--shadow-sm);
   --shadow-md: var(--shadow-md);
@@ -114,4 +125,151 @@
 @utility text-display-2 {
   font-size: 2rem;
   line-height: 1.2;
+}
+
+@layer base {
+  html {
+    background:
+      radial-gradient(circle at top, rgb(255 255 255 / 0.03), transparent 30%),
+      linear-gradient(180deg, rgb(255 255 255 / 0.02), transparent 22%),
+      var(--bg);
+  }
+
+  body {
+    min-height: 100vh;
+    color: var(--fg);
+    background:
+      radial-gradient(circle at 20% 10%, rgb(255 255 255 / 0.03), transparent 24%),
+      radial-gradient(circle at 80% 28%, rgb(163 171 131 / 0.06), transparent 18%),
+      radial-gradient(circle at 50% 100%, rgb(255 255 255 / 0.025), transparent 30%),
+      linear-gradient(180deg, rgb(255 255 255 / 0.01), transparent 20%),
+      var(--bg);
+  }
+
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    opacity: 0.28;
+    background-image:
+      linear-gradient(rgb(255 255 255 / 0.018) 1px, transparent 1px),
+      linear-gradient(90deg, rgb(255 255 255 / 0.018) 1px, transparent 1px);
+    background-size: 120px 120px;
+    mask-image: radial-gradient(circle at center, black, transparent 82%);
+  }
+
+  ::selection {
+    background: rgb(163 171 131 / 0.35);
+    color: var(--fg);
+  }
+}
+
+@layer components {
+  .brand-kicker {
+    font-family: var(--font-brand);
+    font-size: 0.75rem;
+    font-weight: 700;
+    letter-spacing: 0.22em;
+    text-transform: uppercase;
+  }
+
+  .brand-title {
+    font-family: var(--font-brand);
+    font-weight: 800;
+    letter-spacing: -0.04em;
+    text-transform: uppercase;
+  }
+
+  .brand-divider {
+    height: 1px;
+    background: linear-gradient(90deg, transparent, var(--fg), transparent);
+    opacity: 0.45;
+  }
+
+  .brand-panel {
+    position: relative;
+    overflow: hidden;
+    border: 1px solid var(--card-ring);
+    background:
+      radial-gradient(circle at 12% 18%, rgb(255 255 255 / 0.045), transparent 18%),
+      radial-gradient(circle at 83% 24%, rgb(163 171 131 / 0.08), transparent 18%),
+      radial-gradient(circle at 72% 78%, rgb(255 255 255 / 0.035), transparent 20%),
+      linear-gradient(180deg, rgb(255 255 255 / 0.04), transparent 34%),
+      linear-gradient(135deg, rgb(255 255 255 / 0.025), transparent 45%),
+      var(--surface);
+    box-shadow: var(--shadow-md);
+  }
+
+  .brand-panel::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    opacity: 0.35;
+    background:
+      radial-gradient(circle at 20% 15%, rgb(255 255 255 / 0.06), transparent 10%),
+      radial-gradient(circle at 76% 74%, rgb(255 255 255 / 0.05), transparent 12%),
+      radial-gradient(circle at 48% 42%, rgb(255 255 255 / 0.02), transparent 26%);
+    mix-blend-mode: screen;
+  }
+
+  .brand-panel::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    opacity: 0.22;
+    background-image:
+      linear-gradient(120deg, transparent 0%, rgb(255 255 255 / 0.08) 49%, transparent 52%),
+      linear-gradient(rgb(255 255 255 / 0.06) 1px, transparent 1px),
+      linear-gradient(90deg, rgb(255 255 255 / 0.06) 1px, transparent 1px);
+    background-size: 100% 100%, 5px 5px, 5px 5px;
+    mask-image: linear-gradient(180deg, black, rgb(0 0 0 / 0.08));
+  }
+
+  .brand-landscape {
+    position: relative;
+  }
+
+  .brand-landscape::before,
+  .brand-landscape::after {
+    content: '';
+    position: absolute;
+    left: -5%;
+    right: -5%;
+    height: 18%;
+    opacity: 0.45;
+    background:
+      radial-gradient(circle at 30% 40%, transparent 0 46%, rgb(239 226 209 / 0.55) 48%, transparent 50%),
+      radial-gradient(circle at 52% 55%, transparent 0 48%, rgb(239 226 209 / 0.32) 49%, transparent 51%),
+      radial-gradient(circle at 72% 50%, transparent 0 47%, rgb(163 171 131 / 0.28) 48%, transparent 50%);
+    filter: blur(0.2px);
+  }
+
+  .brand-landscape::before {
+    bottom: 12%;
+    transform: scaleY(0.8);
+  }
+
+  .brand-landscape::after {
+    top: 28%;
+    opacity: 0.28;
+    transform: scaleY(0.52);
+  }
+
+  .brand-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    border: 1px solid var(--card-ring);
+    border-radius: 999px;
+    background: rgb(255 255 255 / 0.02);
+    padding: 0.5rem 0.9rem;
+    font-family: var(--font-brand);
+    font-size: 0.72rem;
+    font-weight: 700;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+  }
 }

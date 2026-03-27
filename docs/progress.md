@@ -1,6 +1,6 @@
 # CNX AthletX Implementation Progress
 
-Last updated: 2026-02-27
+Last updated: 2026-03-27
 
 ## Summary
 
@@ -53,6 +53,10 @@ Last updated: 2026-02-27
 - Legal pages added and routed:
   - Privacy Policy page at `/privacy`
   - Terms of Service page at `/terms`
+- Storefront design language refreshed to match the new packaging direction:
+  - New core palette uses cocoa/bone/sage with muted red signal accents instead of the earlier gold-led treatment.
+  - Montserrat is now the brand display typeface for navigation, headings, CTAs, and badges.
+  - Home, Shop, Product Detail, Navbar, Footer, buttons, and product cards now use textured panels, thin dividers, rounded pill controls, and the updated packaging-inspired tone.
 
 ## Milestones Checklist
 

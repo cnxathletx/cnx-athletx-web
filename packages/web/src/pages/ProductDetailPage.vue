@@ -78,6 +78,22 @@ function decrement() {
   if (quantity.value > 1) quantity.value--
 }
 
+function addCurrentProductToCart() {
+  if (!product.value) return
+
+  cart.addItem(
+    {
+      productId: product.value.id,
+      slug: product.value.slug,
+      name: product.value.name,
+      weightLabel: formatWeight(product.value.weight_g),
+      priceSatang: product.value.price_thb,
+      imageUrl: product.value.image_url,
+    },
+    quantity.value,
+  )
+}
+
 watch(
   () => route.params.slug as string,
   (slug) => {
@@ -92,7 +108,7 @@ watch(
   <div v-if="loading" class="bg-background">
     <div class="mx-auto max-w-[1280px] px-4 sm:px-6 lg:px-8 py-8 sm:py-16">
       <div class="grid grid-cols-1 lg:grid-cols-2 gap-12 animate-pulse">
-        <div class="aspect-square rounded-lg bg-surface" />
+        <div class="aspect-square rounded-[2rem] bg-surface" />
         <div class="space-y-6">
           <div class="h-10 bg-surface rounded w-3/4" />
           <div class="h-6 bg-surface rounded w-1/4" />
@@ -124,7 +140,7 @@ watch(
           d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z"
         />
       </svg>
-      <h1 class="text-3xl font-bold text-foreground">
+      <h1 class="brand-title text-3xl text-foreground">
         {{ error === 'Product not found' ? 'Product Not Found' : 'Error Loading Product' }}
       </h1>
       <p class="text-muted">{{ error }}</p>
@@ -137,7 +153,7 @@ watch(
   <!-- Product Content -->
   <div v-else-if="product">
     <!-- Breadcrumb -->
-    <section class="bg-background">
+    <section class="border-b border-[var(--grid-line)] bg-background">
       <div class="mx-auto max-w-[1280px] px-4 sm:px-6 lg:px-8 py-4">
         <nav class="flex items-center space-x-2 text-sm text-muted">
           <RouterLink to="/" class="hover:text-foreground transition-colors">Home</RouterLink>
@@ -157,7 +173,7 @@ watch(
         <div class="grid grid-cols-1 lg:grid-cols-2 gap-12">
           <!-- Image Column -->
           <div
-            class="aspect-square rounded-lg overflow-hidden bg-surface ring-1 ring-[var(--card-ring)]"
+            class="brand-panel brand-landscape aspect-square overflow-hidden rounded-[2rem]"
           >
             <img
               v-if="product.image_url && !productImageError"
@@ -168,11 +184,11 @@ watch(
             />
             <div
               v-else
-              class="w-full h-full bg-gradient-to-br from-primary/15 via-sage/10 to-accent/5 flex items-center justify-center"
+              class="flex h-full w-full items-center justify-center bg-gradient-to-br from-white/6 via-transparent to-accent/10"
             >
               <div class="text-center space-y-3">
                 <svg
-                  class="w-32 h-32 mx-auto text-muted/25"
+                  class="mx-auto h-32 w-32 text-primary/25"
                   fill="none"
                   stroke="currentColor"
                   viewBox="0 0 24 24"
@@ -192,59 +208,68 @@ watch(
           <!-- Info Column -->
           <div class="space-y-6">
             <div class="space-y-3">
-              <h1 class="text-3xl sm:text-4xl font-bold text-foreground">{{ product.name }}</h1>
+              <span class="brand-kicker text-accent">Performance Formula</span>
+              <h1 class="brand-title text-4xl text-foreground sm:text-5xl">{{ product.name }}</h1>
               <AppBadge :label="formatWeight(product.weight_g)" />
             </div>
 
-            <p class="text-4xl font-bold text-foreground">{{ formatPrice(product.price_thb) }}</p>
+            <p class="font-brand text-4xl font-bold uppercase tracking-[0.04em] text-foreground">
+              {{ formatPrice(product.price_thb) }}
+            </p>
 
-            <p class="text-muted leading-relaxed">{{ product.description }}</p>
+            <p class="max-w-xl text-muted leading-relaxed">{{ product.description }}</p>
 
             <!-- Quantity Selector -->
-            <div class="flex items-center space-x-4">
-              <span class="text-sm font-medium text-muted">Quantity</span>
-              <div class="flex items-center space-x-3">
-                <button
-                  @click="decrement"
-                  :disabled="quantity <= 1"
-                  class="w-10 h-10 rounded-md border border-sand flex items-center justify-center text-foreground hover:bg-surface-alt transition-colors disabled:opacity-50"
+            <div class="rounded-[1.75rem] border border-[var(--card-ring)] bg-[var(--panel-wash)] p-5">
+              <div class="flex items-center space-x-4">
+                <span
+                  class="font-brand text-[0.72rem] font-semibold uppercase tracking-[0.16em] text-muted"
                 >
-                  <svg
-                    class="w-4 h-4"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      stroke-linecap="round"
-                      stroke-linejoin="round"
-                      stroke-width="2"
-                      d="M20 12H4"
-                    />
-                  </svg>
-                </button>
-                <span class="text-lg font-semibold text-foreground w-8 text-center">
-                  {{ quantity }}
+                  Quantity
                 </span>
-                <button
-                  @click="increment"
-                  :disabled="quantity >= 10"
-                  class="w-10 h-10 rounded-md border border-sand flex items-center justify-center text-foreground hover:bg-surface-alt transition-colors disabled:opacity-50"
-                >
-                  <svg
-                    class="w-4 h-4"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
+                <div class="flex items-center space-x-3">
+                  <button
+                    @click="decrement"
+                    :disabled="quantity <= 1"
+                    class="flex h-10 w-10 items-center justify-center rounded-full border border-[var(--card-ring)] text-foreground transition-colors hover:bg-white/5 disabled:opacity-50"
                   >
-                    <path
-                      stroke-linecap="round"
-                      stroke-linejoin="round"
-                      stroke-width="2"
-                      d="M12 4v16m8-8H4"
-                    />
-                  </svg>
-                </button>
+                    <svg
+                      class="w-4 h-4"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                        stroke-width="2"
+                        d="M20 12H4"
+                      />
+                    </svg>
+                  </button>
+                  <span class="w-8 text-center text-lg font-semibold text-foreground">
+                    {{ quantity }}
+                  </span>
+                  <button
+                    @click="increment"
+                    :disabled="quantity >= 10"
+                    class="flex h-10 w-10 items-center justify-center rounded-full border border-[var(--card-ring)] text-foreground transition-colors hover:bg-white/5 disabled:opacity-50"
+                  >
+                    <svg
+                      class="w-4 h-4"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                        stroke-width="2"
+                        d="M12 4v16m8-8H4"
+                      />
+                    </svg>
+                  </button>
+                </div>
               </div>
             </div>
 
@@ -252,7 +277,7 @@ watch(
             <PrimaryButton
               full-width
               :disabled="product.available_stock <= 0"
-              @click="cart.addItem({ productId: product.id, slug: product.slug, name: product.name, weightLabel: formatWeight(product.weight_g), priceSatang: product.price_thb, imageUrl: product.image_url }, quantity)"
+              @click="addCurrentProductToCart"
             >
               {{ product.available_stock > 0 ? 'Add to Cart' : 'Sold Out' }}
             </PrimaryButton>
@@ -275,7 +300,7 @@ watch(
     </section>
 
     <!-- Details Tabs -->
-    <section class="bg-surface">
+    <section class="border-y border-[var(--grid-line)] bg-surface">
       <div class="mx-auto max-w-[1280px] px-4 sm:px-6 lg:px-8 py-12 sm:py-16">
         <div class="border-b border-sand">
           <nav class="flex space-x-8 -mb-px overflow-x-auto">
@@ -284,7 +309,7 @@ watch(
               :key="tab.key"
               @click="activeTab = tab.key"
               :class="[
-                'py-4 px-1 text-sm font-semibold transition-colors whitespace-nowrap border-b-2',
+                'border-b-2 px-1 py-4 font-brand text-[0.72rem] font-semibold uppercase tracking-[0.16em] transition-colors whitespace-nowrap',
                 activeTab === tab.key
                   ? 'border-primary text-primary'
                   : 'border-transparent text-muted hover:text-foreground hover:border-sand',
@@ -296,7 +321,7 @@ watch(
         </div>
 
         <div class="pt-8">
-          <div v-if="activeTab === 'nutrition'" class="max-w-md">
+          <div v-if="activeTab === 'nutrition'" class="max-w-md rounded-[1.75rem] border border-[var(--card-ring)] bg-[var(--panel-wash)] p-6">
             <div class="space-y-3">
               <div
                 v-for="(value, label) in nutritionFacts"
@@ -309,11 +334,11 @@ watch(
             </div>
           </div>
 
-          <div v-if="activeTab === 'ingredients'" class="max-w-2xl">
+          <div v-if="activeTab === 'ingredients'" class="max-w-2xl rounded-[1.75rem] border border-[var(--card-ring)] bg-[var(--panel-wash)] p-6">
             <p class="text-foreground leading-relaxed">{{ ingredientsText }}</p>
           </div>
 
-          <div v-if="activeTab === 'howToUse'" class="max-w-2xl">
+          <div v-if="activeTab === 'howToUse'" class="max-w-2xl rounded-[1.75rem] border border-[var(--card-ring)] bg-[var(--panel-wash)] p-6">
             <p class="text-foreground leading-relaxed">{{ howToUseText }}</p>
           </div>
         </div>
@@ -323,7 +348,7 @@ watch(
     <!-- Related Product -->
     <section v-if="relatedProduct" class="bg-background">
       <div class="mx-auto max-w-[1280px] px-4 sm:px-6 lg:px-8 py-12 sm:py-16">
-        <h2 class="text-2xl font-bold text-foreground mb-8">Also Available</h2>
+        <h2 class="brand-title mb-8 text-2xl text-foreground">Also Available</h2>
         <div class="max-w-sm">
           <ProductCard
             :product-id="relatedProduct.id"

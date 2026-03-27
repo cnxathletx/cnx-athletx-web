@@ -115,6 +115,16 @@ The theme uses **CSS custom properties** that swap via a `.light` class on `<htm
 
 Place in `<head>` before any CSS. No class = dark (default). Only `.light` is ever added.
 
+### Brand Refresh Note (2026-03)
+
+The original green/gold storefront direction has been superseded by the newer packaging language. The current implementation now favors:
+
+- deep cocoa and warm bone as the main contrast pair
+- sage as the primary accent color
+- muted red as a restrained signal/highlight color
+- Montserrat for condensed, uppercase display hierarchy
+- textured panels, thin divider rules, and more tactile, terrain-inspired surfaces
+
 ### Color Palette
 
 **Dark Theme (Default):**

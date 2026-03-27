@@ -75,70 +75,60 @@ onMounted(async () => {
     <!-- ============ SOCIAL PROOF BAR ============ -->
     <section class="bg-surface-alt">
       <div class="mx-auto max-w-[1280px] px-4 sm:px-6 lg:px-8 py-12">
-        <div class="grid grid-cols-2 lg:grid-cols-4 gap-8">
+        <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-8">
+          <!-- 100% Natural -->
           <div class="flex flex-col items-center text-center space-y-2">
-            <svg
-              class="w-8 h-8 text-primary"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                stroke-linecap="round"
-                stroke-linejoin="round"
-                stroke-width="2"
-                d="M5 13l4 4L19 7"
-              />
+            <svg class="w-9 h-9 text-primary" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
+              <circle cx="12" cy="12" r="10" />
+              <path stroke-linecap="round" stroke-linejoin="round" d="M7 12c1-4 4-6 5-6s4 2 5 6c-1 4-4 6-5 6s-4-2-5-6z" />
+              <path stroke-linecap="round" stroke-linejoin="round" d="M12 6v12" />
             </svg>
-            <span class="text-sm font-semibold text-foreground">100% Plant-Based</span>
+            <span class="text-sm font-semibold text-foreground">100% Natural</span>
           </div>
+          <!-- Vegan -->
           <div class="flex flex-col items-center text-center space-y-2">
-            <svg
-              class="w-8 h-8 text-primary"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                stroke-linecap="round"
-                stroke-linejoin="round"
-                stroke-width="2"
-                d="M3.055 11H5a2 2 0 012 2v1a2 2 0 002 2 2 2 0 012 2v2.945M8 3.935V5.5A2.5 2.5 0 0010.5 8h.5a2 2 0 012 2 2 2 0 104 0 2 2 0 012-2h1.064M15 20.488V18a2 2 0 012-2h3.064M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
-              />
+            <svg class="w-9 h-9 text-primary" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M17 8c-2 0-4.5 1-5 5-1.5-3-1-6.5 3-8" />
+              <path stroke-linecap="round" stroke-linejoin="round" d="M6 20c1-6 4-10 6-12 2 2 5 6 6 12" />
+              <path stroke-linecap="round" stroke-linejoin="round" d="M12 12v8" />
             </svg>
-            <span class="text-sm font-semibold text-foreground">Made in Thailand</span>
+            <span class="text-sm font-semibold text-foreground">Vegan</span>
           </div>
+          <!-- Muscle Support -->
           <div class="flex flex-col items-center text-center space-y-2">
-            <svg
-              class="w-8 h-8 text-primary"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                stroke-linecap="round"
-                stroke-linejoin="round"
-                stroke-width="2"
-                d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"
-              />
+            <svg class="w-9 h-9 text-primary" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M4 15c1-2 2-4 4-4s2 3 4 3 2-3 4-3 3 2 4 4" />
+              <path stroke-linecap="round" stroke-linejoin="round" d="M3 15h1M20 15h1" />
+              <path stroke-linecap="round" stroke-linejoin="round" d="M6 11c0-2 1-4 3-4M15 7c2 0 3 2 3 4" />
             </svg>
-            <span class="text-sm font-semibold text-foreground">Community Tested</span>
+            <span class="text-sm font-semibold text-foreground">Muscle Support</span>
           </div>
+          <!-- Gluten Free -->
           <div class="flex flex-col items-center text-center space-y-2">
-            <svg
-              class="w-8 h-8 text-primary"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                stroke-linecap="round"
-                stroke-linejoin="round"
-                stroke-width="2"
-                d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"
-              />
+            <svg class="w-9 h-9 text-primary" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M12 3v18" />
+              <path stroke-linecap="round" stroke-linejoin="round" d="M8 6c2 1 2 3 4 3s2-2 4-3M8 10c2 1 2 3 4 3s2-2 4-3M8 14c2 1 2 3 4 3s2-2 4-3" />
+              <line x1="4" y1="4" x2="20" y2="20" stroke-width="2" />
             </svg>
-            <span class="text-sm font-semibold text-foreground">Natural Ingredients</span>
+            <span class="text-sm font-semibold text-foreground">Gluten Free</span>
+          </div>
+          <!-- Dairy Free -->
+          <div class="flex flex-col items-center text-center space-y-2">
+            <svg class="w-9 h-9 text-primary" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M9 4h6l1 4v10a2 2 0 01-2 2h-4a2 2 0 01-2-2V8l1-4z" />
+              <path stroke-linecap="round" stroke-linejoin="round" d="M9 11h6" />
+              <line x1="5" y1="4" x2="19" y2="20" stroke-width="2" />
+            </svg>
+            <span class="text-sm font-semibold text-foreground">Dairy Free</span>
+          </div>
+          <!-- No Added Sugar -->
+          <div class="flex flex-col items-center text-center space-y-2">
+            <svg class="w-9 h-9 text-primary" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
+              <rect x="6" y="6" width="12" height="12" rx="2" />
+              <path stroke-linecap="round" stroke-linejoin="round" d="M10 10h4M10 14h2" />
+              <line x1="5" y1="4" x2="19" y2="20" stroke-width="2" />
+            </svg>
+            <span class="text-sm font-semibold text-foreground">No Added Sugar</span>
           </div>
         </div>
       </div>

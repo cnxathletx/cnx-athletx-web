@@ -1,44 +1,44 @@
 @import 'tailwindcss';
 
 :root {
-  --bg: #0a0a0a;
-  --fg: #f4f3ee;
-  --primary: #ebb83c;
-  --primary-light: #f7dd6e;
-  --primary-dark: #c9972a;
-  --accent: #caab56;
-  --accent-light: #f9ea89;
-  --sage: #8c7d46;
-  --sand: #1a1a1a;
-  --surface: #141414;
-  --surface-alt: #1e1e1e;
-  --muted: #a0a0a0;
-  --error: #ef4444;
-  --success: #22c55e;
-  --footer-bg: #111111;
+  --bg: #2E2B26;
+  --fg: #E5DDD0;
+  --primary: #8B9A7B;
+  --primary-light: #A3B293;
+  --primary-dark: #6F7F63;
+  --accent: #B53A32;
+  --accent-light: #D4524D;
+  --sage: #8B9A7B;
+  --sand: #3A3730;
+  --surface: #35322C;
+  --surface-alt: #3D3A34;
+  --muted: #9C9689;
+  --error: #D4524D;
+  --success: #8B9A7B;
+  --footer-bg: #252320;
 
   --shadow-sm: none;
   --shadow-md: none;
   --shadow-lg: none;
-  --card-ring: rgb(255 255 255 / 0.05);
+  --card-ring: rgb(229 221 208 / 0.08);
 }
 
 :root.light {
-  --bg: #f4f3ee;
-  --fg: #1a1a1a;
-  --primary: #a67c1f;
-  --primary-light: #c9972a;
-  --primary-dark: #7b5c14;
-  --accent: #b99642;
-  --accent-light: #e9cd5c;
-  --sage: #9f8f54;
-  --sand: #d9cdbf;
-  --surface: #ffffff;
-  --surface-alt: #f4f3ee;
-  --muted: #6b7280;
-  --error: #dc2626;
-  --success: #16a34a;
-  --footer-bg: #e8dece;
+  --bg: #F2EDE4;
+  --fg: #2E2B26;
+  --primary: #6F7F63;
+  --primary-light: #8B9A7B;
+  --primary-dark: #576650;
+  --accent: #9E2A25;
+  --accent-light: #B53A32;
+  --sage: #7A8A6C;
+  --sand: #D5CBBA;
+  --surface: #FFFFFF;
+  --surface-alt: #F2EDE4;
+  --muted: #7A756C;
+  --error: #9E2A25;
+  --success: #576650;
+  --footer-bg: #2E2B26;
 
   --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
   --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
@@ -72,37 +72,37 @@
 
 /* Status pill colors */
 :root {
-  --status-pending-bg: rgb(120 53 15 / 0.5);
-  --status-pending-text: #fcd34d;
-  --status-paid-bg: rgb(30 58 138 / 0.5);
-  --status-paid-text: #93c5fd;
-  --status-packed-bg: rgb(88 28 135 / 0.5);
-  --status-packed-text: #d8b4fe;
-  --status-delivered-bg: rgb(20 83 45 / 0.5);
-  --status-delivered-text: #86efac;
-  --status-cancelled-bg: rgb(127 29 29 / 0.5);
-  --status-cancelled-text: #fca5a5;
+  --status-pending-bg: rgb(181 58 50 / 0.25);
+  --status-pending-text: #D4524D;
+  --status-paid-bg: rgb(139 154 123 / 0.3);
+  --status-paid-text: #A3B293;
+  --status-packed-bg: rgb(156 150 137 / 0.3);
+  --status-packed-text: #D5CBBA;
+  --status-delivered-bg: rgb(111 127 99 / 0.35);
+  --status-delivered-text: #A3B293;
+  --status-cancelled-bg: rgb(181 58 50 / 0.25);
+  --status-cancelled-text: #D4524D;
 
-  --warning-bg: rgb(120 53 15 / 0.15);
-  --warning-border: rgb(217 119 6 / 0.3);
-  --warning-text: #fcd34d;
+  --warning-bg: rgb(181 58 50 / 0.12);
+  --warning-border: rgb(181 58 50 / 0.3);
+  --warning-text: #D4524D;
 }
 
 :root.light {
-  --status-pending-bg: #fef3c7;
-  --status-pending-text: #92400e;
-  --status-paid-bg: #dbeafe;
-  --status-paid-text: #1e3a8a;
-  --status-packed-bg: #f3e8ff;
-  --status-packed-text: #581c87;
-  --status-delivered-bg: #dcfce7;
-  --status-delivered-text: #14532d;
-  --status-cancelled-bg: #fee2e2;
-  --status-cancelled-text: #7f1d1d;
+  --status-pending-bg: #F5E6D8;
+  --status-pending-text: #9E2A25;
+  --status-paid-bg: #E2EBDB;
+  --status-paid-text: #576650;
+  --status-packed-bg: #EAE4DA;
+  --status-packed-text: #5C574E;
+  --status-delivered-bg: #DBEBD4;
+  --status-delivered-text: #3D5232;
+  --status-cancelled-bg: #F5DEDD;
+  --status-cancelled-text: #9E2A25;
 
-  --warning-bg: #fffbeb;
-  --warning-border: #fde68a;
-  --warning-text: #92400e;
+  --warning-bg: #FDF5ED;
+  --warning-border: #D5CBBA;
+  --warning-text: #9E2A25;
 }
 
 /* Typography Utilities */

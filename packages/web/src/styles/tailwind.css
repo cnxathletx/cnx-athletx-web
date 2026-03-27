@@ -47,7 +47,7 @@
 }
 
 @theme {
-  --font-sans: 'Inter', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  --font-sans: 'Montserrat', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
 
   --color-background: var(--bg);
   --color-foreground: var(--fg);

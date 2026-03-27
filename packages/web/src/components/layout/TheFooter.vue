@@ -3,47 +3,47 @@ import { RouterLink } from 'vue-router'
 </script>
 
 <template>
-  <footer class="border-t border-[var(--grid-line)] bg-footer-bg text-foreground/80">
+  <footer class="bg-footer-bg text-foreground/80">
     <!-- Main Footer Content -->
     <div class="mx-auto max-w-[1280px] px-4 sm:px-6 lg:px-8 py-16 sm:py-20">
       <div class="grid grid-cols-1 md:grid-cols-3 gap-12">
         <!-- Brand Info -->
         <div class="space-y-4">
-          <div class="flex flex-col gap-2">
-            <span class="brand-kicker text-accent">Natural Performance</span>
-            <span class="brand-title text-2xl text-primary">CNX AthletX</span>
+          <div class="flex items-center gap-2">
+            <span class="text-xl font-bold tracking-tight text-foreground">CNX</span>
+            <span class="text-xl font-bold tracking-tight text-primary">AthletX</span>
           </div>
-          <p class="max-w-sm text-sm leading-relaxed text-muted">
-            Plant-based performance nutrition shaped by Chiang Mai movement culture. Clean inputs,
-            grounded aesthetics, and recovery that fits real training life.
+          <p class="text-sm leading-relaxed">
+            Clean athletic everyday health. Plant-based protein powder from Chiang Mai's active
+            community.
           </p>
         </div>
 
         <!-- Quick Links -->
         <div class="space-y-4">
-          <h3 class="font-brand text-[0.72rem] font-semibold uppercase tracking-[0.18em] text-accent">Quick Links</h3>
+          <h3 class="text-foreground font-semibold">Quick Links</h3>
           <nav class="flex flex-col space-y-2">
             <RouterLink
               to="/shop"
-              class="text-sm text-muted transition-colors hover:text-foreground"
+              class="text-sm hover:text-foreground transition-colors"
             >
               Shop
             </RouterLink>
             <RouterLink
               to="/order/status"
-              class="text-sm text-muted transition-colors hover:text-foreground"
+              class="text-sm hover:text-foreground transition-colors"
             >
               Track Order
             </RouterLink>
             <RouterLink
               to="/privacy"
-              class="text-sm text-muted transition-colors hover:text-foreground"
+              class="text-sm hover:text-foreground transition-colors"
             >
               Privacy Policy
             </RouterLink>
             <RouterLink
               to="/terms"
-              class="text-sm text-muted transition-colors hover:text-foreground"
+              class="text-sm hover:text-foreground transition-colors"
             >
               Terms of Service
             </RouterLink>
@@ -52,16 +52,16 @@ import { RouterLink } from 'vue-router'
 
         <!-- Contact Info -->
         <div class="space-y-4">
-          <h3 class="font-brand text-[0.72rem] font-semibold uppercase tracking-[0.18em] text-accent">Contact</h3>
-          <div class="space-y-2 text-sm text-muted">
-            <p>Made in Chiang Mai, Thailand</p>
+          <h3 class="text-foreground font-semibold">Contact</h3>
+          <div class="space-y-2 text-sm">
+            <p>Chiang Mai, Thailand</p>
             <p>contact@cnxathletx.com</p>
             <div class="flex space-x-4 pt-2">
               <a
                 href="https://www.instagram.com/cnx_athletx"
                 target="_blank"
                 rel="noopener noreferrer"
-                class="transition-colors hover:text-foreground"
+                class="hover:text-foreground transition-colors"
                 aria-label="Instagram"
               >
                 <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
@@ -74,7 +74,7 @@ import { RouterLink } from 'vue-router'
                 href="https://www.tiktok.com/@cnx.athletx"
                 target="_blank"
                 rel="noopener noreferrer"
-                class="transition-colors hover:text-foreground"
+                class="hover:text-foreground transition-colors"
                 aria-label="TikTok"
               >
                 <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
@@ -87,7 +87,7 @@ import { RouterLink } from 'vue-router'
                 href="https://www.facebook.com/profile.php?id=61579807747184"
                 target="_blank"
                 rel="noopener noreferrer"
-                class="transition-colors hover:text-foreground"
+                class="hover:text-foreground transition-colors"
                 aria-label="Facebook"
               >
                 <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
@@ -103,17 +103,17 @@ import { RouterLink } from 'vue-router'
     </div>
 
     <!-- Bottom Bar -->
-    <div class="border-t border-[var(--grid-line)]">
+    <div class="border-t border-foreground/20">
       <div class="mx-auto max-w-[1280px] px-4 sm:px-6 lg:px-8 py-6">
         <div
-          class="flex flex-col items-center justify-between space-y-2 text-sm md:flex-row md:space-y-0"
+          class="flex flex-col md:flex-row justify-between items-center space-y-2 md:space-y-0 text-sm"
         >
-          <p class="text-muted">&copy; 2026 CNX AthletX. All rights reserved.</p>
+          <p>&copy; 2026 CNX AthletX. All rights reserved.</p>
           <div class="flex space-x-6">
-            <RouterLink to="/privacy" class="text-muted transition-colors hover:text-foreground">
+            <RouterLink to="/privacy" class="hover:text-foreground transition-colors">
               Privacy
             </RouterLink>
-            <RouterLink to="/terms" class="text-muted transition-colors hover:text-foreground">
+            <RouterLink to="/terms" class="hover:text-foreground transition-colors">
               Terms
             </RouterLink>
           </div>

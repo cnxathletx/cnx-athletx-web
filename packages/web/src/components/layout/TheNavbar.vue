@@ -23,34 +23,32 @@ async function handleLogout() {
 </script>
 
 <template>
-  <header class="sticky top-0 z-50 border-b border-[var(--grid-line)] bg-background/90 backdrop-blur-xl">
+  <header class="sticky top-0 z-50 bg-background/95 backdrop-blur-sm border-b border-sand">
     <div class="mx-auto max-w-[1280px] px-4 sm:px-6 lg:px-8">
       <div class="flex items-center justify-between h-16">
         <!-- Logo -->
-        <RouterLink to="/" class="shrink-0">
-          <div class="flex flex-col leading-none">
-            <span class="brand-kicker text-accent">Natural Performance</span>
-            <span class="brand-title text-lg text-primary sm:text-xl">CNX AthletX</span>
-          </div>
+        <RouterLink to="/" class="flex items-center gap-2 shrink-0">
+          <span class="text-xl font-bold tracking-tight text-foreground">CNX</span>
+          <span class="text-xl font-bold tracking-tight text-primary">AthletX</span>
         </RouterLink>
 
         <!-- Desktop Navigation -->
         <nav class="hidden md:flex items-center space-x-8">
           <RouterLink
             to="/"
-            class="font-brand text-[0.72rem] font-semibold uppercase tracking-[0.16em] text-foreground transition-colors hover:text-accent"
+            class="text-sm font-semibold text-foreground hover:text-primary transition-colors"
           >
             Home
           </RouterLink>
           <RouterLink
             to="/shop"
-            class="font-brand text-[0.72rem] font-semibold uppercase tracking-[0.16em] text-foreground transition-colors hover:text-accent"
+            class="text-sm font-semibold text-foreground hover:text-primary transition-colors"
           >
             Shop
           </RouterLink>
           <RouterLink
             to="/order/status"
-            class="font-brand text-[0.72rem] font-semibold uppercase tracking-[0.16em] text-foreground transition-colors hover:text-accent"
+            class="text-sm font-semibold text-foreground hover:text-primary transition-colors"
           >
             Track Order
           </RouterLink>
@@ -61,7 +59,7 @@ async function handleLogout() {
           <RouterLink
             v-if="!auth.loading && !auth.isAuthenticated"
             to="/login"
-            class="hidden md:inline-flex px-2 py-1 font-brand text-[0.68rem] font-semibold uppercase tracking-[0.16em] text-foreground transition-colors hover:text-accent"
+            class="hidden md:inline-flex text-sm font-semibold text-foreground hover:text-primary transition-colors px-2 py-1"
           >
             Log In
           </RouterLink>
@@ -69,9 +67,9 @@ async function handleLogout() {
           <RouterLink
             v-if="!auth.loading && auth.isAuthenticated"
             to="/account"
-            class="hidden md:inline-flex items-center gap-2 px-2 py-1 font-brand text-[0.68rem] font-semibold uppercase tracking-[0.16em] text-foreground transition-colors hover:text-accent"
+            class="hidden md:inline-flex items-center gap-2 px-2 py-1 text-sm font-semibold text-foreground hover:text-primary transition-colors"
           >
-            <span class="flex h-7 w-7 items-center justify-center rounded-full border border-[var(--card-ring)] bg-primary text-xs font-bold text-background">
+            <span class="w-7 h-7 rounded-full bg-primary text-background flex items-center justify-center text-xs font-bold">
               {{ auth.displayInitial }}
             </span>
             Account
@@ -79,7 +77,7 @@ async function handleLogout() {
 
           <button
             v-if="!auth.loading && auth.isAuthenticated"
-            class="hidden md:inline-flex px-2 py-1 font-brand text-[0.68rem] font-semibold uppercase tracking-[0.16em] text-muted transition-colors hover:text-signal"
+            class="hidden md:inline-flex text-sm font-semibold text-muted hover:text-error transition-colors px-2 py-1"
             @click="handleLogout"
           >
             Log Out
@@ -88,7 +86,7 @@ async function handleLogout() {
           <!-- Theme Toggle -->
           <button
             @click="toggle"
-            class="rounded-full border border-[var(--card-ring)] bg-[var(--panel-wash)] p-2.5 text-foreground transition-colors hover:text-accent"
+            class="p-2.5 text-foreground hover:text-primary transition-colors rounded-md"
             aria-label="Toggle theme"
           >
             <!-- Sun icon (shown in dark mode) -->
@@ -120,7 +118,7 @@ async function handleLogout() {
           <!-- Cart Icon -->
           <RouterLink
             to="/cart"
-            class="relative rounded-full border border-[var(--card-ring)] bg-[var(--panel-wash)] p-2.5 text-foreground transition-colors hover:text-accent"
+            class="relative p-2.5 text-foreground hover:text-primary transition-colors"
           >
             <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path
@@ -133,7 +131,7 @@ async function handleLogout() {
             <!-- Count Badge -->
             <span
               v-if="cart.totalItems > 0"
-              class="absolute -right-1 -top-1 flex h-5 w-5 items-center justify-center rounded-full bg-accent text-[0.65rem] font-bold text-background"
+              class="absolute -top-1 -right-1 bg-primary text-background text-xs font-bold rounded-full w-5 h-5 flex items-center justify-center"
             >
               {{ cart.totalItems > 9 ? '9+' : cart.totalItems }}
             </span>
@@ -141,7 +139,7 @@ async function handleLogout() {
 
           <!-- Mobile Menu Button -->
           <button
-            class="rounded-full border border-[var(--card-ring)] bg-[var(--panel-wash)] p-2.5 text-foreground transition-colors hover:text-accent md:hidden"
+            class="md:hidden p-2.5 text-foreground hover:text-primary transition-colors"
             @click="mobileOpen = !mobileOpen"
             :aria-label="mobileOpen ? 'Close menu' : 'Open menu'"
           >
@@ -177,7 +175,7 @@ async function handleLogout() {
   <Transition name="overlay">
     <div
       v-if="mobileOpen"
-      class="fixed inset-0 z-50 bg-background/70 backdrop-blur-sm md:hidden"
+      class="fixed inset-0 z-50 bg-foreground/50 backdrop-blur-sm md:hidden"
       @click="closeMobile"
     />
   </Transition>
@@ -186,14 +184,14 @@ async function handleLogout() {
   <Transition name="drawer">
     <div
       v-if="mobileOpen"
-      class="brand-panel fixed inset-y-0 right-0 z-50 w-72 md:hidden"
+      class="fixed inset-y-0 right-0 z-50 w-72 bg-surface shadow-lg md:hidden"
     >
       <div class="p-6 space-y-8">
         <!-- Close -->
         <div class="flex justify-end">
           <button
             @click="closeMobile"
-            class="rounded-full border border-[var(--card-ring)] bg-[var(--panel-wash)] p-2.5 text-foreground transition-colors hover:text-accent"
+            class="p-2.5 text-foreground hover:text-primary transition-colors"
             aria-label="Close menu"
           >
             <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -209,10 +207,10 @@ async function handleLogout() {
 
         <!-- Theme Toggle in Mobile -->
         <div class="flex items-center justify-between px-1">
-          <span class="font-brand text-[0.68rem] font-semibold uppercase tracking-[0.16em] text-muted">Theme</span>
+          <span class="text-sm font-medium text-muted">Theme</span>
           <button
             @click="toggle"
-            class="rounded-full border border-[var(--card-ring)] bg-[var(--panel-wash)] p-2.5 text-foreground transition-colors hover:text-accent"
+            class="p-2.5 text-foreground hover:text-primary transition-colors rounded-md"
             aria-label="Toggle theme"
           >
             <svg
@@ -245,21 +243,21 @@ async function handleLogout() {
           <RouterLink
             to="/"
             @click="closeMobile"
-            class="rounded-2xl px-3 py-3 font-brand text-sm font-semibold uppercase tracking-[0.16em] text-foreground transition-colors hover:bg-white/5 hover:text-accent"
+            class="text-lg font-semibold text-foreground hover:text-primary hover:bg-surface-alt px-3 py-3 rounded-md transition-colors"
           >
             Home
           </RouterLink>
           <RouterLink
             to="/shop"
             @click="closeMobile"
-            class="rounded-2xl px-3 py-3 font-brand text-sm font-semibold uppercase tracking-[0.16em] text-foreground transition-colors hover:bg-white/5 hover:text-accent"
+            class="text-lg font-semibold text-foreground hover:text-primary hover:bg-surface-alt px-3 py-3 rounded-md transition-colors"
           >
             Shop
           </RouterLink>
           <RouterLink
             to="/order/status"
             @click="closeMobile"
-            class="rounded-2xl px-3 py-3 font-brand text-sm font-semibold uppercase tracking-[0.16em] text-foreground transition-colors hover:bg-white/5 hover:text-accent"
+            class="text-lg font-semibold text-foreground hover:text-primary hover:bg-surface-alt px-3 py-3 rounded-md transition-colors"
           >
             Track Order
           </RouterLink>
@@ -268,7 +266,7 @@ async function handleLogout() {
             v-if="!auth.loading && !auth.isAuthenticated"
             to="/login"
             @click="closeMobile"
-            class="rounded-2xl px-3 py-3 font-brand text-sm font-semibold uppercase tracking-[0.16em] text-foreground transition-colors hover:bg-white/5 hover:text-accent"
+            class="text-lg font-semibold text-foreground hover:text-primary hover:bg-surface-alt px-3 py-3 rounded-md transition-colors"
           >
             Log In
           </RouterLink>
@@ -277,14 +275,14 @@ async function handleLogout() {
             v-if="!auth.loading && auth.isAuthenticated"
             to="/account"
             @click="closeMobile"
-            class="rounded-2xl px-3 py-3 font-brand text-sm font-semibold uppercase tracking-[0.16em] text-foreground transition-colors hover:bg-white/5 hover:text-accent"
+            class="text-lg font-semibold text-foreground hover:text-primary hover:bg-surface-alt px-3 py-3 rounded-md transition-colors"
           >
             My Account
           </RouterLink>
 
           <button
             v-if="!auth.loading && auth.isAuthenticated"
-            class="rounded-2xl px-3 py-3 text-left font-brand text-sm font-semibold uppercase tracking-[0.16em] text-signal transition-colors hover:bg-white/5"
+            class="text-left text-lg font-semibold text-error hover:bg-surface-alt px-3 py-3 rounded-md transition-colors"
             @click="handleLogout"
           >
             Log Out

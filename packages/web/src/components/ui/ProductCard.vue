@@ -40,11 +40,11 @@ function addToCart() {
 
 <template>
   <div
-    class="brand-panel group rounded-[2rem] transition-all duration-300 hover:-translate-y-1.5 hover:shadow-lg"
+    class="group bg-surface rounded-lg shadow-sm ring-1 ring-[var(--card-ring)] overflow-hidden transition-all duration-300 hover:shadow-md hover:-translate-y-1"
   >
     <!-- Image Container -->
     <RouterLink :to="`/product/${slug}`" class="block">
-      <div class="brand-landscape relative aspect-[4/3] overflow-hidden bg-sand">
+      <div class="aspect-[4/3] overflow-hidden bg-sand relative">
         <img
           v-if="imageUrl && !imageLoadError"
           :src="imageUrl"
@@ -54,10 +54,10 @@ function addToCart() {
         />
         <div
           v-else
-          class="flex h-full w-full items-center justify-center bg-gradient-to-br from-white/6 via-transparent to-accent/10 transition-transform duration-300 group-hover:scale-105"
+          class="w-full h-full bg-gradient-to-br from-primary/20 via-sage/15 to-primary/10 flex items-center justify-center transition-transform duration-300 group-hover:scale-105"
         >
-            <svg
-            class="w-20 h-20 text-primary/25"
+          <svg
+            class="w-20 h-20 text-muted/40"
             fill="none"
             stroke="currentColor"
             viewBox="0 0 24 24"
@@ -73,10 +73,10 @@ function addToCart() {
         <!-- Out of Stock Overlay -->
         <div
           v-if="!inStock"
-          class="absolute inset-0 flex items-center justify-center bg-background/60"
+          class="absolute inset-0 bg-foreground/30 flex items-center justify-center"
         >
           <span
-            class="rounded-full border border-primary/30 bg-background/80 px-4 py-2 font-brand text-[0.68rem] font-semibold uppercase tracking-[0.16em] text-primary"
+            class="bg-foreground/80 text-background text-sm font-semibold px-4 py-2 rounded-md"
           >
             Out of Stock
           </span>
@@ -85,21 +85,17 @@ function addToCart() {
     </RouterLink>
 
     <!-- Content -->
-    <div class="space-y-4 p-6">
-      <div class="space-y-3">
+    <div class="p-6 space-y-4">
+      <div class="space-y-2">
         <RouterLink :to="`/product/${slug}`">
-          <h3 class="brand-title text-2xl text-foreground transition-colors hover:text-primary">
+          <h3 class="text-xl font-semibold text-foreground hover:text-primary transition-colors">
             {{ name }}
           </h3>
         </RouterLink>
         <AppBadge :label="weight" />
       </div>
 
-      <div class="brand-divider" />
-
-      <p class="font-brand text-2xl font-bold uppercase tracking-[0.04em] text-foreground">
-        {{ priceFormatted }}
-      </p>
+      <p class="text-2xl font-bold text-foreground">{{ priceFormatted }}</p>
 
       <PrimaryButton full-width :disabled="!inStock" @click="addToCart">
         {{ inStock ? 'Add to Cart' : 'Sold Out' }}

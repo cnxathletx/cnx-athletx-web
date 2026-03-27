@@ -6,7 +6,7 @@ defineProps<{
 
 <template>
   <span
-    class="inline-flex items-center rounded-full border border-[var(--card-ring)] bg-[var(--panel-wash)] px-3 py-1 text-[0.68rem] font-brand font-semibold uppercase tracking-[0.18em] text-accent"
+    class="inline-flex items-center bg-accent/10 text-accent text-xs font-semibold uppercase tracking-wider rounded-full px-3 py-1"
   >
     {{ label }}
   </span>

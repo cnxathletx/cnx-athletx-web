@@ -64,6 +64,11 @@ const router = createRouter({
       component: () => import('../pages/OrderStatusPage.vue'),
     },
     {
+      path: '/admin',
+      name: 'admin-dashboard',
+      component: () => import('../pages/AdminDashboardPage.vue'),
+    },
+    {
       path: '/admin/orders',
       name: 'admin-orders',
       component: () => import('../pages/AdminOrdersPage.vue'),

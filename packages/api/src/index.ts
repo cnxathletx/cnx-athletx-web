@@ -5,6 +5,7 @@ interface Env {
   DB: D1Database
   RESEND_API_KEY?: string
   ALLOWED_ORIGINS?: string
+  ADMIN_EMAILS?: string
 }
 
 const router = Router()
@@ -184,12 +185,32 @@ async function getSessionUser(request: Request, env: Env): Promise<SessionUser |
   }
 }
 
-function getAdminUser(request: Request): AdminUser | null {
+const DEFAULT_ADMIN_EMAILS = ['jdelaire@gmail.com', 'athletx.cnx@gmail.com']
+
+function getAdminEmails(env: Env): string[] {
+  if (env.ADMIN_EMAILS) {
+    return env.ADMIN_EMAILS.split(',').map((e) => e.trim().toLowerCase()).filter(Boolean)
+  }
+  return DEFAULT_ADMIN_EMAILS
+}
+
+async function getAdminUser(request: Request, env: Env): Promise<AdminUser | null> {
+  // 1. Cloudflare Access header (set when Access policy is on the API domain)
   const cfAccessEmail = request.headers.get('Cf-Access-Authenticated-User-Email')?.trim()
   if (cfAccessEmail) {
     return { email: cfAccessEmail.toLowerCase() }
   }
 
+  // 2. Customer session — check if logged-in user is an admin
+  const sessionUser = await getSessionUser(request, env)
+  if (sessionUser) {
+    const adminEmails = getAdminEmails(env)
+    if (adminEmails.includes(sessionUser.email.toLowerCase())) {
+      return { email: sessionUser.email.toLowerCase() }
+    }
+  }
+
+  // 3. Local development fallback
   const url = new URL(request.url)
   const isLocal =
     url.hostname === 'localhost' ||
@@ -1866,7 +1887,7 @@ router.get('/api/orders/:id', async (request: Request, env: Env) => {
 // --- Admin Order + Inventory Endpoints ---
 
 router.get('/api/admin/orders', async (request: Request, env: Env) => {
-  const adminUser = getAdminUser(request)
+  const adminUser = await getAdminUser(request, env)
   if (!adminUser) {
     return Response.json({ error: 'Admin authentication required' }, { status: 403 })
   }
@@ -1931,7 +1952,7 @@ router.get('/api/admin/orders', async (request: Request, env: Env) => {
 })
 
 router.get('/api/admin/orders/:id', async (request: Request, env: Env) => {
-  const adminUser = getAdminUser(request)
+  const adminUser = await getAdminUser(request, env)
   if (!adminUser) {
     return Response.json({ error: 'Admin authentication required' }, { status: 403 })
   }
@@ -2051,7 +2072,7 @@ router.get('/api/admin/orders/:id', async (request: Request, env: Env) => {
 })
 
 router.post('/api/admin/orders/:id/mark-paid', async (request: Request, env: Env) => {
-  const adminUser = getAdminUser(request)
+  const adminUser = await getAdminUser(request, env)
   if (!adminUser) {
     return Response.json({ error: 'Admin authentication required' }, { status: 403 })
   }
@@ -2115,7 +2136,7 @@ router.post('/api/admin/orders/:id/mark-paid', async (request: Request, env: Env
 })
 
 router.post('/api/admin/orders/:id/pack', async (request: Request, env: Env) => {
-  const adminUser = getAdminUser(request)
+  const adminUser = await getAdminUser(request, env)
   if (!adminUser) {
     return Response.json({ error: 'Admin authentication required' }, { status: 403 })
   }
@@ -2152,7 +2173,7 @@ router.post('/api/admin/orders/:id/pack', async (request: Request, env: Env) => 
 })
 
 router.post('/api/admin/orders/:id/ship', async (request: Request, env: Env) => {
-  const adminUser = getAdminUser(request)
+  const adminUser = await getAdminUser(request, env)
   if (!adminUser) {
     return Response.json({ error: 'Admin authentication required' }, { status: 403 })
   }
@@ -2213,7 +2234,7 @@ router.post('/api/admin/orders/:id/ship', async (request: Request, env: Env) => 
 })
 
 router.post('/api/admin/orders/:id/cancel', async (request: Request, env: Env) => {
-  const adminUser = getAdminUser(request)
+  const adminUser = await getAdminUser(request, env)
   if (!adminUser) {
     return Response.json({ error: 'Admin authentication required' }, { status: 403 })
   }
@@ -2283,7 +2304,7 @@ router.post('/api/admin/orders/:id/cancel', async (request: Request, env: Env) =
 })
 
 router.get('/api/admin/inventory', async (request: Request, env: Env) => {
-  const adminUser = getAdminUser(request)
+  const adminUser = await getAdminUser(request, env)
   if (!adminUser) {
     return Response.json({ error: 'Admin authentication required' }, { status: 403 })
   }
@@ -2315,7 +2336,7 @@ router.get('/api/admin/inventory', async (request: Request, env: Env) => {
 })
 
 router.patch('/api/admin/inventory/:productId', async (request: Request, env: Env) => {
-  const adminUser = getAdminUser(request)
+  const adminUser = await getAdminUser(request, env)
   if (!adminUser) {
     return Response.json({ error: 'Admin authentication required' }, { status: 403 })
   }
@@ -2395,7 +2416,7 @@ router.patch('/api/admin/inventory/:productId', async (request: Request, env: En
 })
 
 router.get('/api/admin/products', async (request: Request, env: Env) => {
-  const adminUser = getAdminUser(request)
+  const adminUser = await getAdminUser(request, env)
   if (!adminUser) {
     return Response.json({ error: 'Admin authentication required' }, { status: 403 })
   }
@@ -2432,7 +2453,7 @@ router.get('/api/admin/products', async (request: Request, env: Env) => {
 })
 
 router.post('/api/admin/products', async (request: Request, env: Env) => {
-  const adminUser = getAdminUser(request)
+  const adminUser = await getAdminUser(request, env)
   if (!adminUser) {
     return Response.json({ error: 'Admin authentication required' }, { status: 403 })
   }
@@ -2548,7 +2569,7 @@ router.post('/api/admin/products', async (request: Request, env: Env) => {
 })
 
 router.patch('/api/admin/products/:id', async (request: Request, env: Env) => {
-  const adminUser = getAdminUser(request)
+  const adminUser = await getAdminUser(request, env)
   if (!adminUser) {
     return Response.json({ error: 'Admin authentication required' }, { status: 403 })
   }

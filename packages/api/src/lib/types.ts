@@ -1,0 +1,298 @@
+export interface Env {
+  DB: D1Database
+  RESEND_API_KEY?: string
+  ALLOWED_ORIGINS?: string
+  ADMIN_EMAILS?: string
+}
+
+export interface SessionUser {
+  id: string
+  email: string
+  name: string | null
+  phone: string | null
+}
+
+export interface AdminUser {
+  email: string
+}
+
+export interface ValidationError {
+  field: string
+  message: string
+}
+
+// --- Auth row types ---
+
+export interface SessionRow {
+  user_id: string
+  email: string
+  name: string | null
+  phone: string | null
+}
+
+export interface UserRow {
+  id: string
+  email: string
+  name: string | null
+  phone: string | null
+}
+
+export interface MagicLinkRow {
+  id: number
+  email: string
+}
+
+export interface CountRow {
+  count: number
+}
+
+export interface RequestLinkBody {
+  email: string
+}
+
+export interface VerifyLinkBody {
+  token: string
+}
+
+export interface UpdateProfileBody {
+  name?: string
+  phone?: string
+}
+
+// --- Account row types ---
+
+export interface AccountOrderRow {
+  id: string
+  status: string
+  total_thb: number
+  created_at: string
+  items_count: number
+  carrier: string | null
+  tracking_number: string | null
+}
+
+export interface LastAddressRow {
+  shipping_address_line1: string
+  shipping_address_line2: string | null
+  district: string
+  province: string
+  postal_code: string
+}
+
+// --- Checkout types ---
+
+export interface CheckoutItem {
+  product_id: number
+  quantity: number
+}
+
+export interface CheckoutAddress {
+  line1: string
+  line2?: string
+  district: string
+  province: string
+  postal_code: string
+}
+
+export interface CheckoutCustomer {
+  name: string
+  email: string
+  phone: string
+  address: CheckoutAddress
+}
+
+export interface CheckoutBody {
+  items: CheckoutItem[]
+  customer: CheckoutCustomer
+  idempotency_key: string
+  discount_code?: string
+}
+
+export interface ProductRow {
+  id: number
+  name: string
+  price_thb: number
+  stock_count: number
+  reserved_count: number
+}
+
+export interface SiteSettings {
+  shipping_flat_rate: number
+  shipping_free_threshold: number
+  promptpay_number: string
+  bank_name: string
+  bank_account_name: string
+  bank_account_number: string
+}
+
+export interface DiscountCodeRow {
+  id: number
+  code: string
+  type: 'fixed' | 'percent'
+  value: number
+  min_order_thb: number
+  max_uses: number | null
+  used_count: number
+  active: number
+  expires_at: string | null
+}
+
+export interface ExistingOrderRow {
+  id: string
+  subtotal_thb: number
+  shipping_thb: number
+  discount_thb: number
+  total_thb: number
+}
+
+export interface PaymentProofBody {
+  proof_value: string
+}
+
+export interface OrderStatusOnlyRow {
+  status: string
+}
+
+// --- Order detail types ---
+
+export interface OrderRow {
+  id: string
+  status: string
+  subtotal_thb: number
+  shipping_thb: number
+  discount_thb: number
+  total_thb: number
+  created_at: string
+}
+
+export interface OrderItemRow {
+  product_name: string
+  quantity: number
+  line_total_thb: number
+}
+
+export interface ShipmentRow {
+  carrier: string
+  tracking_number: string
+  shipped_at: string
+}
+
+export interface PaymentProofRow {
+  proof_type: 'reference' | 'image_url'
+  proof_value: string
+  submitted_at: string
+}
+
+// --- Admin types ---
+
+export interface AdminOrderDetailRow {
+  id: string
+  status: string
+  customer_name: string
+  customer_email: string
+  customer_phone: string
+  shipping_address_line1: string
+  shipping_address_line2: string | null
+  district: string
+  province: string
+  postal_code: string
+  subtotal_thb: number
+  shipping_thb: number
+  discount_thb: number
+  total_thb: number
+  created_at: string
+  updated_at: string
+}
+
+export interface AdminPaymentProofRow extends PaymentProofRow {
+  id: number
+}
+
+export interface AdminOrderListRow {
+  id: string
+  status: string
+  customer_name: string
+  total_thb: number
+  created_at: string
+  items_count: number
+}
+
+export interface AdminOrderListCountRow {
+  total: number
+}
+
+export interface AdminOrderItemForStockRow {
+  product_id: number
+  quantity: number
+}
+
+export interface AdminShipmentBody {
+  carrier: string
+  tracking_number: string
+}
+
+export interface AdminInventoryRow {
+  product_id: number
+  slug: string
+  name: string
+  price_thb: number
+  active: number
+  stock_count: number
+  reserved_count: number
+  available_count: number
+}
+
+export interface AdminInventoryUpdateBody {
+  adjustment: number
+  notes?: string
+}
+
+export interface AdminInventorySingleRow {
+  stock_count: number
+  reserved_count: number
+}
+
+export interface AdminAuditLogRow {
+  id: number
+  admin_email: string
+  action: string
+  details_json: string | null
+  created_at: string
+}
+
+export interface AdminProductRow {
+  id: number
+  slug: string
+  name: string
+  description: string
+  price_thb: number
+  weight_g: number
+  image_url: string
+  active: number
+  created_at: string
+  updated_at: string
+  stock_count: number
+  reserved_count: number
+  available_count: number
+}
+
+export interface AdminCreateProductBody {
+  slug: string
+  name: string
+  description: string
+  price_thb: number
+  weight_g: number
+  image_url: string
+  active: boolean
+  stock_count: number
+}
+
+export interface AdminUpdateProductBody {
+  slug?: string
+  name?: string
+  description?: string
+  price_thb?: number
+  weight_g?: number
+  image_url?: string
+  active?: boolean
+}

@@ -2,7 +2,7 @@ import type { RouterType } from 'itty-router'
 import type { Env, CountRow, UserRow, MagicLinkRow } from '../lib/types'
 import { nowIso, randomHex, sha256Hex } from '../lib/utils'
 import { validateRequestLinkBody, validateVerifyBody } from '../lib/validation'
-import { getSessionUser, buildSessionCookie, clearSessionCookie, parseCookie, SESSION_MAX_AGE_SECONDS } from '../middleware/auth'
+import { getSessionUser, buildSessionCookie, clearSessionCookie, parseCookie, parseJsonBody, SESSION_MAX_AGE_SECONDS } from '../middleware/auth'
 import { sendMagicLinkEmail } from '../services/email'
 import { generateULID } from '../lib/ulid'
 
@@ -11,17 +11,10 @@ const MAGIC_LINK_RATE_LIMIT_MAX = 3
 
 export function registerAuthRoutes(router: RouterType) {
   router.post('/api/auth/request-link', async (request: Request, env: Env) => {
-    let body: unknown
-    try {
-      body = await request.json()
-    } catch {
-      return Response.json(
-        { error: 'Invalid JSON body', details: [{ field: 'body', message: 'Request body must be valid JSON' }] },
-        { status: 400 }
-      )
-    }
+    const parsed = await parseJsonBody(request)
+    if (!parsed.ok) return parsed.response
 
-    const { errors, data } = validateRequestLinkBody(body)
+    const { errors, data } = validateRequestLinkBody(parsed.data)
     if (errors.length > 0 || !data) {
       return Response.json({ error: 'Validation failed', details: errors }, { status: 400 })
     }
@@ -77,17 +70,10 @@ export function registerAuthRoutes(router: RouterType) {
   })
 
   router.post('/api/auth/verify', async (request: Request, env: Env) => {
-    let body: unknown
-    try {
-      body = await request.json()
-    } catch {
-      return Response.json(
-        { error: 'Invalid JSON body', details: [{ field: 'body', message: 'Request body must be valid JSON' }] },
-        { status: 400 }
-      )
-    }
+    const parsed = await parseJsonBody(request)
+    if (!parsed.ok) return parsed.response
 
-    const { errors, data } = validateVerifyBody(body)
+    const { errors, data } = validateVerifyBody(parsed.data)
     if (errors.length > 0 || !data) {
       return Response.json({ error: 'Validation failed', details: errors }, { status: 400 })
     }

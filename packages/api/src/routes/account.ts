@@ -2,7 +2,7 @@ import type { RouterType } from 'itty-router'
 import type { Env, AccountOrderRow, LastAddressRow, CountRow, UserRow, ValidationError } from '../lib/types'
 import { nowIso } from '../lib/utils'
 import { validateProfileBody } from '../lib/validation'
-import { getSessionUser } from '../middleware/auth'
+import { getSessionUser, parseJsonBody } from '../middleware/auth'
 
 export function registerAccountRoutes(router: RouterType) {
   router.get('/api/account/orders', async (request: Request, env: Env) => {
@@ -130,18 +130,14 @@ export function registerAccountRoutes(router: RouterType) {
       return Response.json({ error: 'Authentication required. Please log in.' }, { status: 401 })
     }
 
-    let body: unknown
-    try {
-      body = await request.json()
-    } catch {
-      return Response.json({ error: 'Invalid JSON body' }, { status: 400 })
-    }
+    const parsed = await parseJsonBody(request)
+    if (!parsed.ok) return parsed.response
 
-    if (!body || typeof body !== 'object') {
+    if (!parsed.data || typeof parsed.data !== 'object') {
       return Response.json({ error: 'Request body must be a JSON object' }, { status: 400 })
     }
 
-    const b = body as Record<string, unknown>
+    const b = parsed.data as Record<string, unknown>
     const errors: ValidationError[] = []
 
     if (typeof b.line1 !== 'string' || b.line1.trim().length < 5 || b.line1.trim().length > 200) {
@@ -189,17 +185,10 @@ export function registerAccountRoutes(router: RouterType) {
       return Response.json({ error: 'Authentication required. Please log in.' }, { status: 401 })
     }
 
-    let body: unknown
-    try {
-      body = await request.json()
-    } catch {
-      return Response.json(
-        { error: 'Invalid JSON body', details: [{ field: 'body', message: 'Request body must be valid JSON' }] },
-        { status: 400 }
-      )
-    }
+    const parsed = await parseJsonBody(request)
+    if (!parsed.ok) return parsed.response
 
-    const { errors, data } = validateProfileBody(body)
+    const { errors, data } = validateProfileBody(parsed.data)
     if (errors.length > 0 || !data) {
       return Response.json({ error: 'Validation failed', details: errors }, { status: 400 })
     }

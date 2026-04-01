@@ -12,16 +12,11 @@ import type {
 } from '../../lib/types'
 import { nowIso, isValidOrderId } from '../../lib/utils'
 import { parseAdminPagination, validateShipmentBody } from '../../lib/validation'
-import { getAdminUser } from '../../middleware/auth'
+import { requireAdmin, parseJsonBody } from '../../middleware/auth'
 import { sendOrderEmail, fetchOrderEmailData } from '../../services/email'
 
 export function registerAdminOrderRoutes(router: RouterType) {
-  router.get('/api/admin/orders', async (request: Request, env: Env) => {
-    const adminUser = await getAdminUser(request, env)
-    if (!adminUser) {
-      return Response.json({ error: 'Admin authentication required' }, { status: 403 })
-    }
-
+  router.get('/api/admin/orders', requireAdmin(async (request, env) => {
     const url = new URL(request.url)
     const status = (url.searchParams.get('status') ?? '').trim()
     const q = (url.searchParams.get('q') ?? '').trim()
@@ -79,14 +74,9 @@ export function registerAdminOrderRoutes(router: RouterType) {
     } catch {
       return Response.json({ error: 'Database error' }, { status: 500 })
     }
-  })
+  }))
 
-  router.get('/api/admin/orders/:id', async (request: Request, env: Env) => {
-    const adminUser = await getAdminUser(request, env)
-    if (!adminUser) {
-      return Response.json({ error: 'Admin authentication required' }, { status: 403 })
-    }
-
+  router.get('/api/admin/orders/:id', requireAdmin(async (request, env) => {
     const url = new URL(request.url)
     const id = url.pathname.split('/').pop() || ''
 
@@ -199,14 +189,9 @@ export function registerAdminOrderRoutes(router: RouterType) {
     } catch {
       return Response.json({ error: 'Database error' }, { status: 500 })
     }
-  })
+  }))
 
-  router.post('/api/admin/orders/:id/mark-paid', async (request: Request, env: Env) => {
-    const adminUser = await getAdminUser(request, env)
-    if (!adminUser) {
-      return Response.json({ error: 'Admin authentication required' }, { status: 403 })
-    }
-
+  router.post('/api/admin/orders/:id/mark-paid', requireAdmin(async (request, env, adminUser) => {
     const url = new URL(request.url)
     const id = url.pathname.split('/')[4] || ''
     if (!isValidOrderId(id)) {
@@ -268,14 +253,9 @@ export function registerAdminOrderRoutes(router: RouterType) {
     } catch {
       return Response.json({ error: 'Database error' }, { status: 500 })
     }
-  })
+  }))
 
-  router.post('/api/admin/orders/:id/pack', async (request: Request, env: Env) => {
-    const adminUser = await getAdminUser(request, env)
-    if (!adminUser) {
-      return Response.json({ error: 'Admin authentication required' }, { status: 403 })
-    }
-
+  router.post('/api/admin/orders/:id/pack', requireAdmin(async (request, env, adminUser) => {
     const url = new URL(request.url)
     const id = url.pathname.split('/')[4] || ''
     if (!isValidOrderId(id)) {
@@ -305,14 +285,9 @@ export function registerAdminOrderRoutes(router: RouterType) {
     } catch {
       return Response.json({ error: 'Database error' }, { status: 500 })
     }
-  })
+  }))
 
-  router.post('/api/admin/orders/:id/ship', async (request: Request, env: Env) => {
-    const adminUser = await getAdminUser(request, env)
-    if (!adminUser) {
-      return Response.json({ error: 'Admin authentication required' }, { status: 403 })
-    }
-
+  router.post('/api/admin/orders/:id/ship', requireAdmin(async (request, env, adminUser) => {
     const url = new URL(request.url)
     const id = url.pathname.split('/')[4] || ''
     if (!isValidOrderId(id)) {
@@ -320,17 +295,10 @@ export function registerAdminOrderRoutes(router: RouterType) {
     }
     const orderId = id.toUpperCase()
 
-    let body: unknown
-    try {
-      body = await request.json()
-    } catch {
-      return Response.json(
-        { error: 'Invalid JSON body', details: [{ field: 'body', message: 'Request body must be valid JSON' }] },
-        { status: 400 }
-      )
-    }
+    const parsed = await parseJsonBody(request)
+    if (!parsed.ok) return parsed.response
 
-    const { errors, data } = validateShipmentBody(body)
+    const { errors, data } = validateShipmentBody(parsed.data)
     if (errors.length > 0 || !data) {
       return Response.json({ error: 'Validation failed', details: errors }, { status: 400 })
     }
@@ -370,14 +338,9 @@ export function registerAdminOrderRoutes(router: RouterType) {
     } catch {
       return Response.json({ error: 'Database error' }, { status: 500 })
     }
-  })
+  }))
 
-  router.post('/api/admin/orders/:id/cancel', async (request: Request, env: Env) => {
-    const adminUser = await getAdminUser(request, env)
-    if (!adminUser) {
-      return Response.json({ error: 'Admin authentication required' }, { status: 403 })
-    }
-
+  router.post('/api/admin/orders/:id/cancel', requireAdmin(async (request, env, adminUser) => {
     const url = new URL(request.url)
     const id = url.pathname.split('/')[4] || ''
     if (!isValidOrderId(id)) {
@@ -440,5 +403,5 @@ export function registerAdminOrderRoutes(router: RouterType) {
     } catch {
       return Response.json({ error: 'Database error' }, { status: 500 })
     }
-  })
+  }))
 }

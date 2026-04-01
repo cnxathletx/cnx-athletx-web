@@ -2,15 +2,10 @@ import type { RouterType } from 'itty-router'
 import type { Env, AdminProductRow } from '../../lib/types'
 import { nowIso } from '../../lib/utils'
 import { validateCreateProductBody, validateUpdateProductBody } from '../../lib/validation'
-import { getAdminUser } from '../../middleware/auth'
+import { requireAdmin, parseJsonBody } from '../../middleware/auth'
 
 export function registerAdminProductRoutes(router: RouterType) {
-  router.get('/api/admin/products', async (request: Request, env: Env) => {
-    const adminUser = await getAdminUser(request, env)
-    if (!adminUser) {
-      return Response.json({ error: 'Admin authentication required' }, { status: 403 })
-    }
-
+  router.get('/api/admin/products', requireAdmin(async (_request, env) => {
     try {
       const { results } = await env.DB.prepare(
         `SELECT p.id, p.slug, p.name, p.description, p.price_thb, p.weight_g, p.image_url, p.active, p.created_at, p.updated_at,
@@ -40,25 +35,13 @@ export function registerAdminProductRoutes(router: RouterType) {
     } catch {
       return Response.json({ error: 'Database error' }, { status: 500 })
     }
-  })
+  }))
 
-  router.post('/api/admin/products', async (request: Request, env: Env) => {
-    const adminUser = await getAdminUser(request, env)
-    if (!adminUser) {
-      return Response.json({ error: 'Admin authentication required' }, { status: 403 })
-    }
+  router.post('/api/admin/products', requireAdmin(async (request, env, adminUser) => {
+    const parsed = await parseJsonBody(request)
+    if (!parsed.ok) return parsed.response
 
-    let body: unknown
-    try {
-      body = await request.json()
-    } catch {
-      return Response.json(
-        { error: 'Invalid JSON body', details: [{ field: 'body', message: 'Request body must be valid JSON' }] },
-        { status: 400 }
-      )
-    }
-
-    const { errors, data } = validateCreateProductBody(body)
+    const { errors, data } = validateCreateProductBody(parsed.data)
     if (errors.length > 0 || !data) {
       return Response.json({ error: 'Validation failed', details: errors }, { status: 400 })
     }
@@ -146,14 +129,9 @@ export function registerAdminProductRoutes(router: RouterType) {
       }
       return Response.json({ error: 'Database error' }, { status: 500 })
     }
-  })
+  }))
 
-  router.patch('/api/admin/products/:id', async (request: Request, env: Env) => {
-    const adminUser = await getAdminUser(request, env)
-    if (!adminUser) {
-      return Response.json({ error: 'Admin authentication required' }, { status: 403 })
-    }
-
+  router.patch('/api/admin/products/:id', requireAdmin(async (request, env, adminUser) => {
     const url = new URL(request.url)
     const idRaw = url.pathname.split('/').pop() || ''
     const productId = parseInt(idRaw, 10)
@@ -161,17 +139,10 @@ export function registerAdminProductRoutes(router: RouterType) {
       return Response.json({ error: 'Invalid product ID' }, { status: 400 })
     }
 
-    let body: unknown
-    try {
-      body = await request.json()
-    } catch {
-      return Response.json(
-        { error: 'Invalid JSON body', details: [{ field: 'body', message: 'Request body must be valid JSON' }] },
-        { status: 400 }
-      )
-    }
+    const parsed = await parseJsonBody(request)
+    if (!parsed.ok) return parsed.response
 
-    const { errors, data } = validateUpdateProductBody(body)
+    const { errors, data } = validateUpdateProductBody(parsed.data)
     if (errors.length > 0 || !data) {
       return Response.json({ error: 'Validation failed', details: errors }, { status: 400 })
     }
@@ -251,5 +222,5 @@ export function registerAdminProductRoutes(router: RouterType) {
       }
       return Response.json({ error: 'Database error' }, { status: 500 })
     }
-  })
+  }))
 }

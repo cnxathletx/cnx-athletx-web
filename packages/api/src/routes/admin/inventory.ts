@@ -2,15 +2,10 @@ import type { RouterType } from 'itty-router'
 import type { Env, AdminInventoryRow, AdminInventorySingleRow } from '../../lib/types'
 import { nowIso } from '../../lib/utils'
 import { validateInventoryUpdateBody } from '../../lib/validation'
-import { getAdminUser } from '../../middleware/auth'
+import { requireAdmin, parseJsonBody } from '../../middleware/auth'
 
 export function registerAdminInventoryRoutes(router: RouterType) {
-  router.get('/api/admin/inventory', async (request: Request, env: Env) => {
-    const adminUser = await getAdminUser(request, env)
-    if (!adminUser) {
-      return Response.json({ error: 'Admin authentication required' }, { status: 403 })
-    }
-
+  router.get('/api/admin/inventory', requireAdmin(async (_request, env) => {
     try {
       const { results } = await env.DB.prepare(
         `SELECT p.id AS product_id, p.slug, p.name, p.price_thb, p.active,
@@ -35,14 +30,9 @@ export function registerAdminInventoryRoutes(router: RouterType) {
     } catch {
       return Response.json({ error: 'Database error' }, { status: 500 })
     }
-  })
+  }))
 
-  router.patch('/api/admin/inventory/:productId', async (request: Request, env: Env) => {
-    const adminUser = await getAdminUser(request, env)
-    if (!adminUser) {
-      return Response.json({ error: 'Admin authentication required' }, { status: 403 })
-    }
-
+  router.patch('/api/admin/inventory/:productId', requireAdmin(async (request, env, adminUser) => {
     const url = new URL(request.url)
     const productIdRaw = url.pathname.split('/').pop() || ''
     const productId = parseInt(productIdRaw, 10)
@@ -50,17 +40,10 @@ export function registerAdminInventoryRoutes(router: RouterType) {
       return Response.json({ error: 'Invalid productId' }, { status: 400 })
     }
 
-    let body: unknown
-    try {
-      body = await request.json()
-    } catch {
-      return Response.json(
-        { error: 'Invalid JSON body', details: [{ field: 'body', message: 'Request body must be valid JSON' }] },
-        { status: 400 }
-      )
-    }
+    const parsed = await parseJsonBody(request)
+    if (!parsed.ok) return parsed.response
 
-    const { errors, data } = validateInventoryUpdateBody(body)
+    const { errors, data } = validateInventoryUpdateBody(parsed.data)
     if (errors.length > 0 || !data) {
       return Response.json({ error: 'Validation failed', details: errors }, { status: 400 })
     }
@@ -115,5 +98,5 @@ export function registerAdminInventoryRoutes(router: RouterType) {
     } catch {
       return Response.json({ error: 'Database error' }, { status: 500 })
     }
-  })
+  }))
 }

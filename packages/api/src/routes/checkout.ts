@@ -11,7 +11,7 @@ import type {
 } from '../lib/types'
 import { isValidOrderId } from '../lib/utils'
 import { validateCheckoutBody, validatePaymentProofBody } from '../lib/validation'
-import { getSessionUser } from '../middleware/auth'
+import { getSessionUser, parseJsonBody } from '../middleware/auth'
 import { sendOrderEmail } from '../services/email'
 import type { EmailItem } from '../services/email'
 import { generateULID } from '../lib/ulid'
@@ -20,17 +20,10 @@ export function registerCheckoutRoutes(router: RouterType) {
   router.post('/api/checkout', async (request: Request, env: Env) => {
     const sessionUser = await getSessionUser(request, env)
 
-    let body: unknown
-    try {
-      body = await request.json()
-    } catch {
-      return Response.json(
-        { error: 'Invalid JSON body', details: [{ field: 'body', message: 'Request body must be valid JSON' }] },
-        { status: 400 }
-      )
-    }
+    const parsed = await parseJsonBody(request)
+    if (!parsed.ok) return parsed.response
 
-    const { errors, data } = validateCheckoutBody(body)
+    const { errors, data } = validateCheckoutBody(parsed.data)
     if (errors.length > 0 || !data) {
       return Response.json({ error: 'Validation failed', details: errors }, { status: 400 })
     }
@@ -447,17 +440,10 @@ export function registerCheckoutRoutes(router: RouterType) {
       return Response.json({ error: 'Invalid order ID format' }, { status: 400 })
     }
 
-    let body: unknown
-    try {
-      body = await request.json()
-    } catch {
-      return Response.json(
-        { error: 'Invalid JSON body', details: [{ field: 'body', message: 'Request body must be valid JSON' }] },
-        { status: 400 }
-      )
-    }
+    const parsed = await parseJsonBody(request)
+    if (!parsed.ok) return parsed.response
 
-    const { errors, data } = validatePaymentProofBody(body)
+    const { errors, data } = validatePaymentProofBody(parsed.data)
     if (errors.length > 0 || !data) {
       return Response.json({ error: 'Validation failed', details: errors }, { status: 400 })
     }

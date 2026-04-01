@@ -12,23 +12,42 @@ const router = Router()
 
 // --- CORS Middleware ---
 
-const CORS_BASE_HEADERS = {
-  'Access-Control-Allow-Methods': 'GET, POST, PATCH, DELETE, OPTIONS',
-  'Access-Control-Allow-Headers': 'Content-Type',
-  'Access-Control-Allow-Credentials': 'true',
+// Local origins allowed during development
+const LOCAL_ORIGINS = ['http://localhost:5171', 'http://localhost:5173', 'http://127.0.0.1:5171', 'http://127.0.0.1:5173']
+
+function getAllowedOrigins(env: Env): Set<string> {
+  const origins = new Set<string>(LOCAL_ORIGINS)
+  if (env.ALLOWED_ORIGINS) {
+    for (const o of env.ALLOWED_ORIGINS.split(',')) {
+      const trimmed = o.trim()
+      if (trimmed) origins.add(trimmed)
+    }
+  }
+  return origins
 }
 
-function getCorsHeaders(request: Request): Record<string, string> {
+function isAllowedOrigin(origin: string, env: Env): boolean {
+  return getAllowedOrigins(env).has(origin)
+}
+
+function getCorsHeaders(request: Request, env: Env): Record<string, string> {
   const origin = request.headers.get('Origin')
+
+  if (!origin || !isAllowedOrigin(origin, env)) {
+    return { Vary: 'Origin' }
+  }
+
   return {
-    ...CORS_BASE_HEADERS,
-    'Access-Control-Allow-Origin': origin ?? '*',
+    'Access-Control-Allow-Origin': origin,
+    'Access-Control-Allow-Methods': 'GET, POST, PATCH, DELETE, OPTIONS',
+    'Access-Control-Allow-Headers': 'Content-Type',
+    'Access-Control-Allow-Credentials': 'true',
     Vary: 'Origin',
   }
 }
 
-function corsify(response: Response, request: Request): Response {
-  const corsHeaders = getCorsHeaders(request)
+function corsify(response: Response, request: Request, env: Env): Response {
+  const corsHeaders = getCorsHeaders(request, env)
   const newHeaders = new Headers(response.headers)
   for (const [key, value] of Object.entries(corsHeaders)) {
     newHeaders.set(key, value)
@@ -41,7 +60,7 @@ function corsify(response: Response, request: Request): Response {
 }
 
 // Preflight
-router.options('*', (request: Request) => new Response(null, { status: 204, headers: getCorsHeaders(request) }))
+router.options('*', (request: Request, env: Env) => new Response(null, { status: 204, headers: getCorsHeaders(request, env) }))
 
 // --- Auth Utilities ---
 
@@ -138,26 +157,39 @@ async function sha256Hex(value: string): Promise<string> {
   return bytesToHex(new Uint8Array(digest))
 }
 
-function buildSessionCookie(request: Request, token: string): string {
+function isCrossSite(request: Request): boolean {
   const reqUrl = new URL(request.url)
-  const requestOrigin = reqUrl.origin
   const callerOrigin = request.headers.get('Origin')
-  const isCrossOrigin = !!callerOrigin && callerOrigin !== requestOrigin
-  const isSecure = reqUrl.protocol === 'https:'
-  const sameSite = isCrossOrigin ? 'None' : 'Lax'
-  const secureFlag = isSecure || isCrossOrigin ? '; Secure' : ''
+  if (!callerOrigin) return false
+  try {
+    const callerHost = new URL(callerOrigin).hostname
+    const apiHost = reqUrl.hostname
+    // Same-site if they share the same registrable domain (e.g. www.cnxnature.com + api.cnxnature.com)
+    // Cross-site only for truly different domains (e.g. localhost vs workers.dev)
+    const callerParts = callerHost.split('.')
+    const apiParts = apiHost.split('.')
+    const callerBase = callerParts.slice(-2).join('.')
+    const apiBase = apiParts.slice(-2).join('.')
+    return callerBase !== apiBase
+  } catch {
+    return false
+  }
+}
+
+function buildSessionCookie(request: Request, token: string): string {
+  const isSecure = new URL(request.url).protocol === 'https:'
+  const crossSite = isCrossSite(request)
+  const sameSite = crossSite ? 'None' : 'Lax'
+  const secureFlag = isSecure || crossSite ? '; Secure' : ''
 
   return `session=${token}; Path=/; HttpOnly; SameSite=${sameSite}; Max-Age=${SESSION_MAX_AGE_SECONDS}${secureFlag}`
 }
 
 function clearSessionCookie(request: Request): string {
-  const reqUrl = new URL(request.url)
-  const requestOrigin = reqUrl.origin
-  const callerOrigin = request.headers.get('Origin')
-  const isCrossOrigin = !!callerOrigin && callerOrigin !== requestOrigin
-  const isSecure = reqUrl.protocol === 'https:'
-  const sameSite = isCrossOrigin ? 'None' : 'Lax'
-  const secureFlag = isSecure || isCrossOrigin ? '; Secure' : ''
+  const isSecure = new URL(request.url).protocol === 'https:'
+  const crossSite = isCrossSite(request)
+  const sameSite = crossSite ? 'None' : 'Lax'
+  const secureFlag = isSecure || crossSite ? '; Secure' : ''
 
   return `session=; Path=/; HttpOnly; SameSite=${sameSite}; Max-Age=0${secureFlag}`
 }
@@ -166,13 +198,15 @@ async function getSessionUser(request: Request, env: Env): Promise<SessionUser |
   const sessionToken = parseCookie(request.headers.get('Cookie'), 'session')
   if (!sessionToken) return null
 
+  const tokenHash = await sha256Hex(sessionToken)
+
   const row = await env.DB.prepare(
     `SELECT s.user_id, u.email, u.name, u.phone
      FROM sessions s
      JOIN users u ON u.id = s.user_id
      WHERE s.id = ? AND julianday(s.expires_at) > julianday('now') LIMIT 1`
   )
-    .bind(sessionToken)
+    .bind(tokenHash)
     .first<SessionRow>()
 
   if (!row) return null
@@ -596,9 +630,10 @@ router.post('/api/auth/verify', async (request: Request, env: Env) => {
       .run()
 
     const sessionToken = randomHex(32)
+    const sessionTokenHash = await sha256Hex(sessionToken)
     const sessionExpiresAt = new Date(Date.now() + SESSION_MAX_AGE_SECONDS * 1000).toISOString()
     await env.DB.prepare(`INSERT INTO sessions (id, user_id, expires_at, created_at) VALUES (?, ?, ?, ?)`)
-      .bind(sessionToken, user.id, sessionExpiresAt, now)
+      .bind(sessionTokenHash, user.id, sessionExpiresAt, now)
       .run()
 
     return Response.json(
@@ -626,7 +661,8 @@ router.post('/api/auth/logout', async (request: Request, env: Env) => {
 
   if (sessionToken) {
     try {
-      await env.DB.prepare(`DELETE FROM sessions WHERE id = ?`).bind(sessionToken).run()
+      const tokenHash = await sha256Hex(sessionToken)
+      await env.DB.prepare(`DELETE FROM sessions WHERE id = ?`).bind(tokenHash).run()
     } catch {
       // Best-effort session cleanup.
     }
@@ -1323,20 +1359,88 @@ router.post('/api/checkout', async (request: Request, env: Env) => {
   const orderId = generateULID()
   const now = new Date().toISOString()
 
-  // --- Atomic batch write ---
-  const statements: D1PreparedStatement[] = []
-
-  // Reserve inventory for each item
+  // --- Phase 1: Reserve inventory with conditional updates ---
+  // Each UPDATE only succeeds (affects rows) if enough stock is available.
+  // This prevents overselling under concurrent requests.
+  const reserveStatements: D1PreparedStatement[] = []
   for (const item of mergedItems) {
-    statements.push(
+    reserveStatements.push(
       env.DB.prepare(
-        `UPDATE inventory SET reserved_count = reserved_count + ?, updated_at = ? WHERE product_id = ?`
-      ).bind(item.quantity, now, item.product_id)
+        `UPDATE inventory SET reserved_count = reserved_count + ?, updated_at = ?
+         WHERE product_id = ? AND (stock_count - reserved_count) >= ?`
+      ).bind(item.quantity, now, item.product_id, item.quantity)
     )
   }
 
+  // Also guard discount usage atomically
+  if (discountCodeRow) {
+    reserveStatements.push(
+      env.DB.prepare(
+        `UPDATE discount_codes SET used_count = used_count + 1
+         WHERE id = ? AND (max_uses IS NULL OR used_count < max_uses)`
+      ).bind(discountCodeRow.id)
+    )
+  }
+
+  try {
+    const reserveResults = await env.DB.batch(reserveStatements)
+
+    // Verify all inventory updates affected exactly 1 row
+    for (let i = 0; i < mergedItems.length; i++) {
+      if (reserveResults[i]?.meta?.changes === 0) {
+        // Roll back any reservations that succeeded before this one
+        const rollbacks: D1PreparedStatement[] = []
+        for (let j = 0; j < i; j++) {
+          if (reserveResults[j]?.meta?.changes && reserveResults[j].meta.changes > 0) {
+            rollbacks.push(
+              env.DB.prepare(
+                `UPDATE inventory SET reserved_count = reserved_count - ?, updated_at = ? WHERE product_id = ?`
+              ).bind(mergedItems[j].quantity, now, mergedItems[j].product_id)
+            )
+          }
+        }
+        if (rollbacks.length > 0) await env.DB.batch(rollbacks).catch(() => {})
+
+        return Response.json(
+          {
+            error: 'Insufficient stock',
+            details: [{ field: 'items', message: `Product ${mergedItems[i].product_id} is no longer available in the requested quantity` }],
+          },
+          { status: 422 }
+        )
+      }
+    }
+
+    // Verify discount reservation if applicable
+    if (discountCodeRow) {
+      const discountResult = reserveResults[mergedItems.length]
+      if (discountResult?.meta?.changes === 0) {
+        // Roll back all inventory reservations
+        const rollbacks = mergedItems.map((item) =>
+          env.DB.prepare(
+            `UPDATE inventory SET reserved_count = reserved_count - ?, updated_at = ? WHERE product_id = ?`
+          ).bind(item.quantity, now, item.product_id)
+        )
+        await env.DB.batch(rollbacks).catch(() => {})
+
+        return Response.json(
+          {
+            error: 'Validation failed',
+            details: [{ field: 'discount_code', message: 'Discount code has reached its maximum usage limit' }],
+          },
+          { status: 400 }
+        )
+      }
+    }
+  } catch {
+    return Response.json({ error: 'Database error reserving stock' }, { status: 500 })
+  }
+
+  // --- Phase 2: Create order (inventory and discount already reserved) ---
+  const orderStatements: D1PreparedStatement[] = []
+
   // Insert order
-  statements.push(
+  orderStatements.push(
     env.DB.prepare(
       `INSERT INTO orders (
         id, user_id, customer_name, customer_email, customer_phone,
@@ -1369,7 +1473,7 @@ router.post('/api/checkout', async (request: Request, env: Env) => {
   )
 
   if (sessionUser) {
-    statements.push(
+    orderStatements.push(
       env.DB.prepare(`UPDATE users SET name = ?, phone = ?, updated_at = ? WHERE id = ?`).bind(
         data.customer.name.trim(),
         data.customer.phone.trim(),
@@ -1383,7 +1487,7 @@ router.post('/api/checkout', async (request: Request, env: Env) => {
   for (const item of mergedItems) {
     const product = productMap.get(item.product_id)!
     const lineTotal = product.price_thb * item.quantity
-    statements.push(
+    orderStatements.push(
       env.DB.prepare(
         `INSERT INTO order_items (order_id, product_id, quantity, unit_price_thb, line_total_thb)
          VALUES (?, ?, ?, ?, ?)`
@@ -1391,15 +1495,8 @@ router.post('/api/checkout', async (request: Request, env: Env) => {
     )
   }
 
-  // Increment discount code usage if applicable
-  if (discountCodeRow) {
-    statements.push(
-      env.DB.prepare(`UPDATE discount_codes SET used_count = used_count + 1 WHERE id = ?`).bind(discountCodeRow.id)
-    )
-  }
-
   try {
-    await env.DB.batch(statements)
+    await env.DB.batch(orderStatements)
   } catch {
     return Response.json({ error: 'Database error creating order' }, { status: 500 })
   }
@@ -2812,6 +2909,6 @@ export default {
       response = new Response('Router method is unavailable', { status: 500 })
     }
 
-    return corsify(response, request)
+    return corsify(response, request, env)
   },
 }

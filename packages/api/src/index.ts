@@ -12,28 +12,31 @@ const router = Router()
 
 // --- CORS Middleware ---
 
-// Local origins allowed during development
-const LOCAL_ORIGINS = ['http://localhost:5171', 'http://localhost:5173', 'http://127.0.0.1:5171', 'http://127.0.0.1:5173']
+// Local origins — only trusted when the API itself is running locally
+const LOCAL_ORIGINS = new Set(['http://localhost:5171', 'http://localhost:5173', 'http://127.0.0.1:5171', 'http://127.0.0.1:5173'])
 
-function getAllowedOrigins(env: Env): Set<string> {
-  const origins = new Set<string>(LOCAL_ORIGINS)
-  if (env.ALLOWED_ORIGINS) {
-    for (const o of env.ALLOWED_ORIGINS.split(',')) {
-      const trimmed = o.trim()
-      if (trimmed) origins.add(trimmed)
-    }
-  }
-  return origins
+function isLocalRequest(request: Request): boolean {
+  const host = new URL(request.url).hostname
+  return host === 'localhost' || host === '127.0.0.1' || host === '0.0.0.0' || host.endsWith('.local')
 }
 
-function isAllowedOrigin(origin: string, env: Env): boolean {
-  return getAllowedOrigins(env).has(origin)
+function isAllowedOrigin(origin: string, request: Request, env: Env): boolean {
+  // Local origins only accepted when the API is running locally
+  if (LOCAL_ORIGINS.has(origin)) {
+    return isLocalRequest(request)
+  }
+  if (env.ALLOWED_ORIGINS) {
+    for (const o of env.ALLOWED_ORIGINS.split(',')) {
+      if (o.trim() === origin) return true
+    }
+  }
+  return false
 }
 
 function getCorsHeaders(request: Request, env: Env): Record<string, string> {
   const origin = request.headers.get('Origin')
 
-  if (!origin || !isAllowedOrigin(origin, env)) {
+  if (!origin || !isAllowedOrigin(origin, request, env)) {
     return { Vary: 'Origin' }
   }
 
@@ -229,19 +232,18 @@ function getAdminEmails(env: Env): string[] {
 }
 
 async function getAdminUser(request: Request, env: Env): Promise<AdminUser | null> {
+  const adminEmails = getAdminEmails(env)
+
   // 1. Cloudflare Access header (set when Access policy is on the API domain)
-  const cfAccessEmail = request.headers.get('Cf-Access-Authenticated-User-Email')?.trim()
-  if (cfAccessEmail) {
-    return { email: cfAccessEmail.toLowerCase() }
+  const cfAccessEmail = request.headers.get('Cf-Access-Authenticated-User-Email')?.trim()?.toLowerCase()
+  if (cfAccessEmail && adminEmails.includes(cfAccessEmail)) {
+    return { email: cfAccessEmail }
   }
 
   // 2. Customer session — check if logged-in user is an admin
   const sessionUser = await getSessionUser(request, env)
-  if (sessionUser) {
-    const adminEmails = getAdminEmails(env)
-    if (adminEmails.includes(sessionUser.email.toLowerCase())) {
-      return { email: sessionUser.email.toLowerCase() }
-    }
+  if (sessionUser && adminEmails.includes(sessionUser.email.toLowerCase())) {
+    return { email: sessionUser.email.toLowerCase() }
   }
 
   // 3. Local development fallback

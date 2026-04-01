@@ -4,8 +4,11 @@ import { useRouter } from 'vue-router'
 import {
   AuthApiErrorResponse,
   fetchAccountOrders,
+  fetchSavedAddress,
+  updateAddress,
   updateProfile,
   type AccountOrder,
+  type SavedAddress,
 } from '../api/auth'
 import PrimaryButton from '../components/ui/PrimaryButton.vue'
 import SecondaryButton from '../components/ui/SecondaryButton.vue'
@@ -29,6 +32,17 @@ const profile = ref({
   name: '',
   phone: '',
 })
+
+const address = ref<SavedAddress>({
+  line1: '',
+  line2: null,
+  district: '',
+  province: '',
+  postal_code: '',
+})
+const savingAddress = ref(false)
+const addressError = ref('')
+const addressSuccess = ref('')
 
 const totalPages = computed(() => Math.max(1, Math.ceil(total.value / limit)))
 const canPrev = computed(() => page.value > 1)
@@ -109,6 +123,49 @@ async function saveProfile() {
   }
 }
 
+async function saveAddress() {
+  addressError.value = ''
+  addressSuccess.value = ''
+
+  if (address.value.line1.trim().length < 5) {
+    addressError.value = 'Address line 1 must be at least 5 characters.'
+    return
+  }
+  if (!address.value.district.trim()) {
+    addressError.value = 'District is required.'
+    return
+  }
+  if (!address.value.province.trim()) {
+    addressError.value = 'Province is required.'
+    return
+  }
+  if (!/^\d{5}$/.test(address.value.postal_code)) {
+    addressError.value = 'Postal code must be exactly 5 digits.'
+    return
+  }
+
+  savingAddress.value = true
+  try {
+    const saved = await updateAddress({
+      line1: address.value.line1.trim(),
+      line2: address.value.line2?.trim() || null,
+      district: address.value.district.trim(),
+      province: address.value.province.trim(),
+      postal_code: address.value.postal_code,
+    })
+    address.value = saved
+    addressSuccess.value = 'Address saved.'
+  } catch (err) {
+    if (err instanceof AuthApiErrorResponse) {
+      addressError.value = err.message
+    } else {
+      addressError.value = 'Unable to save address right now.'
+    }
+  } finally {
+    savingAddress.value = false
+  }
+}
+
 async function handleLogout() {
   await auth.logout()
   await router.push('/')
@@ -138,6 +195,14 @@ onMounted(async () => {
 
   profile.value.name = auth.user.name ?? ''
   profile.value.phone = auth.user.phone ?? ''
+
+  try {
+    const saved = await fetchSavedAddress()
+    if (saved) address.value = saved
+  } catch {
+    // Non-critical — address section will just be empty
+  }
+
   await loadOrders()
   loading.value = false
 })
@@ -187,6 +252,64 @@ onMounted(async () => {
           <p v-if="saveSuccess" class="text-sm text-primary">{{ saveSuccess }}</p>
           <PrimaryButton size="sm" :disabled="saving" @click="saveProfile">
             {{ saving ? 'Saving...' : 'Save Profile' }}
+          </PrimaryButton>
+        </div>
+
+        <div class="bg-surface rounded-lg ring-1 ring-[var(--card-ring)] p-6 space-y-4">
+          <h2 class="text-xl font-bold text-foreground">Shipping Address</h2>
+          <p class="text-sm text-muted">This address will be pre-filled at checkout.</p>
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div class="sm:col-span-2">
+              <label class="block text-sm font-medium text-foreground mb-1">Address Line 1</label>
+              <input
+                v-model="address.line1"
+                type="text"
+                class="w-full rounded-md border border-sand px-4 py-3 text-sm bg-surface-alt text-foreground placeholder:text-muted transition-colors focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
+                placeholder="123/4 Moo 5, Soi Example"
+              />
+            </div>
+            <div class="sm:col-span-2">
+              <label class="block text-sm font-medium text-foreground mb-1">Address Line 2 <span class="text-muted font-normal">(optional)</span></label>
+              <input
+                v-model="address.line2"
+                type="text"
+                class="w-full rounded-md border border-sand px-4 py-3 text-sm bg-surface-alt text-foreground placeholder:text-muted transition-colors focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
+                placeholder="Building, floor, unit"
+              />
+            </div>
+            <div>
+              <label class="block text-sm font-medium text-foreground mb-1">District</label>
+              <input
+                v-model="address.district"
+                type="text"
+                class="w-full rounded-md border border-sand px-4 py-3 text-sm bg-surface-alt text-foreground placeholder:text-muted transition-colors focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
+                placeholder="Mueang Chiang Mai"
+              />
+            </div>
+            <div>
+              <label class="block text-sm font-medium text-foreground mb-1">Province</label>
+              <input
+                v-model="address.province"
+                type="text"
+                class="w-full rounded-md border border-sand px-4 py-3 text-sm bg-surface-alt text-foreground placeholder:text-muted transition-colors focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
+                placeholder="Chiang Mai"
+              />
+            </div>
+            <div>
+              <label class="block text-sm font-medium text-foreground mb-1">Postal Code</label>
+              <input
+                v-model="address.postal_code"
+                type="text"
+                maxlength="5"
+                class="w-full rounded-md border border-sand px-4 py-3 text-sm bg-surface-alt text-foreground placeholder:text-muted transition-colors focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
+                placeholder="50200"
+              />
+            </div>
+          </div>
+          <p v-if="addressError" class="text-sm text-error">{{ addressError }}</p>
+          <p v-if="addressSuccess" class="text-sm text-primary">{{ addressSuccess }}</p>
+          <PrimaryButton size="sm" :disabled="savingAddress" @click="saveAddress">
+            {{ savingAddress ? 'Saving...' : 'Save Address' }}
           </PrimaryButton>
         </div>
 

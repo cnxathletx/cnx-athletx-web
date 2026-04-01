@@ -712,6 +712,21 @@ router.get('/api/account/last-address', async (request: Request, env: Env) => {
   }
 
   try {
+    // Prefer saved address on user profile
+    const userRow = await env.DB.prepare(`SELECT saved_address_json FROM users WHERE id = ? LIMIT 1`)
+      .bind(user.id)
+      .first<{ saved_address_json: string | null }>()
+
+    if (userRow?.saved_address_json) {
+      try {
+        const address = JSON.parse(userRow.saved_address_json)
+        return Response.json({ address })
+      } catch {
+        // Fall through to order-based address
+      }
+    }
+
+    // Fall back to last order address
     const latest = await env.DB.prepare(
       `SELECT shipping_address_line1, shipping_address_line2, district, province, postal_code
        FROM orders
@@ -735,6 +750,86 @@ router.get('/api/account/last-address', async (request: Request, env: Env) => {
         postal_code: latest.postal_code,
       },
     })
+  } catch {
+    return Response.json({ error: 'Database error' }, { status: 500 })
+  }
+})
+
+router.get('/api/account/address', async (request: Request, env: Env) => {
+  const user = await getSessionUser(request, env)
+  if (!user) {
+    return Response.json({ error: 'Authentication required. Please log in.' }, { status: 401 })
+  }
+
+  try {
+    const row = await env.DB.prepare(`SELECT saved_address_json FROM users WHERE id = ? LIMIT 1`)
+      .bind(user.id)
+      .first<{ saved_address_json: string | null }>()
+
+    if (!row?.saved_address_json) {
+      return Response.json({ address: null })
+    }
+
+    return Response.json({ address: JSON.parse(row.saved_address_json) })
+  } catch {
+    return Response.json({ error: 'Database error' }, { status: 500 })
+  }
+})
+
+router.patch('/api/account/address', async (request: Request, env: Env) => {
+  const user = await getSessionUser(request, env)
+  if (!user) {
+    return Response.json({ error: 'Authentication required. Please log in.' }, { status: 401 })
+  }
+
+  let body: unknown
+  try {
+    body = await request.json()
+  } catch {
+    return Response.json({ error: 'Invalid JSON body' }, { status: 400 })
+  }
+
+  if (!body || typeof body !== 'object') {
+    return Response.json({ error: 'Request body must be a JSON object' }, { status: 400 })
+  }
+
+  const b = body as Record<string, unknown>
+  const errors: ValidationError[] = []
+
+  if (typeof b.line1 !== 'string' || b.line1.trim().length < 5 || b.line1.trim().length > 200) {
+    errors.push({ field: 'line1', message: 'Address line 1 must be between 5 and 200 characters' })
+  }
+  if (b.line2 !== undefined && b.line2 !== null && b.line2 !== '' && typeof b.line2 !== 'string') {
+    errors.push({ field: 'line2', message: 'Address line 2 must be a string' })
+  }
+  if (typeof b.district !== 'string' || b.district.trim().length < 1) {
+    errors.push({ field: 'district', message: 'District is required' })
+  }
+  if (typeof b.province !== 'string' || b.province.trim().length < 1) {
+    errors.push({ field: 'province', message: 'Province is required' })
+  }
+  if (typeof b.postal_code !== 'string' || !/^\d{5}$/.test(b.postal_code)) {
+    errors.push({ field: 'postal_code', message: 'Postal code must be exactly 5 digits' })
+  }
+
+  if (errors.length > 0) {
+    return Response.json({ error: 'Validation failed', details: errors }, { status: 400 })
+  }
+
+  const address = {
+    line1: (b.line1 as string).trim(),
+    line2: b.line2 ? (b.line2 as string).trim() : null,
+    district: (b.district as string).trim(),
+    province: (b.province as string).trim(),
+    postal_code: b.postal_code as string,
+  }
+
+  try {
+    await env.DB.prepare(`UPDATE users SET saved_address_json = ?, updated_at = ? WHERE id = ?`)
+      .bind(JSON.stringify(address), nowIso(), user.id)
+      .run()
+
+    return Response.json({ success: true, address })
   } catch {
     return Response.json({ error: 'Database error' }, { status: 500 })
   }

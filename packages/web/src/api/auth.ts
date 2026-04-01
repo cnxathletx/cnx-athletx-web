@@ -142,6 +142,39 @@ export async function fetchLastAddress(): Promise<{
   return data.address
 }
 
+export interface SavedAddress {
+  line1: string
+  line2: string | null
+  district: string
+  province: string
+  postal_code: string
+}
+
+export async function fetchSavedAddress(): Promise<SavedAddress | null> {
+  const res = await fetch(apiUrl('/api/account/address'), {
+    credentials: 'include',
+  })
+  if (!res.ok) {
+    await parseAuthError(res)
+  }
+  const data = (await res.json()) as { address: SavedAddress | null }
+  return data.address
+}
+
+export async function updateAddress(payload: SavedAddress): Promise<SavedAddress> {
+  const res = await fetch(apiUrl('/api/account/address'), {
+    method: 'PATCH',
+    credentials: 'include',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload),
+  })
+  if (!res.ok) {
+    await parseAuthError(res)
+  }
+  const data = (await res.json()) as { success: true; address: SavedAddress }
+  return data.address
+}
+
 export async function updateProfile(payload: { name?: string; phone?: string }): Promise<AuthUser> {
   const res = await fetch(apiUrl('/api/account/profile'), {
     method: 'PATCH',

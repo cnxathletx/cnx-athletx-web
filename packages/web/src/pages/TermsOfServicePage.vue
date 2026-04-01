@@ -94,7 +94,7 @@
           <h2 class="text-xl font-bold text-foreground">10. Contact</h2>
           <p class="text-sm text-muted">
             For questions regarding these Terms, contact
-            <a href="mailto:contact@cnxathletx.com" class="text-primary hover:underline underline-offset-4">contact@cnxathletx.com</a>.
+            <a href="mailto:contact@cnxnature.com" class="text-primary hover:underline underline-offset-4">contact@cnxnature.com</a>.
           </p>
         </section>
 

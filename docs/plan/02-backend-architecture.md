@@ -55,10 +55,10 @@
 ### Request Flow: Browse Products
 
 ```
-1. Browser → GET https://cnxathletx.com/products/whey-protein-500g
+1. Browser → GET https://cnxnature.com/products/whey-protein-500g
 2. Cloudflare Pages → serves index.html (Vue SPA)
 3. Vue Router → loads ProductDetail component
-4. Component mounted → fetch('https://cnxathletx.com/api/products/whey-protein-500g')
+4. Component mounted → fetch('https://cnxnature.com/api/products/whey-protein-500g')
 5. Workers → SELECT from products JOIN inventory WHERE slug = ? AND active = 1
 6. D1 → returns product + stock_count
 7. Workers → JSON response {product, available_stock}
@@ -114,14 +114,14 @@
 ### Request Flow: Admin Order Management
 
 ```
-1. Admin → visits https://cnxathletx.com/admin/orders
+1. Admin → visits https://cnxnature.com/admin/orders
 
 2. Cloudflare Access middleware:
    - Checks Cf-Access-Authenticated-User-Email header
    - If missing/invalid → 403 Forbidden
    - If valid → forwards to Workers
 
-3. Workers → reads header, validates admin email domain (@cnxathletx.com)
+3. Workers → reads header, validates admin email domain (@cnxnature.com)
 
 4. Workers → GET /api/admin/orders?status=pending_payment&page=1&limit=20
    - SELECT orders with filters
@@ -159,7 +159,7 @@
 - **Access Policy Configuration:**
   - Path: `/admin/*` (Pages)
   - Path: `/api/admin/*` (Workers custom domain)
-  - Allow rule: Email domain is `cnxathletx.com`
+  - Allow rule: Email domain is `cnxnature.com`
   - Authentication: One-time PIN via email or Google Workspace SSO
 
 - **Implementation in Workers:**
@@ -714,7 +714,7 @@ If status = `shipped`:
 - `proof_type` must be `reference` or `image_url`
 - `proof_value`:
   - If `reference`: 5-100 chars, alphanumeric + basic punctuation
-  - If `image_url`: valid HTTPS URL, domain must be r2.dev or cnxathletx.com
+  - If `image_url`: valid HTTPS URL, domain must be r2.dev or cnxnature.com
 - Order must exist and status must be `pending_payment`
 
 **Errors:**
@@ -751,7 +751,7 @@ Admin can update these values via `PUT /api/admin/settings`.
 
 All admin endpoints require:
 - `Cf-Access-Authenticated-User-Email` header present
-- Email domain validation: `@cnxathletx.com` or whitelisted admin emails
+- Email domain validation: `@cnxnature.com` or whitelisted admin emails
 - Returns `403 Forbidden` if missing
 
 ---
@@ -857,7 +857,7 @@ All admin endpoints require:
   },
   "audit_log": [
     {
-      "admin_email": "admin@cnxathletx.com",
+      "admin_email": "admin@cnxnature.com",
       "action": "mark_paid",
       "details": "Verified PromptPay payment",
       "created_at": "2026-02-11T09:00:00Z"
@@ -1259,7 +1259,7 @@ CANCELLATION PATH (from any pre-shipped state):
 
 10. Workers:
     a. Updates order status to 'paid'
-    b. Inserts payment record (verified_by = admin@cnxathletx.com)
+    b. Inserts payment record (verified_by = admin@cnxnature.com)
     c. Deducts inventory (reserved → committed)
     d. Logs audit trail
     e. Sends "Payment Confirmed" email to customer
@@ -1320,7 +1320,7 @@ STEP 4: MARK SHIPPED (system)
 
 ```
 SCENARIO A: Customer requests cancellation (pending_payment)
-├─ Customer emails support@cnxathletx.com: "Please cancel order #01HN..."
+├─ Customer emails support@cnxnature.com: "Please cancel order #01HN..."
 ├─ Admin opens order in dashboard
 ├─ Verifies no payment received yet
 ├─ Clicks "Cancel Order"
@@ -1378,7 +1378,7 @@ SCENARIO D: Cannot cancel shipped orders
 [
   {
     "id": 1,
-    "admin_email": "admin@cnxathletx.com",
+    "admin_email": "admin@cnxnature.com",
     "action": "mark_paid",
     "order_id": "01HN2P3Q4R5S6T7V8W9X0Y1Z2A",
     "details_json": "{\"payment_method\":\"promptpay\",\"reference\":\"TXN20260211083045\",\"notes\":\"Verified in Kasikorn app\"}",
@@ -1386,7 +1386,7 @@ SCENARIO D: Cannot cancel shipped orders
   },
   {
     "id": 2,
-    "admin_email": "fulfillment@cnxathletx.com",
+    "admin_email": "fulfillment@cnxnature.com",
     "action": "pack",
     "order_id": "01HN2P3Q4R5S6T7V8W9X0Y1Z2A",
     "details_json": "{\"notes\":\"Packed by Somchai, box #123\"}",
@@ -1394,7 +1394,7 @@ SCENARIO D: Cannot cancel shipped orders
   },
   {
     "id": 3,
-    "admin_email": "fulfillment@cnxathletx.com",
+    "admin_email": "fulfillment@cnxnature.com",
     "action": "ship",
     "order_id": "01HN2P3Q4R5S6T7V8W9X0Y1Z2A",
     "details_json": "{\"carrier\":\"Thailand Post\",\"tracking_number\":\"RN123456789TH\"}",
@@ -1419,21 +1419,21 @@ SCENARIO D: Cannot cancel shipped orders
 1. **SPF Record:**
    ```
    Type: TXT
-   Name: cnxathletx.com
+   Name: cnxnature.com
    Content: v=spf1 include:_spf.resend.com ~all
    ```
 
 2. **DKIM Record (provided by Resend after domain verification):**
    ```
    Type: TXT
-   Name: resend._domainkey.cnxathletx.com
+   Name: resend._domainkey.cnxnature.com
    Content: [Resend-provided DKIM key]
    ```
 
 3. **Return-Path:**
    ```
    Type: CNAME
-   Name: em.cnxathletx.com
+   Name: em.cnxnature.com
    Content: feedback-smtp.resend.com
    ```
 
@@ -1457,9 +1457,9 @@ SCENARIO D: Cannot cancel shipped orders
 
 **Trigger:** POST /api/checkout success (after order insert commits)
 
-**From:** `CNX AthletX <orders@cnxathletx.com>`
+**From:** `CNX AthletX <orders@cnxnature.com>`
 
-**Reply-To:** `support@cnxathletx.com`
+**Reply-To:** `support@cnxnature.com`
 
 **Subject:** `Order Confirmation #{{order_id}}`
 
@@ -1484,7 +1484,7 @@ SCENARIO D: Cannot cancel shipped orders
 </head>
 <body>
   <div class="header">
-    <img src="https://cnxathletx.com/logo-white.png" alt="CNX AthletX">
+    <img src="https://cnxnature.com/logo-white.png" alt="CNX AthletX">
   </div>
   
   <div class="content">
@@ -1530,7 +1530,7 @@ SCENARIO D: Cannot cancel shipped orders
       </ul>
       
       <p><strong>After payment:</strong> Submit your payment proof here:<br>
-      <a href="https://cnxathletx.com/orders/{{order_id}}/payment-proof">https://cnxathletx.com/orders/{{order_id}}/payment-proof</a></p>
+      <a href="https://cnxnature.com/orders/{{order_id}}/payment-proof">https://cnxnature.com/orders/{{order_id}}/payment-proof</a></p>
     </div>
     
     <h3>What happens next?</h3>
@@ -1541,9 +1541,9 @@ SCENARIO D: Cannot cancel shipped orders
       <li>You'll receive tracking info via email</li>
     </ol>
     
-    <p>Track your order anytime: <a href="https://cnxathletx.com/orders/{{order_id}}">View Order Status</a></p>
+    <p>Track your order anytime: <a href="https://cnxnature.com/orders/{{order_id}}">View Order Status</a></p>
     
-    <p>Questions? Reply to this email or contact us at support@cnxathletx.com</p>
+    <p>Questions? Reply to this email or contact us at support@cnxnature.com</p>
     
     <p>Thanks for supporting local,<br>
     The CNX AthletX Team</p>
@@ -1579,7 +1579,7 @@ SCENARIO D: Cannot cancel shipped orders
 
 **Trigger:** POST /api/admin/orders/:id/mark-paid success
 
-**From:** `CNX AthletX <orders@cnxathletx.com>`
+**From:** `CNX AthletX <orders@cnxnature.com>`
 
 **Subject:** `Payment Confirmed – Order #{{order_id}}`
 
@@ -1601,7 +1601,7 @@ SCENARIO D: Cannot cancel shipped orders
 </head>
 <body>
   <div class="header">
-    <img src="https://cnxathletx.com/logo-white.png" alt="CNX AthletX">
+    <img src="https://cnxnature.com/logo-white.png" alt="CNX AthletX">
   </div>
   
   <div class="content">
@@ -1616,7 +1616,7 @@ SCENARIO D: Cannot cancel shipped orders
     <h3>What's next?</h3>
     <p>We're preparing your order right now. You'll receive another email with tracking information once it ships (usually within 1-2 business days).</p>
     
-    <p>Track your order: <a href="https://cnxathletx.com/orders/{{order_id}}">View Order Status</a></p>
+    <p>Track your order: <a href="https://cnxnature.com/orders/{{order_id}}">View Order Status</a></p>
     
     <p>Thanks for your patience,<br>
     The CNX AthletX Team</p>
@@ -1635,7 +1635,7 @@ SCENARIO D: Cannot cancel shipped orders
 
 **Trigger:** POST /api/admin/orders/:id/ship success
 
-**From:** `CNX AthletX <orders@cnxathletx.com>`
+**From:** `CNX AthletX <orders@cnxnature.com>`
 
 **Subject:** `Your Order Has Shipped! #{{order_id}}`
 
@@ -1658,7 +1658,7 @@ SCENARIO D: Cannot cancel shipped orders
 </head>
 <body>
   <div class="header">
-    <img src="https://cnxathletx.com/logo-white.png" alt="CNX AthletX">
+    <img src="https://cnxnature.com/logo-white.png" alt="CNX AthletX">
   </div>
   
   <div class="content">
@@ -1691,7 +1691,7 @@ SCENARIO D: Cannot cancel shipped orders
       {{/each}}
     </ul>
     
-    <p>If you have any questions or issues with your delivery, reply to this email or contact us at support@cnxathletx.com</p>
+    <p>If you have any questions or issues with your delivery, reply to this email or contact us at support@cnxnature.com</p>
     
     <p>Enjoy your protein!<br>
     The CNX AthletX Team</p>
@@ -1751,9 +1751,9 @@ export class ResendEmailService implements EmailService {
   async sendOrderCreated(order: Order): Promise<void> {
     try {
       await this.resend.emails.send({
-        from: 'CNX AthletX <orders@cnxathletx.com>',
+        from: 'CNX AthletX <orders@cnxnature.com>',
         to: order.customer_email,
-        reply_to: 'support@cnxathletx.com',
+        reply_to: 'support@cnxnature.com',
         subject: `Order Confirmation #${order.id}`,
         html: this.renderOrderCreatedTemplate(order),
       });
@@ -1769,7 +1769,7 @@ export class ResendEmailService implements EmailService {
   async sendPaymentConfirmed(order: Order): Promise<void> {
     try {
       await this.resend.emails.send({
-        from: 'CNX AthletX <orders@cnxathletx.com>',
+        from: 'CNX AthletX <orders@cnxnature.com>',
         to: order.customer_email,
         subject: `Payment Confirmed – Order #${order.id}`,
         html: this.renderPaymentConfirmedTemplate(order),
@@ -1785,7 +1785,7 @@ export class ResendEmailService implements EmailService {
   async sendOrderShipped(order: Order, shipment: Shipment): Promise<void> {
     try {
       await this.resend.emails.send({
-        from: 'CNX AthletX <orders@cnxathletx.com>',
+        from: 'CNX AthletX <orders@cnxnature.com>',
         to: order.customer_email,
         subject: `Your Order Has Shipped! #${order.id}`,
         html: this.renderOrderShippedTemplate(order, shipment),
@@ -2001,7 +2001,7 @@ describe('Order Lifecycle Integration', () => {
     // 3. Admin marks paid
     await mf.dispatchFetch(`/api/admin/orders/${order_id}/mark-paid`, {
       method: 'POST',
-      headers: { 'Cf-Access-Authenticated-User-Email': 'admin@cnxathletx.com' },
+      headers: { 'Cf-Access-Authenticated-User-Email': 'admin@cnxnature.com' },
       body: JSON.stringify({ payment_method: 'promptpay', payment_reference: 'TXN123' }),
     });
 
@@ -2013,14 +2013,14 @@ describe('Order Lifecycle Integration', () => {
     // 4. Pack
     await mf.dispatchFetch(`/api/admin/orders/${order_id}/pack`, {
       method: 'POST',
-      headers: { 'Cf-Access-Authenticated-User-Email': 'admin@cnxathletx.com' },
+      headers: { 'Cf-Access-Authenticated-User-Email': 'admin@cnxnature.com' },
       body: JSON.stringify({ notes: 'Test pack' }),
     });
 
     // 5. Ship
     await mf.dispatchFetch(`/api/admin/orders/${order_id}/ship`, {
       method: 'POST',
-      headers: { 'Cf-Access-Authenticated-User-Email': 'admin@cnxathletx.com' },
+      headers: { 'Cf-Access-Authenticated-User-Email': 'admin@cnxnature.com' },
       body: JSON.stringify({ carrier: 'Thailand Post', tracking_number: 'RN123' }),
     });
 
@@ -2131,8 +2131,8 @@ describe('Order Lifecycle Integration', () => {
   <meta property="og:type" content="product">
   <meta property="og:title" content="CNX Plant Protein 500g">
   <meta property="og:description" content="Premium plant-based protein powder. 25g protein per serving. Made in Thailand.">
-  <meta property="og:image" content="https://cnxathletx.com/images/products/plant-protein-500g.jpg">
-  <meta property="og:url" content="https://cnxathletx.com/products/plant-protein-500g">
+  <meta property="og:image" content="https://cnxnature.com/images/products/plant-protein-500g.jpg">
+  <meta property="og:url" content="https://cnxnature.com/products/plant-protein-500g">
   <meta property="product:price:amount" content="899.00">
   <meta property="product:price:currency" content="THB">
   
@@ -2140,7 +2140,7 @@ describe('Order Lifecycle Integration', () => {
   <meta name="twitter:card" content="summary_large_image">
   <meta name="twitter:title" content="CNX Plant Protein 500g">
   <meta name="twitter:description" content="Premium plant-based protein powder. Made in Thailand.">
-  <meta name="twitter:image" content="https://cnxathletx.com/images/products/plant-protein-500g.jpg">
+  <meta name="twitter:image" content="https://cnxnature.com/images/products/plant-protein-500g.jpg">
 </head>
 ```
 
@@ -2153,8 +2153,8 @@ describe('Order Lifecycle Integration', () => {
   <meta property="og:type" content="website">
   <meta property="og:title" content="CNX AthletX | Plant-Based Protein from Chiang Mai">
   <meta property="og:description" content="Premium plant-based protein powder made in Thailand. Clean ingredients, no nonsense.">
-  <meta property="og:image" content="https://cnxathletx.com/images/og-default.jpg">
-  <meta property="og:url" content="https://cnxathletx.com">
+  <meta property="og:image" content="https://cnxnature.com/images/og-default.jpg">
+  <meta property="og:url" content="https://cnxnature.com">
 </head>
 ```
 
@@ -2169,7 +2169,7 @@ describe('Order Lifecycle Integration', () => {
   "@context": "https://schema.org/",
   "@type": "Product",
   "name": "CNX Plant Protein 500g",
-  "image": "https://cnxathletx.com/images/products/plant-protein-500g.jpg",
+  "image": "https://cnxnature.com/images/products/plant-protein-500g.jpg",
   "description": "Premium pea and brown rice protein blend. 25g protein per serving. Made in Thailand.",
   "brand": {
     "@type": "Brand",
@@ -2177,7 +2177,7 @@ describe('Order Lifecycle Integration', () => {
   },
   "offers": {
     "@type": "Offer",
-    "url": "https://cnxathletx.com/products/plant-protein-500g",
+    "url": "https://cnxnature.com/products/plant-protein-500g",
     "priceCurrency": "THB",
     "price": "899.00",
     "availability": "https://schema.org/InStock",
@@ -2197,11 +2197,11 @@ describe('Order Lifecycle Integration', () => {
   "@context": "https://schema.org",
   "@type": "Organization",
   "name": "CNX AthletX",
-  "url": "https://cnxathletx.com",
-  "logo": "https://cnxathletx.com/logo.png",
+  "url": "https://cnxnature.com",
+  "logo": "https://cnxnature.com/logo.png",
   "contactPoint": {
     "@type": "ContactPoint",
-    "email": "support@cnxathletx.com",
+    "email": "support@cnxnature.com",
     "contactType": "Customer Service",
     "areaServed": "TH",
     "availableLanguage": ["en", "th"]
@@ -2226,7 +2226,7 @@ Allow: /
 Disallow: /admin/
 Disallow: /api/admin/
 
-Sitemap: https://cnxathletx.com/sitemap.xml
+Sitemap: https://cnxnature.com/sitemap.xml
 ```
 
 ---
@@ -2239,35 +2239,35 @@ Sitemap: https://cnxathletx.com/sitemap.xml
 <?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
   <url>
-    <loc>https://cnxathletx.com/</loc>
+    <loc>https://cnxnature.com/</loc>
     <lastmod>2026-02-11</lastmod>
     <changefreq>daily</changefreq>
     <priority>1.0</priority>
   </url>
   <url>
-    <loc>https://cnxathletx.com/products/plant-protein-500g</loc>
+    <loc>https://cnxnature.com/products/plant-protein-500g</loc>
     <lastmod>2026-02-11</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://cnxathletx.com/products/plant-protein-1000g</loc>
+    <loc>https://cnxnature.com/products/plant-protein-1000g</loc>
     <lastmod>2026-02-11</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://cnxathletx.com/about</loc>
+    <loc>https://cnxnature.com/about</loc>
     <changefreq>monthly</changefreq>
     <priority>0.5</priority>
   </url>
   <url>
-    <loc>https://cnxathletx.com/privacy</loc>
+    <loc>https://cnxnature.com/privacy</loc>
     <changefreq>yearly</changefreq>
     <priority>0.3</priority>
   </url>
   <url>
-    <loc>https://cnxathletx.com/terms</loc>
+    <loc>https://cnxnature.com/terms</loc>
     <changefreq>yearly</changefreq>
     <priority>0.3</priority>
   </url>
@@ -2311,7 +2311,7 @@ This product is a food supplement, not a medicine. It is not intended to diagnos
 - **Storage:** Cloudflare D1 database (EU/US regions), payment proofs in Cloudflare R2
 - **Third Parties:** Resend (email service), Cloudflare (hosting)
 - **Retention:** Order data kept for 7 years (Thai tax law), then anonymized
-- **Customer Rights:** Access, correction, deletion (email support@cnxathletx.com)
+- **Customer Rights:** Access, correction, deletion (email support@cnxnature.com)
 - **Thailand PDPA Compliance:** Right to withdraw consent, data breach notification
 
 **Placeholder Text:**
@@ -2320,7 +2320,7 @@ This product is a food supplement, not a medicine. It is not intended to diagnos
 
 Last updated: February 11, 2026
 
-CNX AthletX ("we", "us", "our") operates cnxathletx.com. This page informs you of our policies regarding the collection, use, and disclosure of personal data when you use our service.
+CNX AthletX ("we", "us", "our") operates cnxnature.com. This page informs you of our policies regarding the collection, use, and disclosure of personal data when you use our service.
 
 ## Data We Collect
 - Name, email, phone number, shipping address
@@ -2342,7 +2342,7 @@ CNX AthletX ("we", "us", "our") operates cnxathletx.com. This page informs you o
 - Request correction or deletion
 - Withdraw consent for marketing (we don't send marketing emails in v1)
 
-Contact us: privacy@cnxathletx.com
+Contact us: privacy@cnxnature.com
 
 [Full legal text to be drafted with legal counsel]
 ```
@@ -2365,7 +2365,7 @@ Contact us: privacy@cnxathletx.com
 
 Last updated: February 11, 2026
 
-By using cnxathletx.com, you agree to these terms.
+By using cnxnature.com, you agree to these terms.
 
 ## Orders & Payment
 - Payment must be received within 24 hours or order will be cancelled
@@ -2382,7 +2382,7 @@ By using cnxathletx.com, you agree to these terms.
 - Refunds issued within 7 business days
 
 ## Contact
-Email: support@cnxathletx.com
+Email: support@cnxnature.com
 
 [Full legal text to be drafted]
 ```
@@ -2581,7 +2581,7 @@ cnx-athletx/
 
    [env.production]
    workers_dev = false
-   route = "cnxathletx.com/api/*"
+   route = "cnxnature.com/api/*"
 
    [[d1_databases]]
    binding = "DB"

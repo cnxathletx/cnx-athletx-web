@@ -12,9 +12,12 @@ preview_database_id = "805d023a-2d77-4aef-95eb-164a82201962"
 
 [env.production]
 name = "cnx-athletx-api"
+routes = [
+  { pattern = "api.cnxnature.com", custom_domain = true }
+]
 
 [env.production.vars]
-ALLOWED_ORIGINS = "https://cnxathletx.com,https://www.cnxathletx.com"
+ALLOWED_ORIGINS = "https://cnxnature.com,https://www.cnxnature.com"
 
 [[env.production.d1_databases]]
 binding = "DB"

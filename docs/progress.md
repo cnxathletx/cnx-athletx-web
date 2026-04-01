@@ -1,6 +1,6 @@
 # CNX AthletX Implementation Progress
 
-Last updated: 2026-02-27
+Last updated: 2026-04-01
 
 ## Summary
 
@@ -11,7 +11,8 @@ Last updated: 2026-02-27
 - GitHub Actions CI/CD workflow is configured for lint, build, Pages deploy, and Workers deploy on `main`.
 - GitHub Actions deployment was verified on `main` with successful Pages and Worker jobs.
 - `RESEND_API_KEY` has been uploaded to Cloudflare Worker secrets (top-level and production environments).
-- Cloudflare Access policy setup for path-specific admin protection is pending manual Zero Trust setup plus a custom domain/active zone.
+- Cloudflare Access policy configured for `/admin/*` and `/api/admin/*` on `cnxnature.com` with one-time PIN auth.
+- All domain references updated from `cnxathletx.com` to `cnxnature.com` (brand name CNX AthletX unchanged).
 - Product scope is updated so discount codes are now included in v1 and tracked in Phase 3.
 - Phase 1 UI scaffolds are complete: Navbar (sticky, responsive, mobile drawer, theme toggle), Footer (always-dark, 3-column), Home page (6 sections), Shop page, Product Detail page (with tabs), and shared UI components (PrimaryButton, SecondaryButton, GhostButton, AppBadge, ProductCard).
 - Vue Router installed and configured with routes for `/`, `/shop`, `/product/:slug`.
@@ -66,7 +67,7 @@ Last updated: 2026-02-27
 - [x] Create Cloudflare Pages project linked to `packages/web`
 - [x] Create Cloudflare Workers project config with `wrangler.toml`
 - [x] Provision D1 database (dev + production)
-- [ ] Configure Cloudflare Access policy for `/admin/*` and `/api/admin/*` (Blocked: path-specific policy for public storefront/API requires custom domain with active zone and manual Zero Trust setup; current OAuth flow cannot manage Access apps/policies via API)
+- [x] Configure Cloudflare Access policy for `/admin/*` and `/api/admin/*` (domain: cnxnature.com, one-time PIN auth for jdelaire@gmail.com and athletx.cnx@gmail.com)
 - [x] Set up GitHub Actions: lint + build + deploy (Pages and Workers)
 - [x] Store `RESEND_API_KEY` as Workers secret
 

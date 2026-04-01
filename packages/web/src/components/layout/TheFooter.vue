@@ -55,7 +55,7 @@ import { RouterLink } from 'vue-router'
           <h3 class="text-foreground font-semibold">Contact</h3>
           <div class="space-y-2 text-sm">
             <p>Chiang Mai, Thailand</p>
-            <p>contact@cnxathletx.com</p>
+            <p>contact@cnxnature.com</p>
             <div class="flex space-x-4 pt-2">
               <a
                 href="https://www.instagram.com/cnx_athletx"

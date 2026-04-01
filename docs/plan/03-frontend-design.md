@@ -790,7 +790,7 @@ Always-dark footer regardless of theme. Three-column grid on desktop: brand info
         <h3 class="text-background font-semibold">Contact</h3>
         <div class="space-y-2 text-sm">
           <p>Chiang Mai, Thailand</p>
-          <p>contact@cnxathletx.com</p>
+          <p>contact@cnxnature.com</p>
           <div class="flex space-x-4 pt-2">
             <a href="#" class="hover:text-background transition-colors" aria-label="Instagram">
               <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">

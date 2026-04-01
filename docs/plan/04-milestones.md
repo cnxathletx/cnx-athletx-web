@@ -281,7 +281,7 @@ Last updated: 2026-02-27
 - [ ] Order Shipped email sent with carrier + tracking number
 - [ ] Email failure logs to `email_logs` table but does NOT block order processing
 - [ ] Emails use brand voice (no exaggerated health claims, confident/grounded tone)
-- [ ] From address: `orders@cnxathletx.com` (or configured domain)
+- [ ] From address: `orders@cnxnature.com` (or configured domain)
 - [ ] Emails are mobile-friendly (70%+ of Thai ecommerce is mobile)
 
 ---

@@ -19,7 +19,7 @@ Passwordless customer accounts via email magic link, using the existing Resend i
 4. Workers:
    a. Generate random token (32 bytes, hex encoded)
    b. INSERT INTO magic_links (email, token, expires_at = now + 15 min)
-   c. Send email via Resend with link: https://cnxathletx.com/auth/verify?token=xxx
+   c. Send email via Resend with link: https://cnxnature.com/auth/verify?token=xxx
    d. Response: {success: true, message: "Check your email"}
 5. User clicks link in email
 6. Browser → GET /auth/verify?token=xxx
@@ -524,7 +524,7 @@ router.get('/api/account/orders', async (req, env) => {
 </head>
 <body>
   <div class="header">
-    <img src="https://cnxathletx.com/logo-white.png" alt="CNX AthletX" style="max-width: 150px;">
+    <img src="https://cnxnature.com/logo-white.png" alt="CNX AthletX" style="max-width: 150px;">
   </div>
   <div class="content">
     <h1>Log in to CNX AthletX</h1>

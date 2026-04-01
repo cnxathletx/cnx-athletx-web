@@ -285,8 +285,8 @@ const paymentProofDate = computed(() => {
           <p>Ordered on {{ formattedDate }}</p>
           <p>
             Questions? Contact us at
-            <a href="mailto:hello@cnxathletx.com" class="text-primary hover:underline underline-offset-4">
-              hello@cnxathletx.com
+            <a href="mailto:hello@cnxnature.com" class="text-primary hover:underline underline-offset-4">
+              hello@cnxnature.com
             </a>
           </p>
         </div>

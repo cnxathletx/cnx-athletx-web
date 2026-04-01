@@ -204,7 +204,7 @@ function getAdminUser(request: Request): AdminUser | null {
     return { email: localHeader.toLowerCase() }
   }
 
-  return { email: 'local-admin@cnxathletx.com' }
+  return { email: 'local-admin@cnxnature.com' }
 }
 
 async function sendMagicLinkEmail(env: Env, toEmail: string, magicLinkUrl: string): Promise<void> {
@@ -244,7 +244,7 @@ async function sendMagicLinkEmail(env: Env, toEmail: string, magicLinkUrl: strin
       'Content-Type': 'application/json',
     },
     body: JSON.stringify({
-      from: 'CNX AthletX <orders@cnxathletx.com>',
+      from: 'CNX AthletX <orders@cnxnature.com>',
       to: [toEmail],
       subject: 'Log in to CNX AthletX',
       html,

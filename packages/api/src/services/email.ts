@@ -232,6 +232,82 @@ export function buildOrderShippedEmail(order: OrderEmailData, shipment: Shipment
   return emailLayout('Your Order Has Shipped — CNX AthletX', body)
 }
 
+export interface AdminOrderAddress {
+  line1: string
+  line2?: string
+  district: string
+  province: string
+  postal_code: string
+}
+
+export function buildAdminNewOrderEmail(
+  order: OrderEmailData,
+  address?: AdminOrderAddress,
+  discountCode?: string
+): string {
+  let customerHtml = `<div style="background: #F2EDE4; border-radius: 8px; padding: 20px; margin: 24px 0;">
+    <h3 style="margin: 0 0 12px; font-size: 16px; color: #2E2B26;">Customer</h3>
+    <p style="margin: 0 0 4px; font-size: 14px;"><strong>Name:</strong> ${escapeHtml(order.customer_name)}</p>
+    <p style="margin: 0 0 4px; font-size: 14px;"><strong>Email:</strong> ${escapeHtml(order.customer_email)}</p>`
+
+  if (address) {
+    customerHtml += `<h3 style="margin: 16px 0 12px; font-size: 16px; color: #2E2B26;">Shipping Address</h3>
+    <p style="margin: 0 0 4px; font-size: 14px;">${escapeHtml(address.line1)}</p>`
+    if (address.line2) {
+      customerHtml += `<p style="margin: 0 0 4px; font-size: 14px;">${escapeHtml(address.line2)}</p>`
+    }
+    customerHtml += `<p style="margin: 0; font-size: 14px;">${escapeHtml(address.district)}, ${escapeHtml(address.province)} ${escapeHtml(address.postal_code)}</p>`
+  }
+
+  customerHtml += `</div>`
+
+  let discountHtml = ''
+  if (discountCode) {
+    discountHtml = `<p style="margin: 0 0 4px; font-size: 14px;"><strong>Discount Code:</strong> ${escapeHtml(discountCode)}</p>`
+  }
+
+  const body = `<h2 style="margin: 0 0 8px; font-size: 20px; color: #2E2B26;">New Order Received</h2>
+    <p style="margin: 0 0 20px; font-size: 15px; color: #555;">A new order has been placed and is awaiting payment.</p>
+
+    <div style="background: #F2EDE4; border-radius: 8px; padding: 12px 16px; margin-bottom: 20px;">
+      <p style="margin: 0; font-size: 13px; color: #555;">Order ID</p>
+      <p style="margin: 4px 0 0; font-size: 16px; font-weight: 700; font-family: monospace; letter-spacing: 0.5px;">${order.order_id}</p>
+    </div>
+
+    ${customerHtml}
+    ${discountHtml}
+    ${itemsTableHtml(order.items)}
+    ${orderTotalsHtml(order)}`
+
+  return emailLayout('New Order — CNX AthletX', body)
+}
+
+/** Fire-and-forget: sends admin notification for new orders, never throws */
+export async function sendAdminNewOrderEmail(
+  env: Env,
+  order: OrderEmailData,
+  address?: AdminOrderAddress,
+  discountCode?: string
+): Promise<void> {
+  if (!env.ADMIN_EMAILS) return
+
+  const emails = env.ADMIN_EMAILS.split(',').map((e) => e.trim()).filter(Boolean)
+  if (emails.length === 0) return
+
+  const subject = `New Order — ${order.order_id}`
+  const html = buildAdminNewOrderEmail(order, address, discountCode)
+
+  for (const adminEmail of emails) {
+    try {
+      const ok = await sendResendEmail(env, adminEmail, subject, html)
+      await logEmail(env, order.order_id, 'admin_new_order', adminEmail, ok ? 'sent' : 'failed', ok ? undefined : 'Resend API returned non-OK')
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Unknown error'
+      await logEmail(env, order.order_id, 'admin_new_order', adminEmail, 'failed', message)
+    }
+  }
+}
+
 /** Fire-and-forget: sends email and logs result, never throws */
 export async function sendOrderEmail(
   env: Env,

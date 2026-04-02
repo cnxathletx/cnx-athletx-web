@@ -24,21 +24,27 @@ Run from repo root unless noted.
 - you have access to wrangler cli locally.
 - you have access to gh command for github.
 
-## Coding Style & Naming Conventions
-- Language: TypeScript (strict mode enabled in both packages).
-- Formatting style in current code: 2-space indentation, semicolons, single quotes, trailing commas where valid.
-- Vue components: use PascalCase filenames (for example `ProductCard.vue`).
-- Keep API routes explicit and path-based (for example `/api/health/db`).
-- Prefer small, composable modules under each package’s `src/`.
-
 ## Testing Guidelines
-There is currently no dedicated unit/integration test framework configured. CI quality gates are:
+This project follows **TDD (Test-Driven Development)**. Every feature and bug fix must have an associated test — write the test first, see it fail, then implement the code to make it pass. Do not consider work complete until tests cover the change.
 
+### Running tests
+- `npm test`: run unit tests across all workspaces.
+- `npm run test:integration -w @cnx-athletx/api`: run API integration tests (uses `wrangler unstable_dev` to spin up a local Worker).
+- `npm run test:all -w @cnx-athletx/api`: run API unit + integration tests together.
+- `npm run test:e2e`: run Playwright E2E browser tests (auto-starts dev servers).
+- Single file: `cd packages/api && npx vitest run src/routes/checkout.integration.test.ts`
+- Watch mode: `npm run test:watch -w @cnx-athletx/api` or `-w @cnx-athletx/web`.
+
+### Test organization
+- **API unit tests** (`packages/api/src/**/*.test.ts`): colocated with source, run with default vitest config.
+- **API integration tests** (`packages/api/src/**/*.integration.test.ts`): use `vitest.integration.config.ts`, spin up a real Worker via `unstable_dev`, and share helpers from `src/test/helpers.ts`.
+- **Vue component tests** (`packages/web/src/**/*.test.ts`): use `@vue/test-utils` + `happy-dom`. Require `vi.stubGlobal('localStorage', ...)` since happy-dom's localStorage is limited.
+- **E2E tests** (`e2e/*.spec.ts`): Playwright with Chromium, single worker (tests share DB state). Config auto-starts both API (port 8787) and web (port 5171) dev servers.
+
+### CI quality gates
 - `npm run lint`
 - `npm run typecheck`
 - `npm run build`
-
-For behavior changes, include reproducible manual verification steps in the PR (commands + expected result). If you add automated tests, colocate them with source using `*.test.ts` naming and add workspace scripts.
 
 ## Security & Configuration Tips
 - Never commit `.env`, `.dev.vars`, or secrets.

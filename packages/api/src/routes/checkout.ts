@@ -12,7 +12,7 @@ import type {
 import { isValidOrderId } from '../lib/utils'
 import { validateCheckoutBody, validatePaymentProofBody } from '../lib/validation'
 import { getSessionUser, parseJsonBody } from '../middleware/auth'
-import { sendOrderEmail } from '../services/email'
+import { sendOrderEmail, sendAdminNewOrderEmail } from '../services/email'
 import type { EmailItem } from '../services/email'
 import { generateULID } from '../lib/ulid'
 
@@ -380,7 +380,7 @@ export function registerCheckoutRoutes(router: RouterType) {
       return { name: product.name, quantity: item.quantity, line_total_thb: product.price_thb * item.quantity }
     })
 
-    sendOrderEmail(env, 'order_created', {
+    const orderEmailData = {
       order_id: orderId,
       customer_name: data.customer.name.trim(),
       customer_email: data.customer.email.toLowerCase().trim(),
@@ -389,7 +389,9 @@ export function registerCheckoutRoutes(router: RouterType) {
       shipping_thb: shipping,
       discount_thb: discountThb,
       total_thb: total,
-    }, {
+    }
+
+    sendOrderEmail(env, 'order_created', orderEmailData, {
       payment: {
         promptpay_number: settings.promptpay_number,
         bank_name: settings.bank_name,
@@ -397,6 +399,20 @@ export function registerCheckoutRoutes(router: RouterType) {
         bank_account_number: settings.bank_account_number,
       },
     }).catch(() => {})
+
+    // --- Notify admin (fire-and-forget) ---
+    sendAdminNewOrderEmail(
+      env,
+      orderEmailData,
+      {
+        line1: data.customer.address.line1.trim(),
+        line2: data.customer.address.line2?.trim(),
+        district: data.customer.address.district.trim(),
+        province: data.customer.address.province.trim(),
+        postal_code: data.customer.address.postal_code,
+      },
+      discountCodeRow?.code
+    ).catch(() => {})
 
     // --- Build payment instructions ---
     const totalTHB = (total / 100).toFixed(2)

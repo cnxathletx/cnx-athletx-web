@@ -21,6 +21,7 @@ routes = [
 
 [env.production.vars]
 ALLOWED_ORIGINS = "https://cnxnature.com,https://www.cnxnature.com"
+ADMIN_EMAILS = "orders@cnxnature.com"
 
 [[env.production.d1_databases]]
 binding = "DB"

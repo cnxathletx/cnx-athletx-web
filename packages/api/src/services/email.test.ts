@@ -7,6 +7,7 @@ import {
   buildOrderCreatedEmail,
   buildPaymentConfirmedEmail,
   buildOrderShippedEmail,
+  buildAdminNewOrderEmail,
 } from './email'
 import type { OrderEmailData, PaymentInstructions, ShipmentData, EmailItem } from './email'
 
@@ -241,5 +242,67 @@ describe('buildOrderShippedEmail', () => {
     expect(html).not.toContain('<b>Bad</b>')
     expect(html).toContain('&lt;b&gt;Bad&lt;/b&gt;')
     expect(html).not.toContain('<script>')
+  })
+})
+
+// --- buildAdminNewOrderEmail ---
+
+describe('buildAdminNewOrderEmail', () => {
+  it('contains order ID and "New Order" heading', () => {
+    const html = buildAdminNewOrderEmail(makeOrderData())
+    expect(html).toContain('ORD-TEST-001')
+    expect(html).toContain('New Order Received')
+  })
+
+  it('includes customer name, email, and phone', () => {
+    const html = buildAdminNewOrderEmail(makeOrderData())
+    expect(html).toContain('John Doe')
+    expect(html).toContain('john@example.com')
+  })
+
+  it('includes items table and totals', () => {
+    const html = buildAdminNewOrderEmail(makeOrderData())
+    expect(html).toContain('Protein 500g')
+    expect(html).toContain('Protein 1kg')
+    expect(html).toContain('Subtotal')
+    expect(html).toContain('฿3,347.00')
+  })
+
+  it('includes shipping address', () => {
+    const order = makeOrderData()
+    const html = buildAdminNewOrderEmail(order, {
+      line1: '123 Test Street',
+      district: 'Mueang',
+      province: 'Chiang Mai',
+      postal_code: '50200',
+    })
+    expect(html).toContain('123 Test Street')
+    expect(html).toContain('Mueang')
+    expect(html).toContain('Chiang Mai')
+    expect(html).toContain('50200')
+  })
+
+  it('shows discount code when present', () => {
+    const html = buildAdminNewOrderEmail(
+      makeOrderData({ discount_thb: 10000 }),
+      undefined,
+      'SAVE100'
+    )
+    expect(html).toContain('SAVE100')
+    expect(html).toContain('Discount')
+  })
+
+  it('escapes HTML in customer name', () => {
+    const html = buildAdminNewOrderEmail(
+      makeOrderData({ customer_name: '<script>alert("xss")</script>' })
+    )
+    expect(html).not.toContain('<script>')
+    expect(html).toContain('&lt;script&gt;')
+  })
+
+  it('uses emailLayout wrapper', () => {
+    const html = buildAdminNewOrderEmail(makeOrderData())
+    expect(html).toContain('<!DOCTYPE html>')
+    expect(html).toContain('CNX AthletX')
   })
 })

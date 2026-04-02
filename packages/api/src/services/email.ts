@@ -73,11 +73,11 @@ async function sendResendEmail(
   return res.ok
 }
 
-function formatThb(satang: number): string {
+export function formatThb(satang: number): string {
   return `฿${(satang / 100).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
 }
 
-function emailLayout(title: string, body: string): string {
+export function emailLayout(title: string, body: string): string {
   return `<!DOCTYPE html>
 <html>
 <head>
@@ -102,7 +102,7 @@ function emailLayout(title: string, body: string): string {
 </html>`
 }
 
-function itemsTableHtml(items: EmailItem[]): string {
+export function itemsTableHtml(items: EmailItem[]): string {
   const rows = items
     .map(
       (item) =>
@@ -126,7 +126,7 @@ function itemsTableHtml(items: EmailItem[]): string {
   </table>`
 }
 
-function orderTotalsHtml(order: OrderEmailData): string {
+export function orderTotalsHtml(order: OrderEmailData): string {
   let html = `<table style="width: 100%; border-collapse: collapse; margin-top: 8px;">
     <tr>
       <td style="padding: 4px 0; font-size: 14px; color: #555;">Subtotal</td>
@@ -153,7 +153,7 @@ function orderTotalsHtml(order: OrderEmailData): string {
   return html
 }
 
-function buildOrderCreatedEmail(order: OrderEmailData, payment: PaymentInstructions): string {
+export function buildOrderCreatedEmail(order: OrderEmailData, payment: PaymentInstructions): string {
   let paymentHtml = `<div style="background: #F2EDE4; border-radius: 8px; padding: 20px; margin: 24px 0;">
     <h3 style="margin: 0 0 12px; font-size: 16px; color: #2E2B26;">Payment Details</h3>
     <p style="margin: 0 0 4px; font-size: 14px;"><strong>Amount:</strong> ${formatThb(order.total_thb)}</p>`
@@ -188,7 +188,7 @@ function buildOrderCreatedEmail(order: OrderEmailData, payment: PaymentInstructi
   return emailLayout('Order Confirmed — CNX AthletX', body)
 }
 
-function buildPaymentConfirmedEmail(order: OrderEmailData): string {
+export function buildPaymentConfirmedEmail(order: OrderEmailData): string {
   const body = `<h2 style="margin: 0 0 8px; font-size: 20px; color: #2E2B26;">Payment Confirmed</h2>
     <p style="margin: 0 0 20px; font-size: 15px; color: #555;">Hi ${escapeHtml(order.customer_name)}, we've verified your payment. Your order is now being prepared.</p>
 
@@ -209,7 +209,7 @@ function buildPaymentConfirmedEmail(order: OrderEmailData): string {
   return emailLayout('Payment Confirmed — CNX AthletX', body)
 }
 
-function buildOrderShippedEmail(order: OrderEmailData, shipment: ShipmentData): string {
+export function buildOrderShippedEmail(order: OrderEmailData, shipment: ShipmentData): string {
   const body = `<h2 style="margin: 0 0 8px; font-size: 20px; color: #2E2B26;">Your Order Has Shipped</h2>
     <p style="margin: 0 0 20px; font-size: 15px; color: #555;">Hi ${escapeHtml(order.customer_name)}, your order is on its way.</p>
 

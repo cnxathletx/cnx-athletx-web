@@ -7,7 +7,11 @@
     "dev": "wrangler dev --port 8787",
     "build": "tsc --noEmit",
     "typecheck": "tsc --noEmit",
-    "deploy": "wrangler deploy --env production"
+    "deploy": "wrangler deploy --env production",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:integration": "vitest run --config vitest.integration.config.ts",
+    "test:all": "vitest run && vitest run --config vitest.integration.config.ts"
   },
   "dependencies": {
     "itty-router": "^5.0.22"
@@ -15,6 +19,7 @@
   "devDependencies": {
     "@cloudflare/workers-types": "^4.20250929.0",
     "typescript": "^5.9.2",
+    "vitest": "^4.1.2",
     "wrangler": "^4.36.0"
   }
 }

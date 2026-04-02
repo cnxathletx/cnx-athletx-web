@@ -1,0 +1,245 @@
+import { describe, it, expect } from 'vitest'
+import {
+  formatThb,
+  emailLayout,
+  itemsTableHtml,
+  orderTotalsHtml,
+  buildOrderCreatedEmail,
+  buildPaymentConfirmedEmail,
+  buildOrderShippedEmail,
+} from './email'
+import type { OrderEmailData, PaymentInstructions, ShipmentData, EmailItem } from './email'
+
+// --- Helpers ---
+
+function makeOrderData(overrides: Partial<OrderEmailData> = {}): OrderEmailData {
+  return {
+    order_id: 'ORD-TEST-001',
+    customer_name: 'John Doe',
+    customer_email: 'john@example.com',
+    items: [
+      { name: 'Protein 500g', quantity: 2, line_total_thb: 179800 },
+      { name: 'Protein 1kg', quantity: 1, line_total_thb: 149900 },
+    ],
+    subtotal_thb: 329700,
+    shipping_thb: 5000,
+    discount_thb: 0,
+    total_thb: 334700,
+    ...overrides,
+  }
+}
+
+function makePayment(overrides: Partial<PaymentInstructions> = {}): PaymentInstructions {
+  return {
+    promptpay_number: '0812345678',
+    bank_name: 'Bangkok Bank',
+    bank_account_name: 'CNX AthletX Co Ltd',
+    bank_account_number: '123-456-7890',
+    ...overrides,
+  }
+}
+
+function makeShipment(overrides: Partial<ShipmentData> = {}): ShipmentData {
+  return {
+    carrier: 'Kerry Express',
+    tracking_number: 'KRY123456789',
+    ...overrides,
+  }
+}
+
+// --- formatThb ---
+
+describe('formatThb', () => {
+  it('formats satang to THB with ฿ symbol', () => {
+    expect(formatThb(89900)).toBe('฿899.00')
+  })
+
+  it('formats zero', () => {
+    expect(formatThb(0)).toBe('฿0.00')
+  })
+
+  it('formats large amounts with comma separators', () => {
+    expect(formatThb(10000000)).toBe('฿100,000.00')
+  })
+
+  it('handles odd satang values', () => {
+    expect(formatThb(99)).toBe('฿0.99')
+  })
+})
+
+// --- emailLayout ---
+
+describe('emailLayout', () => {
+  it('wraps body in HTML document with header and footer', () => {
+    const html = emailLayout('Test Title', '<p>Hello</p>')
+    expect(html).toContain('<!DOCTYPE html>')
+    expect(html).toContain('<title>Test Title</title>')
+    expect(html).toContain('<p>Hello</p>')
+    expect(html).toContain('CNX AthletX')
+    expect(html).toContain('orders@cnxnature.com')
+  })
+})
+
+// --- itemsTableHtml ---
+
+describe('itemsTableHtml', () => {
+  it('renders items in a table', () => {
+    const items: EmailItem[] = [
+      { name: 'Protein 500g', quantity: 2, line_total_thb: 179800 },
+    ]
+    const html = itemsTableHtml(items)
+    expect(html).toContain('Protein 500g')
+    expect(html).toContain('>2<')
+    expect(html).toContain('฿1,798.00')
+    expect(html).toContain('<table')
+    expect(html).toContain('<thead>')
+  })
+
+  it('renders multiple items', () => {
+    const items: EmailItem[] = [
+      { name: 'Product A', quantity: 1, line_total_thb: 10000 },
+      { name: 'Product B', quantity: 3, line_total_thb: 30000 },
+    ]
+    const html = itemsTableHtml(items)
+    expect(html).toContain('Product A')
+    expect(html).toContain('Product B')
+  })
+
+  it('escapes HTML in product names', () => {
+    const items: EmailItem[] = [
+      { name: '<script>alert("xss")</script>', quantity: 1, line_total_thb: 100 },
+    ]
+    const html = itemsTableHtml(items)
+    expect(html).not.toContain('<script>')
+    expect(html).toContain('&lt;script&gt;')
+  })
+})
+
+// --- orderTotalsHtml ---
+
+describe('orderTotalsHtml', () => {
+  it('renders subtotal, shipping, and total', () => {
+    const html = orderTotalsHtml(makeOrderData())
+    expect(html).toContain('Subtotal')
+    expect(html).toContain('฿3,297.00')
+    expect(html).toContain('Shipping')
+    expect(html).toContain('฿50.00')
+    expect(html).toContain('Total')
+    expect(html).toContain('฿3,347.00')
+  })
+
+  it('shows "Free" when shipping is zero', () => {
+    const html = orderTotalsHtml(makeOrderData({ shipping_thb: 0 }))
+    expect(html).toContain('Free')
+  })
+
+  it('shows discount row when discount > 0', () => {
+    const html = orderTotalsHtml(makeOrderData({ discount_thb: 5000 }))
+    expect(html).toContain('Discount')
+    expect(html).toContain('-฿50.00')
+  })
+
+  it('hides discount row when discount is 0', () => {
+    const html = orderTotalsHtml(makeOrderData({ discount_thb: 0 }))
+    expect(html).not.toContain('Discount')
+  })
+})
+
+// --- buildOrderCreatedEmail ---
+
+describe('buildOrderCreatedEmail', () => {
+  it('contains order ID and customer name', () => {
+    const html = buildOrderCreatedEmail(makeOrderData(), makePayment())
+    expect(html).toContain('ORD-TEST-001')
+    expect(html).toContain('John Doe')
+    expect(html).toContain('Order Confirmed')
+  })
+
+  it('includes PromptPay number', () => {
+    const html = buildOrderCreatedEmail(makeOrderData(), makePayment())
+    expect(html).toContain('PromptPay')
+    expect(html).toContain('0812345678')
+  })
+
+  it('includes bank details', () => {
+    const html = buildOrderCreatedEmail(makeOrderData(), makePayment())
+    expect(html).toContain('Bangkok Bank')
+    expect(html).toContain('CNX AthletX Co Ltd')
+    expect(html).toContain('123-456-7890')
+  })
+
+  it('omits PromptPay section when empty', () => {
+    const html = buildOrderCreatedEmail(makeOrderData(), makePayment({ promptpay_number: '' }))
+    expect(html).not.toContain('PromptPay')
+  })
+
+  it('omits bank section when empty', () => {
+    const html = buildOrderCreatedEmail(makeOrderData(), makePayment({ bank_name: '' }))
+    expect(html).not.toContain('Account Number')
+  })
+
+  it('escapes HTML in customer name', () => {
+    const html = buildOrderCreatedEmail(
+      makeOrderData({ customer_name: '<img src=x onerror=alert(1)>' }),
+      makePayment()
+    )
+    expect(html).not.toContain('<img')
+    expect(html).toContain('&lt;img')
+  })
+
+  it('includes items table and totals', () => {
+    const html = buildOrderCreatedEmail(makeOrderData(), makePayment())
+    expect(html).toContain('Protein 500g')
+    expect(html).toContain('Subtotal')
+  })
+})
+
+// --- buildPaymentConfirmedEmail ---
+
+describe('buildPaymentConfirmedEmail', () => {
+  it('contains order ID and confirmation message', () => {
+    const html = buildPaymentConfirmedEmail(makeOrderData())
+    expect(html).toContain('ORD-TEST-001')
+    expect(html).toContain('Payment Confirmed')
+    expect(html).toContain('being packed')
+  })
+
+  it('includes items and totals', () => {
+    const html = buildPaymentConfirmedEmail(makeOrderData())
+    expect(html).toContain('Protein 500g')
+    expect(html).toContain('Total')
+  })
+
+  it('escapes customer name', () => {
+    const html = buildPaymentConfirmedEmail(makeOrderData({ customer_name: 'A & B <Co>' }))
+    expect(html).toContain('A &amp; B &lt;Co&gt;')
+  })
+})
+
+// --- buildOrderShippedEmail ---
+
+describe('buildOrderShippedEmail', () => {
+  it('contains order ID and shipping info', () => {
+    const html = buildOrderShippedEmail(makeOrderData(), makeShipment())
+    expect(html).toContain('ORD-TEST-001')
+    expect(html).toContain('Has Shipped')
+    expect(html).toContain('Kerry Express')
+    expect(html).toContain('KRY123456789')
+  })
+
+  it('includes items and totals', () => {
+    const html = buildOrderShippedEmail(makeOrderData(), makeShipment())
+    expect(html).toContain('Protein 500g')
+    expect(html).toContain('Total')
+  })
+
+  it('escapes HTML in carrier and tracking number', () => {
+    const html = buildOrderShippedEmail(
+      makeOrderData(),
+      makeShipment({ carrier: '<b>Bad</b>', tracking_number: '"><script>' })
+    )
+    expect(html).not.toContain('<b>Bad</b>')
+    expect(html).toContain('&lt;b&gt;Bad&lt;/b&gt;')
+    expect(html).not.toContain('<script>')
+  })
+})

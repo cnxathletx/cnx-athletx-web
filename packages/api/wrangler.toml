@@ -4,6 +4,9 @@ compatibility_date = "2026-02-25"
 account_id = "0ccff0e0abbbf8d1395557afe2cf9a42"
 workers_dev = true
 
+[vars]
+ALLOWED_ORIGINS = "http://localhost:5171,http://localhost:4173"
+
 [[d1_databases]]
 binding = "DB"
 database_name = "cnx-athletx-dev"

@@ -14,7 +14,12 @@
     "deploy:web": "npm run build:web && CLOUDFLARE_ACCOUNT_ID=0ccff0e0abbbf8d1395557afe2cf9a42 npx wrangler pages deploy packages/web/dist --project-name cnx-athletx-web",
     "deploy:api": "CLOUDFLARE_ACCOUNT_ID=0ccff0e0abbbf8d1395557afe2cf9a42 npm run deploy -w @cnx-athletx/api",
     "deploy": "npm run deploy:web && npm run deploy:api",
+    "test": "npm run test --workspaces --if-present",
+    "test:e2e": "npx playwright test",
     "lint": "npm run lint --workspaces --if-present",
     "typecheck": "npm run typecheck --workspaces --if-present"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.59.1"
   }
 }

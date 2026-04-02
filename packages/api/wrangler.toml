@@ -21,7 +21,9 @@ routes = [
 
 [env.production.vars]
 ALLOWED_ORIGINS = "https://cnxnature.com,https://www.cnxnature.com"
-ADMIN_EMAILS = "orders@cnxnature.com"
+ADMIN_EMAILS = "jdelaire@gmail.com,athletx.cnx@gmail.com"
+CF_ACCESS_TEAM = "cnxathletx"
+CF_ACCESS_AUD = "a9101d2f5e647f9fc66a8de4adb3c9bcf100db4af2e0b4cbe943fd9c4f7f3a5b"
 
 [[env.production.d1_databases]]
 binding = "DB"

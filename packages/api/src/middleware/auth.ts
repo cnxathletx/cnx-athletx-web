@@ -103,22 +103,67 @@ export function parseJsonBody(request: Request): Promise<{ ok: true; data: unkno
   )
 }
 
+async function getEmailFromCfAccessJwt(request: Request, env: Env): Promise<string | null> {
+  if (!env.CF_ACCESS_TEAM || !env.CF_ACCESS_AUD) return null
+
+  const jwt = parseCookie(request.headers.get('Cookie'), 'CF_Authorization')
+  if (!jwt) return null
+
+  try {
+    const parts = jwt.split('.')
+    if (parts.length !== 3) return null
+
+    // Fetch CF Access public keys
+    const certsUrl = `https://${env.CF_ACCESS_TEAM}.cloudflareaccess.com/cdn-cgi/access/certs`
+    const certsRes = await fetch(certsUrl)
+    if (!certsRes.ok) return null
+    const { keys } = (await certsRes.json()) as { keys: JsonWebKey[] }
+
+    // Decode JWT header to find key ID
+    const header = JSON.parse(atob(parts[0])) as { kid: string; alg: string }
+    const jwk = keys.find((k) => (k as JsonWebKey & { kid?: string }).kid === header.kid)
+    if (!jwk) return null
+
+    // Import key and verify signature
+    const key = await crypto.subtle.importKey('jwk', jwk, { name: 'RSASSA-PKCS1-v1_5', hash: 'SHA-256' }, false, ['verify'])
+    const data = new TextEncoder().encode(`${parts[0]}.${parts[1]}`)
+    const sig = Uint8Array.from(atob(parts[2].replace(/-/g, '+').replace(/_/g, '/')), (c) => c.charCodeAt(0))
+    const valid = await crypto.subtle.verify('RSASSA-PKCS1-v1_5', key, sig, data)
+    if (!valid) return null
+
+    // Verify claims
+    const payload = JSON.parse(atob(parts[1])) as { aud?: string[]; email?: string; exp?: number }
+    if (!payload.aud?.includes(env.CF_ACCESS_AUD)) return null
+    if (payload.exp && payload.exp < Math.floor(Date.now() / 1000)) return null
+
+    return payload.email?.trim().toLowerCase() || null
+  } catch {
+    return null
+  }
+}
+
 export async function getAdminUser(request: Request, env: Env): Promise<AdminUser | null> {
   const adminEmails = getAdminEmails(env)
 
-  // 1. CF Access header
+  // 1. CF Access header (set when request goes through CF Access proxy)
   const cfAccessEmail = request.headers.get('Cf-Access-Authenticated-User-Email')?.trim()?.toLowerCase()
   if (cfAccessEmail && adminEmails.includes(cfAccessEmail)) {
     return { email: cfAccessEmail }
   }
 
-  // 2. Customer session — check if logged-in user is admin
+  // 2. CF Access JWT cookie (sent cross-subdomain from Pages → API)
+  const jwtEmail = await getEmailFromCfAccessJwt(request, env)
+  if (jwtEmail && adminEmails.includes(jwtEmail)) {
+    return { email: jwtEmail }
+  }
+
+  // 3. Customer session — check if logged-in user is admin
   const sessionUser = await getSessionUser(request, env)
   if (sessionUser && adminEmails.includes(sessionUser.email.toLowerCase())) {
     return { email: sessionUser.email.toLowerCase() }
   }
 
-  // 3. Local dev fallback
+  // 4. Local dev fallback
   const isLocal =
     new URL(request.url).hostname === 'localhost' ||
     new URL(request.url).hostname === '127.0.0.1'

@@ -3,6 +3,8 @@ export interface Env {
   RESEND_API_KEY?: string
   ALLOWED_ORIGINS?: string
   ADMIN_EMAILS?: string
+  CF_ACCESS_TEAM?: string
+  CF_ACCESS_AUD?: string
 }
 
 export interface SessionUser {

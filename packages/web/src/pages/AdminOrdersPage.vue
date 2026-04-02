@@ -107,6 +107,7 @@ onMounted(async () => {
     <div class="mx-auto max-w-[1280px] px-4 sm:px-6 lg:px-8 py-8 sm:py-12 pb-16 space-y-6">
       <div class="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4">
         <div>
+          <RouterLink to="/admin" class="text-sm text-muted hover:text-primary transition-colors mb-1 inline-block">&larr; Dashboard</RouterLink>
           <h1 class="text-3xl sm:text-4xl font-bold text-foreground">Admin Orders</h1>
           <p class="text-sm text-muted mt-1">Manage order fulfillment workflow.</p>
         </div>
@@ -116,6 +117,9 @@ onMounted(async () => {
           </RouterLink>
           <RouterLink to="/admin/products">
             <SecondaryButton size="sm">Products</SecondaryButton>
+          </RouterLink>
+          <RouterLink to="/admin/discounts">
+            <SecondaryButton size="sm">Discounts</SecondaryButton>
           </RouterLink>
         </div>
       </div>

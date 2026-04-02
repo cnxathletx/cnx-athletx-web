@@ -9,6 +9,7 @@ import {
   type UpdateDiscountPayload,
   AdminApiErrorResponse,
 } from '../api/admin'
+import { RouterLink } from 'vue-router'
 import PrimaryButton from '../components/ui/PrimaryButton.vue'
 import SecondaryButton from '../components/ui/SecondaryButton.vue'
 
@@ -168,7 +169,17 @@ onMounted(loadCodes)
     <div class="mx-auto max-w-[1280px] px-4 sm:px-6 lg:px-8 py-8">
       <!-- Header -->
       <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-8">
-        <h1 class="text-2xl font-bold text-foreground">Discount Codes</h1>
+        <div>
+          <RouterLink to="/admin" class="text-sm text-muted hover:text-primary transition-colors mb-1 inline-block">&larr; Dashboard</RouterLink>
+          <h1 class="text-2xl font-bold text-foreground">Discount Codes</h1>
+        </div>
+        <div class="flex items-center gap-2">
+          <RouterLink to="/admin/orders"><SecondaryButton size="sm">Orders</SecondaryButton></RouterLink>
+          <RouterLink to="/admin/products"><SecondaryButton size="sm">Products</SecondaryButton></RouterLink>
+          <RouterLink to="/admin/inventory"><SecondaryButton size="sm">Inventory</SecondaryButton></RouterLink>
+        </div>
+      </div>
+      <div class="flex justify-end mb-4">
         <PrimaryButton size="sm" @click="showCreate = !showCreate">
           {{ showCreate ? 'Cancel' : 'New Discount Code' }}
         </PrimaryButton>

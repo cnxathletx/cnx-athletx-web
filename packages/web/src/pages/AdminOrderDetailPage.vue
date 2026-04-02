@@ -160,6 +160,8 @@ onMounted(async () => {
           <RouterLink to="/admin/inventory" class="text-xs font-semibold text-muted hover:text-primary">Inventory</RouterLink>
           <span class="text-muted/40">|</span>
           <RouterLink to="/admin/products" class="text-xs font-semibold text-muted hover:text-primary">Products</RouterLink>
+          <span class="text-muted/40">|</span>
+          <RouterLink to="/admin/discounts" class="text-xs font-semibold text-muted hover:text-primary">Discounts</RouterLink>
         </div>
       </div>
 

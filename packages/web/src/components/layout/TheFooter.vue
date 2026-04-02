@@ -102,6 +102,16 @@ import { RouterLink } from 'vue-router'
       </div>
     </div>
 
+    <!-- Supplement Disclaimer -->
+    <div class="border-t border-foreground/10">
+      <div class="mx-auto max-w-[1280px] px-4 sm:px-6 lg:px-8 py-4">
+        <p class="text-xs text-foreground/50 leading-relaxed text-center">
+          This product is a dietary supplement. It is not intended to diagnose, treat, cure, or prevent any disease.
+          Consult a healthcare professional before use. Not registered as a medicine by the Thai FDA.
+        </p>
+      </div>
+    </div>
+
     <!-- Bottom Bar -->
     <div class="border-t border-foreground/20">
       <div class="mx-auto max-w-[1280px] px-4 sm:px-6 lg:px-8 py-6">

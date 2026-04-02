@@ -116,7 +116,24 @@ Last updated: 2026-04-01
 - [x] Build admin products page (list, create/edit, active/inactive toggle)
 - [x] Implement admin product catalog APIs (`GET /api/admin/products`, `POST /api/admin/products`, `PATCH /api/admin/products/:id`)
 
-### Phase 8 — Polish (Legal Pages)
+### Phase 7 — Resend Transactional Emails
+
+- [x] Domain verified with Resend (cnxnature.com — DKIM + SPF via Cloudflare DNS, verified 2026-04-01)
+- [x] RESEND_API_KEY stored as Workers secret
+- [x] Email service (`services/email.ts`) with Resend API integration and `email_logs` table
+- [x] Email templates: order created, payment confirmed, order shipped, magic link login
+- [x] Admin new order notification email (sent to ADMIN_EMAILS on checkout)
+- [x] Emails wired to lifecycle events: checkout, mark-paid, ship (fire-and-forget, failures don't block)
+- [x] Magic link email updated to use shared email layout and current brand colors (sage green #8B9A7B)
+
+### Phase 8 — Polish (SEO, Performance, Legal, Content)
 
 - [x] Privacy Policy page exists with PDPA-required sections
 - [x] Terms of Service page exists with payment, shipping, and return terms
+- [x] Per-page meta tags (title, description, OG, Twitter cards) via `useHead` composable
+- [x] JSON-LD structured data: Organization schema on homepage, Product schema on product detail pages
+- [x] `robots.txt` disallows `/admin/`, `/api/admin/`, auth/payment paths
+- [x] `sitemap.xml` with 7 public URLs
+- [x] Supplement disclaimer in footer (Thai FDA compliance)
+- [x] 404 catch-all page with link back to home
+- [x] `loading="lazy"` on below-fold images (ProductCard, Cart, QR code)

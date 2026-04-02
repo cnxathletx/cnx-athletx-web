@@ -13,6 +13,9 @@ import {
 import PrimaryButton from '../components/ui/PrimaryButton.vue'
 import SecondaryButton from '../components/ui/SecondaryButton.vue'
 import { useAuthStore } from '../stores/auth'
+import { useHead } from '../composables/useHead'
+
+useHead({ title: 'My Account', description: 'View your order history and manage your account.' })
 
 const router = useRouter()
 const auth = useAuthStore()

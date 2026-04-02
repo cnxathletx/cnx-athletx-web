@@ -2,6 +2,9 @@
 import { ref } from 'vue'
 import { useRouter } from 'vue-router'
 import PrimaryButton from '../components/ui/PrimaryButton.vue'
+import { useHead } from '../composables/useHead'
+
+useHead({ title: 'Track Order', description: 'Look up your order status by order ID.', canonicalPath: '/order/status' })
 
 const router = useRouter()
 const orderId = ref('')

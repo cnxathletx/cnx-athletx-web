@@ -8,6 +8,9 @@ import { fetchLastAddress } from '../api/auth'
 import PrimaryButton from '../components/ui/PrimaryButton.vue'
 import CheckoutStepper from '../components/ui/CheckoutStepper.vue'
 import { useAuthStore } from '../stores/auth'
+import { useHead } from '../composables/useHead'
+
+useHead({ title: 'Checkout', description: 'Complete your order with CNX AthletX.' })
 
 const router = useRouter()
 const cart = useCartStore()

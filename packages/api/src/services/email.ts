@@ -375,32 +375,17 @@ export async function fetchOrderEmailData(env: Env, orderId: string): Promise<Or
 export async function sendMagicLinkEmail(env: Env, toEmail: string, magicLinkUrl: string, expiryMinutes: number): Promise<void> {
   if (!env.RESEND_API_KEY) return
 
-  const html = `
-<!DOCTYPE html>
-<html>
-<head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-</head>
-<body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; line-height: 1.6; color: #1a1a1a; margin: 0; padding: 0; background: #f4f3ee;">
-  <div style="max-width: 600px; margin: 0 auto; background: #ffffff;">
-    <div style="background: #a67c1f; padding: 20px; text-align: center;">
-      <h1 style="margin: 0; color: #ffffff; font-size: 24px;">CNX AthletX</h1>
-    </div>
-    <div style="padding: 30px 20px;">
-      <h2 style="margin-top: 0;">Log in to CNX AthletX</h2>
-      <p>Click the button below to log in. This link expires in ${expiryMinutes} minutes.</p>
-      <p style="text-align: center; margin: 30px 0;">
-        <a href="${magicLinkUrl}" style="display: inline-block; background-color: #a67c1f; color: #ffffff; padding: 14px 32px; text-decoration: none; border-radius: 6px; font-weight: 600;">
-          Log In
-        </a>
-      </p>
-      <p style="font-size: 14px; color: #555;">If you did not request this link, you can safely ignore this email.</p>
-      <p style="font-size: 12px; color: #777; word-break: break-all;">${magicLinkUrl}</p>
-    </div>
-  </div>
-</body>
-</html>`
+  const body = `<h2 style="margin: 0 0 8px; font-size: 20px; color: #2E2B26;">Log in to CNX AthletX</h2>
+    <p style="margin: 0 0 20px; font-size: 15px; color: #555;">Click the button below to log in. This link expires in ${expiryMinutes} minutes.</p>
+    <p style="text-align: center; margin: 30px 0;">
+      <a href="${magicLinkUrl}" style="display: inline-block; background-color: #8B9A7B; color: #ffffff; padding: 14px 32px; text-decoration: none; border-radius: 6px; font-weight: 600;">
+        Log In
+      </a>
+    </p>
+    <p style="margin: 24px 0 0; font-size: 14px; color: #555;">If you did not request this link, you can safely ignore this email.</p>
+    <p style="margin: 8px 0 0; font-size: 12px; color: #777; word-break: break-all;">${magicLinkUrl}</p>`
+
+  const html = emailLayout('Log In — CNX AthletX', body)
 
   const emailRes = await fetch('https://api.resend.com/emails', {
     method: 'POST',

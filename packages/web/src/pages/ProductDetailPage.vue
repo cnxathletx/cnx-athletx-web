@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, watch } from 'vue'
+import { ref, watch, computed } from 'vue'
 import { useRoute, RouterLink } from 'vue-router'
 import PrimaryButton from '../components/ui/PrimaryButton.vue'
 import AppBadge from '../components/ui/AppBadge.vue'
@@ -12,6 +12,8 @@ import {
   type ApiProduct,
 } from '../api/products'
 import { useCartStore } from '../stores/cart'
+import { useHead } from '../composables/useHead'
+import { useJsonLd } from '../composables/useJsonLd'
 
 const cart = useCartStore()
 
@@ -23,6 +25,44 @@ const loading = ref(true)
 const error = ref('')
 const quantity = ref(1)
 const productImageError = ref(false)
+
+const productTitle = computed(() => product.value?.name || 'Product')
+const productDescription = computed(() =>
+  product.value
+    ? `${product.value.name} — Plant-based protein powder. ${formatPrice(product.value.price_thb)}. Free shipping available.`
+    : 'Plant-based protein powder from CNX AthletX.'
+)
+const productCanonical = computed(() => product.value ? `/product/${product.value.slug}` : '')
+const productImage = computed(() => product.value?.image_url || '')
+
+useHead({
+  title: productTitle,
+  description: productDescription,
+  ogType: 'product',
+  ogImage: productImage,
+  canonicalPath: productCanonical,
+})
+
+useJsonLd(() => {
+  const p = product.value
+  if (!p) return null
+  return {
+    '@context': 'https://schema.org',
+    '@type': 'Product',
+    name: p.name,
+    description: p.description,
+    image: p.image_url ? `https://www.cnxnature.com${p.image_url}` : undefined,
+    url: `https://www.cnxnature.com/product/${p.slug}`,
+    brand: { '@type': 'Brand', name: 'CNX AthletX' },
+    offers: {
+      '@type': 'Offer',
+      price: (p.price_thb / 100).toFixed(2),
+      priceCurrency: 'THB',
+      availability: p.available_stock > 0 ? 'https://schema.org/InStock' : 'https://schema.org/OutOfStock',
+      url: `https://www.cnxnature.com/product/${p.slug}`,
+    },
+  }
+})
 
 const activeTab = ref<'nutrition' | 'ingredients' | 'howToUse'>('nutrition')
 

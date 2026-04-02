@@ -6,6 +6,9 @@ import PrimaryButton from '../components/ui/PrimaryButton.vue'
 import SecondaryButton from '../components/ui/SecondaryButton.vue'
 import AppBadge from '../components/ui/AppBadge.vue'
 import CheckoutStepper from '../components/ui/CheckoutStepper.vue'
+import { useHead } from '../composables/useHead'
+
+useHead({ title: 'Cart', description: 'Review your cart before checkout.' })
 
 const cart = useCartStore()
 
@@ -65,6 +68,7 @@ function decrement(productId: number, current: number) {
                   v-if="item.imageUrl"
                   :src="item.imageUrl"
                   :alt="item.name"
+                  loading="lazy"
                   class="w-full h-full object-cover"
                 />
                 <svg

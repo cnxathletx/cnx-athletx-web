@@ -46,6 +46,13 @@ This project follows **TDD (Test-Driven Development)**. Every feature and bug fi
 - `npm run typecheck`
 - `npm run build`
 
+## Coding Principles
+- **DRY (Don't Repeat Yourself)**: extract shared logic into reusable helpers, composables, or services. If the same data structure is built in multiple places, build it once and pass it around. If the same pattern appears three or more times, refactor it into a shared function.
+- Language: TypeScript (strict mode enabled in both packages).
+- 2-space indentation, semicolons, single quotes, trailing commas where valid.
+- Vue components: PascalCase filenames (e.g. `ProductCard.vue`).
+- Prefer small, composable modules under each package's `src/`.
+
 ## Security & Configuration Tips
 - Never commit `.env`, `.dev.vars`, or secrets.
 - Manage Worker secrets via Wrangler/GitHub Secrets, not source control.

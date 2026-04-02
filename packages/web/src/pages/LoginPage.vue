@@ -5,6 +5,9 @@ import { AuthApiErrorResponse, requestMagicLink } from '../api/auth'
 import PrimaryButton from '../components/ui/PrimaryButton.vue'
 import SecondaryButton from '../components/ui/SecondaryButton.vue'
 import { useAuthStore } from '../stores/auth'
+import { useHead } from '../composables/useHead'
+
+useHead({ title: 'Log In', description: 'Sign in to your CNX AthletX account.' })
 
 const route = useRoute()
 const router = useRouter()

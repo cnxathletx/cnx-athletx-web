@@ -3,9 +3,12 @@ import { ref, onMounted, computed } from 'vue'
 import { useRoute } from 'vue-router'
 import { fetchOrder, type ApiOrder } from '../api/checkout'
 import SecondaryButton from '../components/ui/SecondaryButton.vue'
+import { useHead } from '../composables/useHead'
 
 const route = useRoute()
 const orderId = route.params.id as string
+
+useHead({ title: `Order ${orderId}`, description: 'View your order status and tracking details.' })
 
 const order = ref<ApiOrder | null>(null)
 const loading = ref(true)

@@ -1,3 +1,9 @@
+<script setup lang="ts">
+import { useHead } from '../composables/useHead'
+
+useHead({ title: 'Terms of Service', description: 'Terms governing your use of CNX AthletX products and services.', canonicalPath: '/terms' })
+</script>
+
 <template>
   <div class="bg-background min-h-[60vh]">
     <div class="mx-auto max-w-[960px] px-4 sm:px-6 lg:px-8 py-8 sm:py-12 pb-16">

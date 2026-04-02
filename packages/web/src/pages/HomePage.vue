@@ -5,6 +5,34 @@ import PrimaryButton from '../components/ui/PrimaryButton.vue'
 import ProductCard from '../components/ui/ProductCard.vue'
 import GhostButton from '../components/ui/GhostButton.vue'
 import { fetchProducts, formatPrice, formatWeight, type ApiProduct } from '../api/products'
+import { useHead } from '../composables/useHead'
+import { useJsonLd } from '../composables/useJsonLd'
+
+useHead({
+  title: undefined, // Just "CNX AthletX" for homepage
+  description: 'Plant-based protein powder from Chiang Mai, Thailand. Clean athletic everyday health.',
+  ogType: 'website',
+  canonicalPath: '/',
+})
+
+useJsonLd(() => ({
+  '@context': 'https://schema.org',
+  '@type': 'Organization',
+  name: 'CNX AthletX',
+  url: 'https://www.cnxnature.com',
+  logo: 'https://www.cnxnature.com/og-default.jpg',
+  description: 'Plant-based protein powder from Chiang Mai, Thailand.',
+  address: {
+    '@type': 'PostalAddress',
+    addressLocality: 'Chiang Mai',
+    addressCountry: 'TH',
+  },
+  contactPoint: {
+    '@type': 'ContactPoint',
+    email: 'contact@cnxnature.com',
+    contactType: 'customer service',
+  },
+}))
 
 const products = ref<ApiProduct[]>([])
 const productsLoaded = ref(false)

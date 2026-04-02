@@ -189,6 +189,7 @@ async function handleSubmitProof() {
                   <img
                     :src="checkoutResult.payment_instructions.promptpay.qr_url"
                     alt="PromptPay QR Code"
+                    loading="lazy"
                     class="w-48 h-48"
                   />
                 </div>

@@ -2,6 +2,13 @@
 import { ref, onMounted } from 'vue'
 import ProductCard from '../components/ui/ProductCard.vue'
 import { fetchProducts, formatPrice, formatWeight, type ApiProduct } from '../api/products'
+import { useHead } from '../composables/useHead'
+
+useHead({
+  title: 'Shop',
+  description: 'Browse our plant-based protein powders. Available in 500g and 1kg sizes. Ships across Thailand.',
+  canonicalPath: '/shop',
+})
 
 const products = ref<ApiProduct[]>([])
 const loading = ref(true)

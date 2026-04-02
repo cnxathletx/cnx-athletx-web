@@ -49,6 +49,7 @@ function addToCart() {
           v-if="imageUrl && !imageLoadError"
           :src="imageUrl"
           :alt="name"
+          loading="lazy"
           class="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
           @error="imageLoadError = true"
         />

@@ -275,14 +275,14 @@ Last updated: 2026-02-27
 8. Apply brand copy guidelines (confident, grounded, no health claims)
 
 **Acceptance Criteria:**
-- [ ] Domain verified in Resend dashboard (DKIM passing)
-- [ ] Order Created email sent on successful checkout (contains payment instructions)
-- [ ] Payment Confirmed email sent when admin marks paid
-- [ ] Order Shipped email sent with carrier + tracking number
-- [ ] Email failure logs to `email_logs` table but does NOT block order processing
-- [ ] Emails use brand voice (no exaggerated health claims, confident/grounded tone)
-- [ ] From address: `orders@cnxnature.com` (or configured domain)
-- [ ] Emails are mobile-friendly (70%+ of Thai ecommerce is mobile)
+- [x] Domain verified in Resend dashboard (DKIM passing)
+- [x] Order Created email sent on successful checkout (contains payment instructions)
+- [x] Payment Confirmed email sent when admin marks paid
+- [x] Order Shipped email sent with carrier + tracking number
+- [x] Email failure logs to `email_logs` table but does NOT block order processing
+- [x] Emails use brand voice (no exaggerated health claims, confident/grounded tone)
+- [x] From address: `orders@cnxnature.com` (or configured domain)
+- [x] Emails are mobile-friendly (70%+ of Thai ecommerce is mobile)
 
 ---
 
@@ -307,16 +307,16 @@ Last updated: 2026-02-27
 14. Final cross-browser testing (Chrome, Safari, mobile Safari, Samsung Internet)
 
 **Acceptance Criteria:**
-- [ ] Product pages have correct OG meta tags (title, description, image, price)
+- [x] Product pages have correct OG meta tags (title, description, image, price)
 - [ ] Google Rich Results Test validates Product JSON-LD
-- [ ] `robots.txt` disallows `/admin/` and `/api/admin/`
+- [x] `robots.txt` disallows `/admin/` and `/api/admin/`
 - [x] Privacy Policy page exists with PDPA-required content sections
 - [x] Terms of Service page exists with payment terms, shipping, returns
-- [ ] Footer includes supplement disclaimer
+- [x] Footer includes supplement disclaimer
 - [ ] Lighthouse Performance score >= 90
 - [ ] Lighthouse Accessibility score = 100
-- [ ] All images use `loading="lazy"` for below-fold content
-- [ ] 404 page renders for unknown routes with link back to home
+- [x] All images use `loading="lazy"` for below-fold content
+- [x] 404 page renders for unknown routes with link back to home
 - [ ] Site works on Chrome, Safari, and mobile browsers
 
 ---

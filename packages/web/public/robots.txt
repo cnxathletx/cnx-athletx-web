@@ -1,0 +1,9 @@
+User-agent: *
+Allow: /
+Disallow: /admin/
+Disallow: /api/admin/
+Disallow: /auth/
+Disallow: /order/*/payment
+Disallow: /order/*/confirmation
+
+Sitemap: https://www.cnxnature.com/sitemap.xml

@@ -1,8 +1,8 @@
-import { unstable_dev, type UnstableDevWorker } from 'wrangler'
+import { unstable_dev, type Unstable_DevWorker } from 'wrangler'
 
-let worker: UnstableDevWorker | null = null
+let worker: Unstable_DevWorker | null = null
 
-export async function startWorker(): Promise<UnstableDevWorker> {
+export async function startWorker(): Promise<Unstable_DevWorker> {
   if (worker) return worker
   worker = await unstable_dev('src/index.ts', {
     experimental: { disableExperimentalWarning: true },
@@ -49,7 +49,7 @@ export async function workerFetch(
     method: options.method ?? (options.body ? 'POST' : 'GET'),
     headers,
     body: options.body ? JSON.stringify(options.body) : undefined,
-  })
+  }) as unknown as Promise<Response>
 }
 
 /**

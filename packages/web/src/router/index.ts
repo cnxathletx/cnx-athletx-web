@@ -93,6 +93,11 @@ const router = createRouter({
       component: () => import('../pages/AdminProductsPage.vue'),
     },
     {
+      path: '/admin/discounts',
+      name: 'admin-discounts',
+      component: () => import('../pages/AdminDiscountsPage.vue'),
+    },
+    {
       path: '/login',
       name: 'login',
       component: () => import('../pages/LoginPage.vue'),

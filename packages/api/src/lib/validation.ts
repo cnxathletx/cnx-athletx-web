@@ -10,6 +10,8 @@ import type {
   AdminInventoryUpdateBody,
   AdminCreateProductBody,
   AdminUpdateProductBody,
+  AdminCreateDiscountBody,
+  AdminUpdateDiscountBody,
 } from './types'
 
 export function validateRequestLinkBody(body: unknown): { errors: ValidationError[]; data: RequestLinkBody | null } {
@@ -432,6 +434,149 @@ export function validateUpdateProductBody(body: unknown): { errors: ValidationEr
       errors.push({ field: 'active', message: 'active must be boolean' })
     } else {
       data.active = b.active
+    }
+  }
+
+  if (errors.length > 0) {
+    return { errors, data: null }
+  }
+
+  return { errors: [], data }
+}
+
+export function validateCreateDiscountBody(body: unknown): { errors: ValidationError[]; data: AdminCreateDiscountBody | null } {
+  const errors: ValidationError[] = []
+
+  if (!body || typeof body !== 'object') {
+    return { errors: [{ field: 'body', message: 'Request body must be a JSON object' }], data: null }
+  }
+
+  const b = body as Record<string, unknown>
+  const code = typeof b.code === 'string' ? b.code.trim().toUpperCase() : ''
+  const type = typeof b.type === 'string' ? b.type : ''
+  const value = typeof b.value === 'number' ? b.value : Number.NaN
+  const minOrder = typeof b.min_order_thb === 'number' ? b.min_order_thb : 0
+  const maxUses = b.max_uses === null || b.max_uses === undefined ? null : (typeof b.max_uses === 'number' ? b.max_uses : Number.NaN)
+  const active = typeof b.active === 'boolean' ? b.active : true
+  const expiresAt = b.expires_at === null || b.expires_at === undefined ? null : (typeof b.expires_at === 'string' ? b.expires_at.trim() : '')
+
+  if (!/^[A-Z0-9_-]{2,30}$/.test(code)) {
+    errors.push({ field: 'code', message: 'code must be 2-30 uppercase alphanumeric characters, hyphens, or underscores' })
+  }
+
+  if (type !== 'fixed' && type !== 'percent') {
+    errors.push({ field: 'type', message: 'type must be "fixed" or "percent"' })
+  }
+
+  if (!Number.isInteger(value) || value <= 0) {
+    errors.push({ field: 'value', message: 'value must be a positive integer' })
+  } else if (type === 'percent' && value > 100) {
+    errors.push({ field: 'value', message: 'percent value must be between 1 and 100' })
+  } else if (type === 'fixed' && value > 100000000) {
+    errors.push({ field: 'value', message: 'fixed value must not exceed 100000000 satang' })
+  }
+
+  if (!Number.isInteger(minOrder) || minOrder < 0) {
+    errors.push({ field: 'min_order_thb', message: 'min_order_thb must be a non-negative integer' })
+  }
+
+  if (maxUses !== null && (!Number.isInteger(maxUses) || maxUses < 1)) {
+    errors.push({ field: 'max_uses', message: 'max_uses must be a positive integer or null' })
+  }
+
+  if (expiresAt !== null && expiresAt !== '' && isNaN(Date.parse(expiresAt))) {
+    errors.push({ field: 'expires_at', message: 'expires_at must be a valid ISO date string or null' })
+  }
+
+  if (errors.length > 0) {
+    return { errors, data: null }
+  }
+
+  return {
+    errors: [],
+    data: {
+      code,
+      type: type as 'fixed' | 'percent',
+      value,
+      min_order_thb: minOrder,
+      max_uses: maxUses,
+      active,
+      expires_at: expiresAt || null,
+    },
+  }
+}
+
+export function validateUpdateDiscountBody(body: unknown): { errors: ValidationError[]; data: AdminUpdateDiscountBody | null } {
+  const errors: ValidationError[] = []
+
+  if (!body || typeof body !== 'object') {
+    return { errors: [{ field: 'body', message: 'Request body must be a JSON object' }], data: null }
+  }
+
+  const b = body as Record<string, unknown>
+  const allowed = ['code', 'type', 'value', 'min_order_thb', 'max_uses', 'active', 'expires_at']
+  const provided = allowed.filter((key) => key in b)
+
+  if (provided.length === 0) {
+    return { errors: [{ field: 'body', message: 'At least one updatable field is required' }], data: null }
+  }
+
+  const data: AdminUpdateDiscountBody = {}
+
+  if ('code' in b) {
+    const code = typeof b.code === 'string' ? b.code.trim().toUpperCase() : ''
+    if (!/^[A-Z0-9_-]{2,30}$/.test(code)) {
+      errors.push({ field: 'code', message: 'code must be 2-30 uppercase alphanumeric characters, hyphens, or underscores' })
+    } else {
+      data.code = code
+    }
+  }
+
+  if ('type' in b) {
+    if (b.type !== 'fixed' && b.type !== 'percent') {
+      errors.push({ field: 'type', message: 'type must be "fixed" or "percent"' })
+    } else {
+      data.type = b.type
+    }
+  }
+
+  if ('value' in b) {
+    if (typeof b.value !== 'number' || !Number.isInteger(b.value) || b.value <= 0) {
+      errors.push({ field: 'value', message: 'value must be a positive integer' })
+    } else {
+      data.value = b.value
+    }
+  }
+
+  if ('min_order_thb' in b) {
+    if (typeof b.min_order_thb !== 'number' || !Number.isInteger(b.min_order_thb) || b.min_order_thb < 0) {
+      errors.push({ field: 'min_order_thb', message: 'min_order_thb must be a non-negative integer' })
+    } else {
+      data.min_order_thb = b.min_order_thb
+    }
+  }
+
+  if ('max_uses' in b) {
+    if (b.max_uses !== null && (typeof b.max_uses !== 'number' || !Number.isInteger(b.max_uses) || b.max_uses < 1)) {
+      errors.push({ field: 'max_uses', message: 'max_uses must be a positive integer or null' })
+    } else {
+      data.max_uses = b.max_uses as number | null
+    }
+  }
+
+  if ('active' in b) {
+    if (typeof b.active !== 'boolean') {
+      errors.push({ field: 'active', message: 'active must be boolean' })
+    } else {
+      data.active = b.active
+    }
+  }
+
+  if ('expires_at' in b) {
+    if (b.expires_at !== null && (typeof b.expires_at !== 'string' || isNaN(Date.parse(b.expires_at)))) {
+      errors.push({ field: 'expires_at', message: 'expires_at must be a valid ISO date string or null' })
+    } else {
+      data.expires_at = b.expires_at as string | null
     }
   }
 

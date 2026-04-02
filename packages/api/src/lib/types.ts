@@ -296,3 +296,38 @@ export interface AdminUpdateProductBody {
   image_url?: string
   active?: boolean
 }
+
+// --- Admin Discount Code types ---
+
+export interface AdminDiscountCodeRow {
+  id: number
+  code: string
+  type: 'fixed' | 'percent'
+  value: number
+  min_order_thb: number
+  max_uses: number | null
+  used_count: number
+  active: number
+  expires_at: string | null
+  created_at: string
+}
+
+export interface AdminCreateDiscountBody {
+  code: string
+  type: 'fixed' | 'percent'
+  value: number
+  min_order_thb: number
+  max_uses: number | null
+  active: boolean
+  expires_at: string | null
+}
+
+export interface AdminUpdateDiscountBody {
+  code?: string
+  type?: 'fixed' | 'percent'
+  value?: number
+  min_order_thb?: number
+  max_uses?: number | null
+  active?: boolean
+  expires_at?: string | null
+}

@@ -268,3 +268,69 @@ export async function updateAdminProduct(productId: number, payload: UpdateAdmin
   const data = (await res.json()) as { success: true; product: AdminProduct }
   return data.product
 }
+
+// --- Admin Discount Codes ---
+
+export interface AdminDiscountCode {
+  id: number
+  code: string
+  type: 'fixed' | 'percent'
+  value: number
+  min_order_thb: number
+  max_uses: number | null
+  used_count: number
+  active: boolean
+  expires_at: string | null
+  created_at: string
+}
+
+export interface CreateDiscountPayload {
+  code: string
+  type: 'fixed' | 'percent'
+  value: number
+  min_order_thb: number
+  max_uses: number | null
+  active: boolean
+  expires_at: string | null
+}
+
+export interface UpdateDiscountPayload {
+  code?: string
+  type?: 'fixed' | 'percent'
+  value?: number
+  min_order_thb?: number
+  max_uses?: number | null
+  active?: boolean
+  expires_at?: string | null
+}
+
+export async function fetchAdminDiscountCodes(): Promise<AdminDiscountCode[]> {
+  const res = await fetch(apiUrl('/api/admin/discount-codes'), { credentials: 'include' })
+  if (!res.ok) await parseAdminError(res)
+  const data = (await res.json()) as { discount_codes: AdminDiscountCode[] }
+  return data.discount_codes
+}
+
+export async function createAdminDiscountCode(payload: CreateDiscountPayload): Promise<AdminDiscountCode> {
+  const res = await fetch(apiUrl('/api/admin/discount-codes'), {
+    method: 'POST',
+    credentials: 'include',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload),
+  })
+  if (!res.ok) await parseAdminError(res)
+  const data = (await res.json()) as { success: true; discount_code: AdminDiscountCode }
+  return data.discount_code
+}
+
+export async function updateAdminDiscountCode(id: number, payload: UpdateDiscountPayload): Promise<AdminDiscountCode> {
+  const res = await fetch(apiUrl(`/api/admin/discount-codes/${id}`), {
+    method: 'PATCH',
+    credentials: 'include',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload),
+  })
+  if (!res.ok) await parseAdminError(res)
+  const data = (await res.json()) as { success: true; discount_code: AdminDiscountCode }
+  return data.discount_code
+}

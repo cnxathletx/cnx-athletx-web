@@ -7,7 +7,7 @@ import { useCartStore } from '../../stores/cart'
 import { useAuthStore } from '../../stores/auth'
 import { setLocale } from '../../i18n'
 
-const { t, locale } = useI18n()
+const { t, locale } = useI18n({ useScope: 'global' })
 const { isDark, toggle } = useTheme()
 const cart = useCartStore()
 const auth = useAuthStore()

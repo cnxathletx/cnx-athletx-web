@@ -51,7 +51,7 @@ useJsonLd(() => {
     '@type': 'Product',
     name: p.name,
     description: p.description,
-    image: p.image_url ? [`https://www.cnxnature.com${p.image_url}`] : undefined,
+    image: p.image_url && p.image_url.startsWith('/') ? [`https://www.cnxnature.com${p.image_url}`] : undefined,
     url: `https://www.cnxnature.com/product/${p.slug}`,
     brand: { '@type': 'Brand', name: 'CNX AthletX' },
     offers: {
@@ -60,6 +60,20 @@ useJsonLd(() => {
       priceCurrency: 'THB',
       availability: p.available_stock > 0 ? 'https://schema.org/InStock' : 'https://schema.org/OutOfStock',
       url: `https://www.cnxnature.com/product/${p.slug}`,
+      shippingDetails: {
+        '@type': 'OfferShippingDetails',
+        shippingDestination: { '@type': 'DefinedRegion', addressCountry: 'TH' },
+        deliveryTime: {
+          '@type': 'ShippingDeliveryTime',
+          handlingTime: { '@type': 'QuantitativeValue', minValue: 1, maxValue: 3, unitCode: 'DAY' },
+          transitTime: { '@type': 'QuantitativeValue', minValue: 1, maxValue: 5, unitCode: 'DAY' },
+        },
+      },
+      hasMerchantReturnPolicy: {
+        '@type': 'MerchantReturnPolicy',
+        applicableCountry: 'TH',
+        returnPolicyCategory: 'https://schema.org/MerchantReturnNotPermitted',
+      },
     },
   }
 })

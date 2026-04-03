@@ -31,7 +31,7 @@ function buildProductJsonLd(product) {
     '@type': 'Product',
     name: product.name,
     description: product.description,
-    image: product.image_url ? [`${SITE_URL}${product.image_url}`] : undefined,
+    image: product.image_url && product.image_url.startsWith('/') ? [`${SITE_URL}${product.image_url}`] : undefined,
     url: `${SITE_URL}/product/${product.slug}`,
     brand: { '@type': 'Brand', name: 'CNX AthletX' },
     offers: {
@@ -42,6 +42,23 @@ function buildProductJsonLd(product) {
         ? 'https://schema.org/InStock'
         : 'https://schema.org/OutOfStock',
       url: `${SITE_URL}/product/${product.slug}`,
+      shippingDetails: {
+        '@type': 'OfferShippingDetails',
+        shippingDestination: {
+          '@type': 'DefinedRegion',
+          addressCountry: 'TH',
+        },
+        deliveryTime: {
+          '@type': 'ShippingDeliveryTime',
+          handlingTime: { '@type': 'QuantitativeValue', minValue: 1, maxValue: 3, unitCode: 'DAY' },
+          transitTime: { '@type': 'QuantitativeValue', minValue: 1, maxValue: 5, unitCode: 'DAY' },
+        },
+      },
+      hasMerchantReturnPolicy: {
+        '@type': 'MerchantReturnPolicy',
+        applicableCountry: 'TH',
+        returnPolicyCategory: 'https://schema.org/MerchantReturnNotPermitted',
+      },
     },
   }
 }
@@ -101,7 +118,7 @@ export default {
           const metaTags = buildMetaTags(
             product.name,
             `${product.name} — Plant-based protein powder. ฿${(product.price_thb / 100).toFixed(0)}. Ships across Thailand.`,
-            product.image_url ? `${SITE_URL}${product.image_url}` : null,
+            product.image_url && product.image_url.startsWith('/') ? `${SITE_URL}${product.image_url}` : null,
             `${SITE_URL}/product/${slug}`
           )
           html = injectIntoHead(html, metaTags, buildProductJsonLd(product))

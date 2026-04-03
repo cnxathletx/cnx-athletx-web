@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onMounted, ref } from 'vue'
+import { computed, onMounted, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import {
   AuthApiErrorResponse,
@@ -14,6 +14,7 @@ import PrimaryButton from '../components/ui/PrimaryButton.vue'
 import SecondaryButton from '../components/ui/SecondaryButton.vue'
 import { useAuthStore } from '../stores/auth'
 import { useHead } from '../composables/useHead'
+import { useThaiAddress } from '../composables/useThaiAddress'
 
 useHead({ title: 'My Account', description: 'View your order history and manage your account.' })
 
@@ -43,6 +44,13 @@ const address = ref<SavedAddress>({
   province: '',
   postal_code: '',
 })
+const thaiAddr = useThaiAddress()
+
+// Sync Thai address composable → address ref
+watch(thaiAddr.selectedProvince, (v) => { address.value.province = v })
+watch(thaiAddr.selectedDistrict, (v) => { address.value.district = v })
+watch(thaiAddr.postalCode, (v) => { address.value.postal_code = v })
+
 const savingAddress = ref(false)
 const addressError = ref('')
 const addressSuccess = ref('')
@@ -201,7 +209,17 @@ onMounted(async () => {
 
   try {
     const saved = await fetchSavedAddress()
-    if (saved) address.value = saved
+    if (saved) {
+      address.value = saved
+      // Pre-fill Thai address dropdowns
+      if (saved.province) {
+        thaiAddr.selectedProvince.value = saved.province
+        await new Promise((r) => setTimeout(r, 0))
+        if (saved.district) thaiAddr.selectedDistrict.value = saved.district
+        await new Promise((r) => setTimeout(r, 0))
+        if (saved.postal_code) thaiAddr.postalCode.value = saved.postal_code
+      }
+    }
   } catch {
     // Non-critical — address section will just be empty
   }
@@ -281,31 +299,46 @@ onMounted(async () => {
               />
             </div>
             <div>
-              <label class="block text-sm font-medium text-foreground mb-1">District</label>
-              <input
-                v-model="address.district"
-                type="text"
-                class="w-full rounded-md border border-sand px-4 py-3 text-sm bg-surface-alt text-foreground placeholder:text-muted transition-colors focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
-                placeholder="Mueang Chiang Mai"
-              />
+              <label class="block text-sm font-medium text-foreground mb-1">Province</label>
+              <select
+                v-model="thaiAddr.selectedProvince.value"
+                class="w-full rounded-md border border-sand px-4 py-3 text-sm bg-surface-alt text-foreground transition-colors focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
+              >
+                <option value="">Select province</option>
+                <option v-for="p in thaiAddr.provinces" :key="p.code" :value="p.name">{{ p.name }}</option>
+              </select>
             </div>
             <div>
-              <label class="block text-sm font-medium text-foreground mb-1">Province</label>
-              <input
-                v-model="address.province"
-                type="text"
-                class="w-full rounded-md border border-sand px-4 py-3 text-sm bg-surface-alt text-foreground placeholder:text-muted transition-colors focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
-                placeholder="Chiang Mai"
-              />
+              <label class="block text-sm font-medium text-foreground mb-1">District</label>
+              <select
+                v-model="thaiAddr.selectedDistrict.value"
+                :disabled="!thaiAddr.selectedProvince.value"
+                class="w-full rounded-md border border-sand px-4 py-3 text-sm bg-surface-alt text-foreground transition-colors focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent disabled:opacity-50"
+              >
+                <option value="">Select district</option>
+                <option v-for="d in thaiAddr.filteredDistricts.value" :key="d.code" :value="d.name">{{ d.name }}</option>
+              </select>
+            </div>
+            <div>
+              <label class="block text-sm font-medium text-foreground mb-1">Sub-district</label>
+              <select
+                v-model="thaiAddr.selectedSubdistrict.value"
+                :disabled="!thaiAddr.selectedDistrict.value"
+                class="w-full rounded-md border border-sand px-4 py-3 text-sm bg-surface-alt text-foreground transition-colors focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent disabled:opacity-50"
+              >
+                <option value="">Select sub-district</option>
+                <option v-for="s in thaiAddr.filteredSubdistricts.value" :key="s.name" :value="s.name">{{ s.name }}</option>
+              </select>
             </div>
             <div>
               <label class="block text-sm font-medium text-foreground mb-1">Postal Code</label>
               <input
-                v-model="address.postal_code"
+                v-model="thaiAddr.postalCode.value"
                 type="text"
                 maxlength="5"
+                readonly
                 class="w-full rounded-md border border-sand px-4 py-3 text-sm bg-surface-alt text-foreground placeholder:text-muted transition-colors focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
-                placeholder="50200"
+                placeholder="Auto-filled"
               />
             </div>
           </div>
@@ -361,3 +394,14 @@ onMounted(async () => {
     </div>
   </div>
 </template>
+
+<style scoped>
+select {
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e");
+  background-position: right 0.75rem center;
+  background-repeat: no-repeat;
+  background-size: 1.25em 1.25em;
+  padding-right: 2.5rem;
+}
+</style>

@@ -1,6 +1,13 @@
 import { createI18n } from 'vue-i18n'
+import { registerMessageCompiler, compile, registerMessageResolver, resolveValue, registerLocaleFallbacker, fallbackWithLocaleChain } from '@intlify/core-base'
 import en from './en.json'
 import th from './th.json'
+
+// vue-i18n's entry registers these as side-effects, but tree-shaking strips them.
+// Register explicitly so the message compiler survives production builds.
+registerMessageCompiler(compile)
+registerMessageResolver(resolveValue)
+registerLocaleFallbacker(fallbackWithLocaleChain)
 
 const STORAGE_KEY = 'cnx-locale'
 

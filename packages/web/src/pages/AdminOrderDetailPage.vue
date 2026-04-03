@@ -225,6 +225,9 @@ onMounted(async () => {
             <div class="flex flex-wrap gap-3">
               <PrimaryButton :disabled="actionLoading" @click="handleShip">Mark Shipped</PrimaryButton>
               <SecondaryButton :disabled="actionLoading" @click="handleCancel">Cancel Order</SecondaryButton>
+              <a href="https://www.flashexpress.com/fle/activity/printer" target="_blank" rel="noopener noreferrer" class="inline-flex items-center gap-1.5 rounded-md border border-sand px-4 py-2 text-sm font-medium text-muted hover:text-foreground hover:border-primary transition-colors">
+                Flash Express Label ↗
+              </a>
             </div>
           </div>
 

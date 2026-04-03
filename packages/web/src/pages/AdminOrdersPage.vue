@@ -152,10 +152,10 @@ onMounted(async () => {
         {{ error }}
       </div>
 
-      <div v-else class="bg-surface rounded-lg ring-1 ring-[var(--card-ring)] overflow-hidden">
+      <div v-else class="bg-surface rounded-lg ring-1 ring-[var(--card-ring)] overflow-x-auto">
         <div v-if="orders.length === 0" class="p-6 text-sm text-muted text-center">No orders found.</div>
 
-        <table v-else class="w-full text-sm">
+        <table v-else class="w-full text-sm whitespace-nowrap">
           <thead class="bg-surface-alt text-muted">
             <tr>
               <th class="text-left px-4 py-3 font-medium">Order</th>

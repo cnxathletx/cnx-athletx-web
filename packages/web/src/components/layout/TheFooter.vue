@@ -1,5 +1,8 @@
 <script setup lang="ts">
 import { RouterLink } from 'vue-router'
+import { useI18n } from 'vue-i18n'
+
+const { t } = useI18n()
 </script>
 
 <template>
@@ -14,47 +17,34 @@ import { RouterLink } from 'vue-router'
             <span class="text-xl font-bold tracking-tight text-primary">AthletX</span>
           </div>
           <p class="text-sm leading-relaxed">
-            Clean athletic everyday health. Plant-based protein powder from Chiang Mai's active
-            community.
+            {{ t('footer.tagline') }}
           </p>
         </div>
 
         <!-- Quick Links -->
         <div class="space-y-4">
-          <h3 class="text-foreground font-semibold">Quick Links</h3>
+          <h3 class="text-foreground font-semibold">{{ t('footer.quickLinks') }}</h3>
           <nav class="flex flex-col space-y-2">
-            <RouterLink
-              to="/shop"
-              class="text-sm hover:text-foreground transition-colors"
-            >
-              Shop
+            <RouterLink to="/shop" class="text-sm hover:text-foreground transition-colors">
+              {{ t('footer.shop') }}
             </RouterLink>
-            <RouterLink
-              to="/order/status"
-              class="text-sm hover:text-foreground transition-colors"
-            >
-              Track Order
+            <RouterLink to="/order/status" class="text-sm hover:text-foreground transition-colors">
+              {{ t('footer.trackOrder') }}
             </RouterLink>
-            <RouterLink
-              to="/privacy"
-              class="text-sm hover:text-foreground transition-colors"
-            >
-              Privacy Policy
+            <RouterLink to="/privacy" class="text-sm hover:text-foreground transition-colors">
+              {{ t('footer.privacyPolicy') }}
             </RouterLink>
-            <RouterLink
-              to="/terms"
-              class="text-sm hover:text-foreground transition-colors"
-            >
-              Terms of Service
+            <RouterLink to="/terms" class="text-sm hover:text-foreground transition-colors">
+              {{ t('footer.termsOfService') }}
             </RouterLink>
           </nav>
         </div>
 
         <!-- Contact Info -->
         <div class="space-y-4">
-          <h3 class="text-foreground font-semibold">Contact</h3>
+          <h3 class="text-foreground font-semibold">{{ t('footer.contact') }}</h3>
           <div class="space-y-2 text-sm">
-            <p>Chiang Mai, Thailand</p>
+            <p>{{ t('footer.location') }}</p>
             <p>contact@cnxnature.com</p>
             <div class="flex space-x-4 pt-2">
               <a
@@ -106,8 +96,7 @@ import { RouterLink } from 'vue-router'
     <div class="border-t border-foreground/10">
       <div class="mx-auto max-w-[1280px] px-4 sm:px-6 lg:px-8 py-4">
         <p class="text-xs text-foreground/50 leading-relaxed text-center">
-          This product is a dietary supplement. It is not intended to diagnose, treat, cure, or prevent any disease.
-          Consult a healthcare professional before use. Not registered as a medicine by the Thai FDA.
+          {{ t('footer.disclaimer') }}
         </p>
       </div>
     </div>
@@ -118,13 +107,13 @@ import { RouterLink } from 'vue-router'
         <div
           class="flex flex-col md:flex-row justify-between items-center space-y-2 md:space-y-0 text-sm"
         >
-          <p>&copy; 2026 CNX AthletX. All rights reserved.</p>
+          <p>{{ t('footer.copyright') }}</p>
           <div class="flex space-x-6">
             <RouterLink to="/privacy" class="hover:text-foreground transition-colors">
-              Privacy
+              {{ t('footer.privacy') }}
             </RouterLink>
             <RouterLink to="/terms" class="hover:text-foreground transition-colors">
-              Terms
+              {{ t('footer.terms') }}
             </RouterLink>
           </div>
         </div>

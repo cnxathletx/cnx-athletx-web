@@ -17,7 +17,7 @@ import type { EmailItem } from '../services/email'
 import { generateULID } from '../lib/ulid'
 
 export function registerCheckoutRoutes(router: RouterType) {
-  router.post('/api/checkout', async (request: Request, env: Env) => {
+  router.post('/api/checkout', async (request: Request, env: Env, ctx: ExecutionContext) => {
     const sessionUser = await getSessionUser(request, env)
 
     const parsed = await parseJsonBody(request)
@@ -391,28 +391,32 @@ export function registerCheckoutRoutes(router: RouterType) {
       total_thb: total,
     }
 
-    sendOrderEmail(env, 'order_created', orderEmailData, {
-      payment: {
-        promptpay_number: settings.promptpay_number,
-        bank_name: settings.bank_name,
-        bank_account_name: settings.bank_account_name,
-        bank_account_number: settings.bank_account_number,
-      },
-    }).catch(() => {})
+    ctx.waitUntil(
+      sendOrderEmail(env, 'order_created', orderEmailData, {
+        payment: {
+          promptpay_number: settings.promptpay_number,
+          bank_name: settings.bank_name,
+          bank_account_name: settings.bank_account_name,
+          bank_account_number: settings.bank_account_number,
+        },
+      }).catch((err) => console.error('order_created email failed:', err))
+    )
 
     // --- Notify admin (fire-and-forget) ---
-    sendAdminNewOrderEmail(
-      env,
-      orderEmailData,
-      {
-        line1: data.customer.address.line1.trim(),
-        line2: data.customer.address.line2?.trim(),
-        district: data.customer.address.district.trim(),
-        province: data.customer.address.province.trim(),
-        postal_code: data.customer.address.postal_code,
-      },
-      discountCodeRow?.code
-    ).catch(() => {})
+    ctx.waitUntil(
+      sendAdminNewOrderEmail(
+        env,
+        orderEmailData,
+        {
+          line1: data.customer.address.line1.trim(),
+          line2: data.customer.address.line2?.trim(),
+          district: data.customer.address.district.trim(),
+          province: data.customer.address.province.trim(),
+          postal_code: data.customer.address.postal_code,
+        },
+        discountCodeRow?.code
+      ).catch((err) => console.error('admin new order email failed:', err))
+    )
 
     // --- Build payment instructions ---
     const totalTHB = (total / 100).toFixed(2)

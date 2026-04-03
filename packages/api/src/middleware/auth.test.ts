@@ -210,7 +210,8 @@ describe('requireAdmin', () => {
     })
 
     const wrapped = requireAdmin(handler)
-    const response = await wrapped(makeLocalRequest(), makeEnv())
+    const fakeCtx = { waitUntil: vi.fn(), passThroughOnException: vi.fn() } as unknown as ExecutionContext
+    const response = await wrapped(makeLocalRequest(), makeEnv(), fakeCtx)
 
     expect(handler).toHaveBeenCalledOnce()
     expect(response.status).toBe(200)
@@ -221,9 +222,10 @@ describe('requireAdmin', () => {
   it('returns 403 when not admin', async () => {
     const handler = vi.fn()
     const wrapped = requireAdmin(handler)
+    const fakeCtx = { waitUntil: vi.fn(), passThroughOnException: vi.fn() } as unknown as ExecutionContext
 
     const request = makeRequest('https://api.cnxnature.com/api/admin/orders')
-    const response = await wrapped(request, makeEnv())
+    const response = await wrapped(request, makeEnv(), fakeCtx)
 
     expect(handler).not.toHaveBeenCalled()
     expect(response.status).toBe(403)

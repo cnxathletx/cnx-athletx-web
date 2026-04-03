@@ -191,7 +191,7 @@ export function registerAdminOrderRoutes(router: RouterType) {
     }
   }))
 
-  router.post('/api/admin/orders/:id/mark-paid', requireAdmin(async (request, env, adminUser) => {
+  router.post('/api/admin/orders/:id/mark-paid', requireAdmin(async (request, env, adminUser, ctx) => {
     const url = new URL(request.url)
     const id = url.pathname.split('/')[4] || ''
     if (!isValidOrderId(id)) {
@@ -245,9 +245,11 @@ export function registerAdminOrderRoutes(router: RouterType) {
 
       await env.DB.batch(statements)
 
-      fetchOrderEmailData(env, orderId).then((emailData) => {
-        if (emailData) sendOrderEmail(env, 'payment_confirmed', emailData)
-      }).catch(() => {})
+      ctx.waitUntil(
+        fetchOrderEmailData(env, orderId).then((emailData) => {
+          if (emailData) return sendOrderEmail(env, 'payment_confirmed', emailData)
+        }).catch((err) => console.error('payment_confirmed email failed:', err))
+      )
 
       return Response.json({ success: true })
     } catch {
@@ -255,7 +257,7 @@ export function registerAdminOrderRoutes(router: RouterType) {
     }
   }))
 
-  router.post('/api/admin/orders/:id/pack', requireAdmin(async (request, env, adminUser) => {
+  router.post('/api/admin/orders/:id/pack', requireAdmin(async (request, env, adminUser, ctx) => {
     const url = new URL(request.url)
     const id = url.pathname.split('/')[4] || ''
     if (!isValidOrderId(id)) {
@@ -287,7 +289,7 @@ export function registerAdminOrderRoutes(router: RouterType) {
     }
   }))
 
-  router.post('/api/admin/orders/:id/ship', requireAdmin(async (request, env, adminUser) => {
+  router.post('/api/admin/orders/:id/ship', requireAdmin(async (request, env, adminUser, ctx) => {
     const url = new URL(request.url)
     const id = url.pathname.split('/')[4] || ''
     if (!isValidOrderId(id)) {
@@ -330,9 +332,11 @@ export function registerAdminOrderRoutes(router: RouterType) {
         ),
       ])
 
-      fetchOrderEmailData(env, orderId).then((emailData) => {
-        if (emailData) sendOrderEmail(env, 'order_shipped', emailData, { shipment: { carrier: data.carrier, tracking_number: data.tracking_number } })
-      }).catch(() => {})
+      ctx.waitUntil(
+        fetchOrderEmailData(env, orderId).then((emailData) => {
+          if (emailData) return sendOrderEmail(env, 'order_shipped', emailData, { shipment: { carrier: data.carrier, tracking_number: data.tracking_number } })
+        }).catch((err) => console.error('order_shipped email failed:', err))
+      )
 
       return Response.json({ success: true })
     } catch {
@@ -340,7 +344,7 @@ export function registerAdminOrderRoutes(router: RouterType) {
     }
   }))
 
-  router.post('/api/admin/orders/:id/cancel', requireAdmin(async (request, env, adminUser) => {
+  router.post('/api/admin/orders/:id/cancel', requireAdmin(async (request, env, adminUser, ctx) => {
     const url = new URL(request.url)
     const id = url.pathname.split('/')[4] || ''
     if (!isValidOrderId(id)) {

@@ -1,0 +1,139 @@
+{
+  "nav": {
+    "home": "Home",
+    "shop": "Shop",
+    "trackOrder": "Track Order",
+    "logIn": "Log In",
+    "logOut": "Log Out",
+    "account": "Account",
+    "myAccount": "My Account",
+    "theme": "Theme"
+  },
+  "footer": {
+    "tagline": "Clean athletic everyday health. Plant-based protein powder from Chiang Mai's active community.",
+    "quickLinks": "Quick Links",
+    "shop": "Shop",
+    "trackOrder": "Track Order",
+    "privacyPolicy": "Privacy Policy",
+    "termsOfService": "Terms of Service",
+    "contact": "Contact",
+    "location": "Chiang Mai, Thailand",
+    "disclaimer": "This product is a dietary supplement. It is not intended to diagnose, treat, cure, or prevent any disease. Consult a healthcare professional before use. Not registered as a medicine by the Thai FDA.",
+    "copyright": "© 2026 CNX AthletX. All rights reserved.",
+    "privacy": "Privacy",
+    "terms": "Terms"
+  },
+  "common": {
+    "addToCart": "Add to Cart",
+    "loading": "Loading...",
+    "error": "Something went wrong",
+    "backToHome": "Back to Home",
+    "currency": "฿",
+    "language": "Language"
+  },
+  "home": {
+    "heroTitle": "Fuel your body.",
+    "heroTitleAccent": "Naturally.",
+    "heroSubtitle": "Plant-based protein powder crafted in Chiang Mai for athletes who care about what they put in their bodies.",
+    "shopNow": "Shop Now",
+    "learnMore": "Learn More",
+    "socialProof": {
+      "plantBased": "100% Plant-Based",
+      "madeInThailand": "Made in Thailand",
+      "noArtificial": "No Artificial Additives",
+      "labTested": "Lab Tested"
+    },
+    "featuredProducts": "Featured Products",
+    "featuredSubtitle": "Protein powder that works as hard as you do.",
+    "brandStoryTitle": "Born in Chiang Mai",
+    "brandStoryText": "CNX AthletX started in the mountains of northern Thailand, where an active community needed clean, accessible protein. We source locally, produce locally, and support the community that inspired us.",
+    "communityTitle": "Join the Community",
+    "communitySubtitle": "Athletes, yogis, climbers, and everyday people who choose to fuel better.",
+    "ctaTitle": "Ready to fuel better?",
+    "ctaSubtitle": "Try our plant-based protein. Your body will thank you.",
+    "ctaButton": "Shop Now"
+  },
+  "shop": {
+    "title": "Shop",
+    "subtitle": "Plant-based protein for every athlete.",
+    "freeShipping": "Free shipping",
+    "viewProduct": "View Product"
+  },
+  "product": {
+    "addToCart": "Add to Cart",
+    "addedToCart": "Added!",
+    "outOfStock": "Out of Stock",
+    "quantity": "Qty",
+    "relatedProducts": "You might also like",
+    "weight": "Weight",
+    "perServing": "per serving"
+  },
+  "cart": {
+    "title": "Your Cart",
+    "empty": "Your cart is empty",
+    "continueShopping": "Continue Shopping",
+    "orderSummary": "Order Summary",
+    "subtotal": "Subtotal",
+    "shipping": "Shipping",
+    "total": "Total",
+    "checkout": "Proceed to Checkout",
+    "remove": "Remove",
+    "freeShipping": "Free"
+  },
+  "checkout": {
+    "title": "Checkout",
+    "contactInfo": "Contact Information",
+    "name": "Full Name",
+    "email": "Email",
+    "phone": "Phone",
+    "shippingAddress": "Shipping Address",
+    "addressLine1": "Address Line 1",
+    "addressLine2": "Address Line 2 (Optional)",
+    "province": "Province",
+    "district": "District",
+    "subdistrict": "Sub-district",
+    "postalCode": "Postal Code",
+    "selectProvince": "Select province",
+    "selectDistrict": "Select district",
+    "selectSubdistrict": "Select sub-district",
+    "autoFilled": "Auto-filled",
+    "discountCode": "Discount Code (Optional)",
+    "apply": "Apply",
+    "placeOrder": "Place Order",
+    "placing": "Placing Order...",
+    "orderSummary": "Order Summary",
+    "subtotal": "Subtotal",
+    "shipping": "Shipping",
+    "discount": "Discount",
+    "total": "Total"
+  },
+  "auth": {
+    "loginTitle": "Log In",
+    "loginSubtitle": "Enter your email to receive a magic link",
+    "sendLink": "Send Magic Link",
+    "sending": "Sending...",
+    "checkEmail": "Check your email",
+    "checkEmailDesc": "We sent a login link to {email}. Click the link to sign in.",
+    "requestNewLink": "Request new link"
+  },
+  "account": {
+    "title": "My Account",
+    "orderHistory": "Order History",
+    "noOrders": "No orders yet.",
+    "profile": "Profile",
+    "logOut": "Log Out"
+  },
+  "orderStatus": {
+    "title": "Track Your Order",
+    "placeholder": "Enter your order ID",
+    "lookup": "Track Order",
+    "status": "Status",
+    "orderDate": "Order Date",
+    "total": "Total"
+  },
+  "notFound": {
+    "title": "Page Not Found",
+    "message": "The page you're looking for doesn't exist.",
+    "backHome": "Back to Home"
+  }
+}

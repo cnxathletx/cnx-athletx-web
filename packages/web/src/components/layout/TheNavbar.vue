@@ -1,15 +1,22 @@
 <script setup lang="ts">
 import { ref } from 'vue'
 import { RouterLink, useRouter } from 'vue-router'
+import { useI18n } from 'vue-i18n'
 import { useTheme } from '../../composables/useTheme'
 import { useCartStore } from '../../stores/cart'
 import { useAuthStore } from '../../stores/auth'
+import { setLocale } from '../../i18n'
 
+const { t, locale } = useI18n()
 const { isDark, toggle } = useTheme()
 const cart = useCartStore()
 const auth = useAuthStore()
 const router = useRouter()
 const mobileOpen = ref(false)
+
+function toggleLocale() {
+  setLocale(locale.value === 'en' ? 'th' : 'en')
+}
 
 function closeMobile() {
   mobileOpen.value = false
@@ -38,19 +45,19 @@ async function handleLogout() {
             to="/"
             class="text-sm font-semibold text-foreground hover:text-primary transition-colors"
           >
-            Home
+            {{ t('nav.home') }}
           </RouterLink>
           <RouterLink
             to="/shop"
             class="text-sm font-semibold text-foreground hover:text-primary transition-colors"
           >
-            Shop
+            {{ t('nav.shop') }}
           </RouterLink>
           <RouterLink
             to="/order/status"
             class="text-sm font-semibold text-foreground hover:text-primary transition-colors"
           >
-            Track Order
+            {{ t('nav.trackOrder') }}
           </RouterLink>
         </nav>
 
@@ -61,7 +68,7 @@ async function handleLogout() {
             to="/login"
             class="hidden md:inline-flex text-sm font-semibold text-foreground hover:text-primary transition-colors px-2 py-1"
           >
-            Log In
+            {{ t('nav.logIn') }}
           </RouterLink>
 
           <RouterLink
@@ -72,7 +79,7 @@ async function handleLogout() {
             <span class="w-7 h-7 rounded-full bg-primary text-background flex items-center justify-center text-xs font-bold">
               {{ auth.displayInitial }}
             </span>
-            Account
+            {{ t('nav.account') }}
           </RouterLink>
 
           <button
@@ -80,7 +87,16 @@ async function handleLogout() {
             class="hidden md:inline-flex text-sm font-semibold text-muted hover:text-error transition-colors px-2 py-1"
             @click="handleLogout"
           >
-            Log Out
+            {{ t('nav.logOut') }}
+          </button>
+
+          <!-- Language Toggle -->
+          <button
+            @click="toggleLocale"
+            class="px-2 py-1.5 text-xs font-bold text-foreground hover:text-primary transition-colors rounded-md"
+            :aria-label="t('common.language')"
+          >
+            {{ locale === 'en' ? 'TH' : 'EN' }}
           </button>
 
           <!-- Theme Toggle -->
@@ -205,9 +221,20 @@ async function handleLogout() {
           </button>
         </div>
 
+        <!-- Language Toggle in Mobile -->
+        <div class="flex items-center justify-between px-1">
+          <span class="text-sm font-medium text-muted">{{ t('common.language') }}</span>
+          <button
+            @click="toggleLocale"
+            class="px-3 py-1.5 text-sm font-bold text-foreground hover:text-primary transition-colors rounded-md"
+          >
+            {{ locale === 'en' ? 'ไทย' : 'English' }}
+          </button>
+        </div>
+
         <!-- Theme Toggle in Mobile -->
         <div class="flex items-center justify-between px-1">
-          <span class="text-sm font-medium text-muted">Theme</span>
+          <span class="text-sm font-medium text-muted">{{ t('nav.theme') }}</span>
           <button
             @click="toggle"
             class="p-2.5 text-foreground hover:text-primary transition-colors rounded-md"
@@ -245,21 +272,21 @@ async function handleLogout() {
             @click="closeMobile"
             class="text-lg font-semibold text-foreground hover:text-primary hover:bg-surface-alt px-3 py-3 rounded-md transition-colors"
           >
-            Home
+            {{ t('nav.home') }}
           </RouterLink>
           <RouterLink
             to="/shop"
             @click="closeMobile"
             class="text-lg font-semibold text-foreground hover:text-primary hover:bg-surface-alt px-3 py-3 rounded-md transition-colors"
           >
-            Shop
+            {{ t('nav.shop') }}
           </RouterLink>
           <RouterLink
             to="/order/status"
             @click="closeMobile"
             class="text-lg font-semibold text-foreground hover:text-primary hover:bg-surface-alt px-3 py-3 rounded-md transition-colors"
           >
-            Track Order
+            {{ t('nav.trackOrder') }}
           </RouterLink>
 
           <RouterLink
@@ -268,7 +295,7 @@ async function handleLogout() {
             @click="closeMobile"
             class="text-lg font-semibold text-foreground hover:text-primary hover:bg-surface-alt px-3 py-3 rounded-md transition-colors"
           >
-            Log In
+            {{ t('nav.logIn') }}
           </RouterLink>
 
           <RouterLink
@@ -277,7 +304,7 @@ async function handleLogout() {
             @click="closeMobile"
             class="text-lg font-semibold text-foreground hover:text-primary hover:bg-surface-alt px-3 py-3 rounded-md transition-colors"
           >
-            My Account
+            {{ t('nav.myAccount') }}
           </RouterLink>
 
           <button
@@ -285,7 +312,7 @@ async function handleLogout() {
             class="text-left text-lg font-semibold text-error hover:bg-surface-alt px-3 py-3 rounded-md transition-colors"
             @click="handleLogout"
           >
-            Log Out
+            {{ t('nav.logOut') }}
           </button>
         </nav>
       </div>

@@ -78,15 +78,15 @@ function getAdminEmails(env: Env): string[] {
   return DEFAULT_ADMIN_EMAILS
 }
 
-export type AdminHandler = (request: Request, env: Env, adminUser: AdminUser) => Promise<Response>
+export type AdminHandler = (request: Request, env: Env, adminUser: AdminUser, ctx: ExecutionContext) => Promise<Response>
 
-export function requireAdmin(handler: AdminHandler): (request: Request, env: Env) => Promise<Response> {
-  return async (request: Request, env: Env) => {
+export function requireAdmin(handler: AdminHandler): (request: Request, env: Env, ctx: ExecutionContext) => Promise<Response> {
+  return async (request: Request, env: Env, ctx: ExecutionContext) => {
     const adminUser = await getAdminUser(request, env)
     if (!adminUser) {
       return Response.json({ error: 'Admin authentication required' }, { status: 403 })
     }
-    return handler(request, env, adminUser)
+    return handler(request, env, adminUser, ctx)
   }
 }
 

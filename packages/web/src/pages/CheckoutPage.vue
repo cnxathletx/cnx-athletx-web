@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { useCartStore } from '../stores/cart'
 import { formatPrice } from '../api/products'
@@ -9,6 +9,7 @@ import PrimaryButton from '../components/ui/PrimaryButton.vue'
 import CheckoutStepper from '../components/ui/CheckoutStepper.vue'
 import { useAuthStore } from '../stores/auth'
 import { useHead } from '../composables/useHead'
+import { useThaiAddress } from '../composables/useThaiAddress'
 
 useHead({ title: 'Checkout', description: 'Complete your order with CNX AthletX.' })
 
@@ -52,6 +53,13 @@ const phoneCountryOptions = [
   { value: '+86', label: 'CN +86' },
   { value: '+91', label: 'IN +91' },
 ]
+
+const thaiAddr = useThaiAddress()
+
+// Sync Thai address composable → form fields
+watch(thaiAddr.selectedProvince, (v) => { form.value.province = v })
+watch(thaiAddr.selectedDistrict, (v) => { form.value.district = v })
+watch(thaiAddr.postalCode, (v) => { form.value.postal_code = v })
 
 const submitting = ref(false)
 const apiError = ref('')
@@ -149,9 +157,14 @@ onMounted(async () => {
 
     if (!form.value.line1) form.value.line1 = address.line1
     if (!form.value.line2) form.value.line2 = address.line2 ?? ''
-    if (!form.value.district) form.value.district = address.district
-    if (!form.value.province) form.value.province = address.province
-    if (!form.value.postal_code) form.value.postal_code = address.postal_code
+    if (!thaiAddr.selectedProvince.value && address.province) {
+      thaiAddr.selectedProvince.value = address.province
+      // Wait for district list to populate, then set district
+      await new Promise((r) => setTimeout(r, 0))
+      if (address.district) thaiAddr.selectedDistrict.value = address.district
+      await new Promise((r) => setTimeout(r, 0))
+      if (address.postal_code) thaiAddr.postalCode.value = address.postal_code
+    }
   } catch {
     // Ignore prefill failures.
   }
@@ -313,45 +326,62 @@ async function handleSubmit() {
                 placeholder="Soi 5, Floor 2"
               />
             </div>
-            <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div>
+                <label class="block text-sm font-medium text-foreground mb-1">Province</label>
+                <select
+                  v-model="thaiAddr.selectedProvince.value"
+                  :class="[
+                    'w-full rounded-md border px-4 py-3 text-sm bg-surface-alt text-foreground transition-colors focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent',
+                    fieldErrors.province ? 'border-error' : 'border-sand',
+                  ]"
+                >
+                  <option value="">Select province</option>
+                  <option v-for="p in thaiAddr.provinces" :key="p.code" :value="p.name">{{ p.name }}</option>
+                </select>
+                <p v-if="fieldErrors.province" class="mt-1 text-xs text-error">{{ fieldErrors.province }}</p>
+              </div>
               <div>
                 <label class="block text-sm font-medium text-foreground mb-1">District</label>
-                <input
-                  v-model="form.district"
-                  type="text"
+                <select
+                  v-model="thaiAddr.selectedDistrict.value"
+                  :disabled="!thaiAddr.selectedProvince.value"
                   :class="[
-                    'w-full rounded-md border px-4 py-3 text-sm bg-surface-alt text-foreground placeholder:text-muted transition-colors focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent',
+                    'w-full rounded-md border px-4 py-3 text-sm bg-surface-alt text-foreground transition-colors focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent disabled:opacity-50',
                     fieldErrors.district ? 'border-error' : 'border-sand',
                   ]"
-                  placeholder="Suthep"
-                />
+                >
+                  <option value="">Select district</option>
+                  <option v-for="d in thaiAddr.filteredDistricts.value" :key="d.code" :value="d.name">{{ d.name }}</option>
+                </select>
                 <p v-if="fieldErrors.district" class="mt-1 text-xs text-error">{{ fieldErrors.district }}</p>
               </div>
               <div>
-                <label class="block text-sm font-medium text-foreground mb-1">Province</label>
-                <input
-                  v-model="form.province"
-                  type="text"
+                <label class="block text-sm font-medium text-foreground mb-1">Sub-district</label>
+                <select
+                  v-model="thaiAddr.selectedSubdistrict.value"
+                  :disabled="!thaiAddr.selectedDistrict.value"
                   :class="[
-                    'w-full rounded-md border px-4 py-3 text-sm bg-surface-alt text-foreground placeholder:text-muted transition-colors focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent',
-                    fieldErrors.province ? 'border-error' : 'border-sand',
+                    'w-full rounded-md border px-4 py-3 text-sm bg-surface-alt text-foreground transition-colors focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent disabled:opacity-50',
                   ]"
-                  placeholder="Chiang Mai"
-                />
-                <p v-if="fieldErrors.province" class="mt-1 text-xs text-error">{{ fieldErrors.province }}</p>
+                >
+                  <option value="">Select sub-district</option>
+                  <option v-for="s in thaiAddr.filteredSubdistricts.value" :key="s.name" :value="s.name">{{ s.name }}</option>
+                </select>
               </div>
               <div>
                 <label class="block text-sm font-medium text-foreground mb-1">Postal Code</label>
                 <input
-                  v-model="form.postal_code"
+                  v-model="thaiAddr.postalCode.value"
                   type="text"
                   inputmode="numeric"
                   maxlength="5"
+                  readonly
                   :class="[
                     'w-full rounded-md border px-4 py-3 text-sm bg-surface-alt text-foreground placeholder:text-muted transition-colors focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent',
                     fieldErrors.postal_code ? 'border-error' : 'border-sand',
                   ]"
-                  placeholder="50200"
+                  placeholder="Auto-filled"
                 />
                 <p v-if="fieldErrors.postal_code" class="mt-1 text-xs text-error">{{ fieldErrors.postal_code }}</p>
               </div>

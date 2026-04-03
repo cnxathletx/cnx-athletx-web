@@ -203,19 +203,20 @@ onMounted(loadCodes)
           <div>
             <label class="block text-sm font-medium text-muted mb-1">Type</label>
             <select v-model="createForm.type" class="w-full rounded-md bg-surface-alt border border-sand px-3 py-2 text-foreground text-sm">
-              <option value="fixed">Fixed (satang)</option>
+              <option value="fixed">Fixed (฿)</option>
               <option value="percent">Percent (%)</option>
             </select>
           </div>
           <div>
             <label class="block text-sm font-medium text-muted mb-1">
-              Value {{ createForm.type === 'percent' ? '(%)' : '(satang)' }}
+              Value {{ createForm.type === 'percent' ? '(%)' : '(฿)' }}
             </label>
-            <input v-model.number="createForm.value" type="number" min="1" class="w-full rounded-md bg-surface-alt border border-sand px-3 py-2 text-foreground text-sm" />
+            <input v-if="createForm.type === 'percent'" v-model.number="createForm.value" type="number" min="1" max="100" class="w-full rounded-md bg-surface-alt border border-sand px-3 py-2 text-foreground text-sm" />
+            <input v-else :value="createForm.value / 100" @input="createForm.value = Math.round(Number(($event.target as HTMLInputElement).value) * 100)" type="number" min="1" step="1" class="w-full rounded-md bg-surface-alt border border-sand px-3 py-2 text-foreground text-sm" />
           </div>
           <div>
-            <label class="block text-sm font-medium text-muted mb-1">Min Order (satang, 0 = none)</label>
-            <input v-model.number="createForm.min_order_thb" type="number" min="0" class="w-full rounded-md bg-surface-alt border border-sand px-3 py-2 text-foreground text-sm" />
+            <label class="block text-sm font-medium text-muted mb-1">Min Order ฿ (0 = none)</label>
+            <input :value="createForm.min_order_thb / 100" @input="createForm.min_order_thb = Math.round(Number(($event.target as HTMLInputElement).value) * 100)" type="number" min="0" step="1" class="w-full rounded-md bg-surface-alt border border-sand px-3 py-2 text-foreground text-sm" />
           </div>
           <div>
             <label class="block text-sm font-medium text-muted mb-1">Max Uses (blank = unlimited)</label>
@@ -307,17 +308,18 @@ onMounted(loadCodes)
                       <div>
                         <label class="block text-xs text-muted mb-1">Type</label>
                         <select v-model="editForm.type" class="w-full rounded-md bg-surface-alt border border-sand px-3 py-2 text-foreground text-sm">
-                          <option value="fixed">Fixed (satang)</option>
+                          <option value="fixed">Fixed (฿)</option>
                           <option value="percent">Percent (%)</option>
                         </select>
                       </div>
                       <div>
-                        <label class="block text-xs text-muted mb-1">Value</label>
-                        <input v-model.number="editForm.value" type="number" min="1" class="w-full rounded-md bg-surface-alt border border-sand px-3 py-2 text-foreground text-sm" />
+                        <label class="block text-xs text-muted mb-1">Value {{ editForm.type === 'percent' ? '(%)' : '(฿)' }}</label>
+                        <input v-if="editForm.type === 'percent'" v-model.number="editForm.value" type="number" min="1" max="100" class="w-full rounded-md bg-surface-alt border border-sand px-3 py-2 text-foreground text-sm" />
+                        <input v-else :value="editForm.value / 100" @input="editForm.value = Math.round(Number(($event.target as HTMLInputElement).value) * 100)" type="number" min="1" step="1" class="w-full rounded-md bg-surface-alt border border-sand px-3 py-2 text-foreground text-sm" />
                       </div>
                       <div>
-                        <label class="block text-xs text-muted mb-1">Min Order (satang)</label>
-                        <input v-model.number="editForm.min_order_thb" type="number" min="0" class="w-full rounded-md bg-surface-alt border border-sand px-3 py-2 text-foreground text-sm" />
+                        <label class="block text-xs text-muted mb-1">Min Order (฿)</label>
+                        <input :value="editForm.min_order_thb / 100" @input="editForm.min_order_thb = Math.round(Number(($event.target as HTMLInputElement).value) * 100)" type="number" min="0" step="1" class="w-full rounded-md bg-surface-alt border border-sand px-3 py-2 text-foreground text-sm" />
                       </div>
                       <div>
                         <label class="block text-xs text-muted mb-1">Max Uses</label>

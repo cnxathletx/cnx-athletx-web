@@ -36,7 +36,7 @@ const createForm = reactive<CreateAdminProductPayload>({
   slug: '',
   name: '',
   description: '',
-  price_thb: 89900,
+  price_thb: 899,
   weight_g: 500,
   image_url: '',
   active: true,
@@ -77,7 +77,7 @@ function resetCreateForm() {
   createForm.slug = ''
   createForm.name = ''
   createForm.description = ''
-  createForm.price_thb = 89900
+  createForm.price_thb = 899
   createForm.weight_g = 500
   createForm.image_url = ''
   createForm.active = true
@@ -177,6 +177,7 @@ async function submitCreate() {
       name: createForm.name.trim(),
       description: createForm.description.trim(),
       image_url: createForm.image_url.trim(),
+      price_thb: Math.round(createForm.price_thb * 100),
     })
     products.value.push(product)
     createSuccess.value = 'Product created.'
@@ -201,7 +202,7 @@ function startEdit(product: AdminProduct) {
   editForm.slug = product.slug
   editForm.name = product.name
   editForm.description = product.description
-  editForm.price_thb = product.price_thb
+  editForm.price_thb = product.price_thb / 100
   editForm.weight_g = product.weight_g
   editForm.image_url = product.image_url
   editForm.active = product.active
@@ -226,7 +227,7 @@ async function submitEdit() {
       slug: editForm.slug.trim().toLowerCase(),
       name: editForm.name.trim(),
       description: editForm.description.trim(),
-      price_thb: Number(editForm.price_thb),
+      price_thb: Math.round(Number(editForm.price_thb) * 100),
       weight_g: Number(editForm.weight_g),
       image_url: editForm.image_url.trim(),
       active: editForm.active,
@@ -282,7 +283,7 @@ onMounted(async () => {
         <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
           <input v-model="createForm.slug" type="text" placeholder="Slug (plant-protein-500g)" class="rounded-md border border-sand px-4 py-3 text-sm bg-surface-alt text-foreground placeholder:text-muted focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent" />
           <input v-model="createForm.name" type="text" placeholder="Name" class="rounded-md border border-sand px-4 py-3 text-sm bg-surface-alt text-foreground placeholder:text-muted focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent" />
-          <input v-model.number="createForm.price_thb" type="number" min="1" step="1" placeholder="Price (satang)" class="rounded-md border border-sand px-4 py-3 text-sm bg-surface-alt text-foreground placeholder:text-muted focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent" />
+          <input v-model.number="createForm.price_thb" type="number" min="1" step="1" placeholder="Price (THB)" class="rounded-md border border-sand px-4 py-3 text-sm bg-surface-alt text-foreground placeholder:text-muted focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent" />
           <input v-model.number="createForm.weight_g" type="number" min="1" step="1" placeholder="Weight (g)" class="rounded-md border border-sand px-4 py-3 text-sm bg-surface-alt text-foreground placeholder:text-muted focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent" />
           <input v-model.number="createForm.stock_count" type="number" min="0" step="1" placeholder="Initial stock" class="rounded-md border border-sand px-4 py-3 text-sm bg-surface-alt text-foreground placeholder:text-muted focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent" />
           <input v-model="createForm.image_url" type="text" placeholder="Image URL, /path, or data:image" class="rounded-md border border-sand px-4 py-3 text-sm bg-surface-alt text-foreground placeholder:text-muted focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent" />

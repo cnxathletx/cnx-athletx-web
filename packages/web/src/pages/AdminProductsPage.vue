@@ -314,10 +314,12 @@ onMounted(async () => {
           class="w-full rounded-md border border-sand px-4 py-3 text-sm bg-surface-alt text-foreground placeholder:text-muted focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
         />
 
-        <label class="inline-flex items-center gap-2 text-sm text-foreground">
-          <input v-model="createForm.active" type="checkbox" class="h-4 w-4 rounded border-sand bg-surface-alt text-primary focus:ring-primary" />
-          Active product
-        </label>
+        <div class="flex items-center gap-2">
+          <label class="inline-flex items-center gap-2 text-sm text-foreground">
+            <input v-model="createForm.active" type="checkbox" class="h-4 w-4 rounded border-sand bg-surface-alt text-primary focus:ring-primary" />
+            Active product
+          </label>
+        </div>
 
         <PrimaryButton :disabled="createLoading || createImageUploading" @click="submitCreate">Create Product</PrimaryButton>
       </div>
@@ -407,10 +409,12 @@ onMounted(async () => {
               class="w-full rounded-md border border-sand px-4 py-3 text-sm bg-surface-alt text-foreground focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
             />
 
-            <label class="inline-flex items-center gap-2 text-sm text-foreground">
-              <input v-model="editForm.active" type="checkbox" class="h-4 w-4 rounded border-sand bg-surface-alt text-primary focus:ring-primary" />
-              Active product
-            </label>
+            <div class="flex items-center gap-2">
+              <label class="inline-flex items-center gap-2 text-sm text-foreground">
+                <input v-model="editForm.active" type="checkbox" class="h-4 w-4 rounded border-sand bg-surface-alt text-primary focus:ring-primary" />
+                Active product
+              </label>
+            </div>
 
             <div class="flex gap-2">
               <PrimaryButton :disabled="editLoading || editImageUploading" @click="submitEdit">Save</PrimaryButton>

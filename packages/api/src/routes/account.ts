@@ -146,6 +146,9 @@ export function registerAccountRoutes(router: RouterType) {
     if (b.line2 !== undefined && b.line2 !== null && b.line2 !== '' && typeof b.line2 !== 'string') {
       errors.push({ field: 'line2', message: 'Address line 2 must be a string' })
     }
+    if (typeof b.subdistrict !== 'string' || b.subdistrict.trim().length < 1) {
+      errors.push({ field: 'subdistrict', message: 'Sub-district is required' })
+    }
     if (typeof b.district !== 'string' || b.district.trim().length < 1) {
       errors.push({ field: 'district', message: 'District is required' })
     }
@@ -163,6 +166,7 @@ export function registerAccountRoutes(router: RouterType) {
     const address = {
       line1: (b.line1 as string).trim(),
       line2: b.line2 ? (b.line2 as string).trim() : null,
+      subdistrict: (b.subdistrict as string).trim(),
       district: (b.district as string).trim(),
       province: (b.province as string).trim(),
       postal_code: b.postal_code as string,

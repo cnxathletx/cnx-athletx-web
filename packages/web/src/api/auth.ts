@@ -118,6 +118,7 @@ export async function fetchAccountOrders(page = 1, limit = 10): Promise<{
 export async function fetchLastAddress(): Promise<{
   line1: string
   line2: string | null
+  subdistrict: string
   district: string
   province: string
   postal_code: string
@@ -145,6 +146,7 @@ export async function fetchLastAddress(): Promise<{
 export interface SavedAddress {
   line1: string
   line2: string | null
+  subdistrict: string
   district: string
   province: string
   postal_code: string

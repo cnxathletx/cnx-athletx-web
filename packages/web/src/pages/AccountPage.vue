@@ -40,6 +40,7 @@ const profile = ref({
 const address = ref<SavedAddress>({
   line1: '',
   line2: null,
+  subdistrict: '',
   district: '',
   province: '',
   postal_code: '',
@@ -49,6 +50,7 @@ const thaiAddr = useThaiAddress()
 // Sync Thai address composable → address ref
 watch(thaiAddr.selectedProvince, (v) => { address.value.province = v })
 watch(thaiAddr.selectedDistrict, (v) => { address.value.district = v })
+watch(thaiAddr.selectedSubdistrict, (v) => { address.value.subdistrict = v })
 watch(thaiAddr.postalCode, (v) => { address.value.postal_code = v })
 
 const savingAddress = ref(false)
@@ -146,6 +148,10 @@ async function saveAddress() {
     addressError.value = 'District is required.'
     return
   }
+  if (!address.value.subdistrict.trim()) {
+    addressError.value = 'Sub-district is required.'
+    return
+  }
   if (!address.value.province.trim()) {
     addressError.value = 'Province is required.'
     return
@@ -160,6 +166,7 @@ async function saveAddress() {
     const saved = await updateAddress({
       line1: address.value.line1.trim(),
       line2: address.value.line2?.trim() || null,
+      subdistrict: address.value.subdistrict.trim(),
       district: address.value.district.trim(),
       province: address.value.province.trim(),
       postal_code: address.value.postal_code,
@@ -216,6 +223,7 @@ onMounted(async () => {
         thaiAddr.setAddress({
           province: saved.province,
           district: saved.district,
+          subdistrict: saved.subdistrict,
           postalCode: saved.postal_code,
         })
       }

@@ -161,6 +161,7 @@ onMounted(async () => {
       thaiAddr.setAddress({
         province: address.province,
         district: address.district,
+        subdistrict: address.subdistrict,
         postalCode: address.postal_code,
       })
     }

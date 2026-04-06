@@ -77,24 +77,12 @@ export function useThaiAddress() {
    * Restore a saved address atomically without triggering reset watchers.
    * Reverse-looks up the subdistrict from district + postal code.
    */
-  function setAddress(addr: { province?: string; district?: string; postalCode?: string }) {
+  function setAddress(addr: { province?: string; district?: string; subdistrict?: string; postalCode?: string }) {
     restoring = true
     if (addr.province) selectedProvince.value = addr.province
     if (addr.district) selectedDistrict.value = addr.district
+    if (addr.subdistrict) selectedSubdistrict.value = addr.subdistrict
     if (addr.postalCode) postalCode.value = addr.postalCode
-
-    // Reverse-lookup subdistrict from district + postal code
-    if (addr.district && addr.postalCode) {
-      const provCode = provinceByName.get(selectedProvince.value)
-      if (provCode !== undefined) {
-        const distCode = districtByKey.get(`${provCode}:${addr.district}`)
-        if (distCode !== undefined) {
-          const subs = subdistrictsByDistrict.get(distCode) ?? []
-          const match = subs.find((s) => String(s.postalCode) === addr.postalCode)
-          if (match) selectedSubdistrict.value = match.name
-        }
-      }
-    }
     // Keep flag up until watchers have flushed
     nextTick(() => { restoring = false })
   }

@@ -1,4 +1,4 @@
-import { computed, ref, watch } from 'vue'
+import { computed, nextTick, ref, watch } from 'vue'
 import data from '../data/th-address.json'
 
 // Data format: p = [code, nameEn][], d = [provinceCode, districtCode, nameEn][], s = [districtCode, nameEn, postalCode][]
@@ -95,7 +95,8 @@ export function useThaiAddress() {
         }
       }
     }
-    restoring = false
+    // Keep flag up until watchers have flushed
+    nextTick(() => { restoring = false })
   }
 
   return {

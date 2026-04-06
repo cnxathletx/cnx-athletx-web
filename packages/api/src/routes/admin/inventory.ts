@@ -12,6 +12,7 @@ export function registerAdminInventoryRoutes(router: RouterType) {
                 i.stock_count, i.reserved_count, (i.stock_count - i.reserved_count) AS available_count
          FROM products p
          JOIN inventory i ON i.product_id = p.id
+         WHERE p.archived = 0
          ORDER BY p.id ASC`
       ).all<AdminInventoryRow>()
 

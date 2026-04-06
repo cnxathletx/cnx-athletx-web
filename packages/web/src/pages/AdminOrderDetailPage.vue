@@ -261,7 +261,7 @@ onMounted(async () => {
           <div class="border-t border-sand/60 pt-4 space-y-1 text-sm">
             <div class="flex justify-between text-muted"><span>Subtotal</span><span>{{ formatMoney(order.subtotal_thb) }}</span></div>
             <div class="flex justify-between text-muted"><span>Shipping</span><span>{{ formatMoney(order.shipping_thb) }}</span></div>
-            <div class="flex justify-between text-muted"><span>Discount</span><span>-{{ formatMoney(order.discount_thb) }}</span></div>
+            <div v-if="order.discount_thb > 0" class="flex justify-between text-muted"><span>Discount</span><span>-{{ formatMoney(order.discount_thb) }}</span></div>
             <div class="flex justify-between text-foreground font-bold pt-1"><span>Total</span><span>{{ formatMoney(order.total_thb) }}</span></div>
           </div>
         </div>

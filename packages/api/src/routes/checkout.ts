@@ -80,7 +80,7 @@ export function registerCheckoutRoutes(router: RouterType) {
         `SELECT p.id, p.name, p.price_thb, i.stock_count, i.reserved_count
          FROM products p
          JOIN inventory i ON i.product_id = p.id
-         WHERE p.id IN (${placeholders}) AND p.active = 1`
+         WHERE p.id IN (${placeholders}) AND p.active = 1 AND p.archived = 0`
       )
         .bind(...productIds)
         .all<ProductRow>()

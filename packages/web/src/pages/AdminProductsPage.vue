@@ -59,7 +59,9 @@ const editForm = reactive<Required<UpdateAdminProductPayload>>({
   product_line_id: null,
 })
 
-const sortedProducts = computed(() => [...products.value].sort((a, b) => a.id - b.id))
+const activeProducts = computed(() => products.value.filter((p) => !p.archived).sort((a, b) => a.id - b.id))
+const archivedProducts = computed(() => products.value.filter((p) => p.archived).sort((a, b) => a.id - b.id))
+const showArchived = ref(false)
 const createImagePreview = computed(() => createForm.image_url.trim())
 const editImagePreview = computed(() => editForm.image_url.trim())
 
@@ -267,6 +269,16 @@ async function submitEdit() {
   }
 }
 
+async function toggleArchive(product: AdminProduct) {
+  try {
+    const updated = await updateAdminProduct(product.id, { archived: !product.archived })
+    products.value = products.value.map((p) => (p.id === product.id ? updated : p))
+    if (editingId.value === product.id) cancelEdit()
+  } catch (err) {
+    error.value = err instanceof AdminApiErrorResponse ? err.message : 'Failed to update product.'
+  }
+}
+
 function formatMoney(value: number): string {
   return `฿${(value / 100).toLocaleString()}`
 }
@@ -358,7 +370,7 @@ onMounted(async () => {
       <div v-else-if="error" class="bg-error/10 border border-error/30 rounded-md p-4 text-sm text-error">{{ error }}</div>
       <div v-else class="space-y-4">
         <div
-          v-for="product in sortedProducts"
+          v-for="product in activeProducts"
           :key="product.id"
           class="bg-surface rounded-lg ring-1 ring-[var(--card-ring)] p-4 sm:p-6 space-y-4"
         >
@@ -461,8 +473,58 @@ onMounted(async () => {
             </div>
           </div>
 
-          <div v-else class="border-t border-sand/60 pt-4">
+          <div v-else class="border-t border-sand/60 pt-4 flex gap-2">
             <SecondaryButton size="sm" @click="startEdit(product)">Edit Product</SecondaryButton>
+            <SecondaryButton size="sm" @click="toggleArchive(product)">Archive</SecondaryButton>
+          </div>
+        </div>
+
+        <!-- Archived Products -->
+        <div v-if="archivedProducts.length > 0" class="pt-4">
+          <button
+            class="flex items-center gap-2 text-sm font-medium text-muted hover:text-foreground transition-colors"
+            @click="showArchived = !showArchived"
+          >
+            <svg
+              class="w-4 h-4 transition-transform"
+              :class="{ 'rotate-90': showArchived }"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
+            </svg>
+            Archived Products ({{ archivedProducts.length }})
+          </button>
+
+          <div v-if="showArchived" class="mt-4 space-y-4">
+            <div
+              v-for="product in archivedProducts"
+              :key="product.id"
+              class="bg-surface rounded-lg ring-1 ring-[var(--card-ring)] p-4 sm:p-6 space-y-4 opacity-70"
+            >
+              <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                <div class="flex items-center gap-3">
+                  <img
+                    v-if="product.image_url"
+                    :src="product.image_url"
+                    alt="Product thumbnail"
+                    class="w-12 h-12 rounded-md object-cover ring-1 ring-[var(--card-ring)]"
+                  />
+                  <div>
+                    <h3 class="text-lg font-semibold text-foreground">{{ product.name }}</h3>
+                    <p class="text-xs font-mono text-muted">ID {{ product.id }} · {{ product.slug }}</p>
+                  </div>
+                </div>
+                <div class="text-right">
+                  <p class="text-sm font-semibold text-muted">Archived</p>
+                  <p class="text-xs text-muted">{{ formatMoney(product.price_thb) }} · {{ product.weight_g }}g</p>
+                </div>
+              </div>
+              <div class="border-t border-sand/60 pt-4">
+                <SecondaryButton size="sm" @click="toggleArchive(product)">Unarchive</SecondaryButton>
+              </div>
+            </div>
           </div>
         </div>
       </div>

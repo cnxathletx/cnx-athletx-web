@@ -8,7 +8,7 @@ export function registerAdminProductRoutes(router: RouterType) {
   router.get('/api/admin/products', requireAdmin(async (_request, env) => {
     try {
       const { results } = await env.DB.prepare(
-        `SELECT p.id, p.product_line_id, p.slug, p.name, p.description, p.price_thb, p.weight_g, p.image_url, p.active, p.created_at, p.updated_at,
+        `SELECT p.id, p.product_line_id, p.slug, p.name, p.description, p.price_thb, p.weight_g, p.image_url, p.active, p.archived, p.created_at, p.updated_at,
                 i.stock_count, i.reserved_count, (i.stock_count - i.reserved_count) AS available_count
          FROM products p
          JOIN inventory i ON i.product_id = p.id
@@ -26,6 +26,7 @@ export function registerAdminProductRoutes(router: RouterType) {
           weight_g: row.weight_g,
           image_url: row.image_url,
           active: !!row.active,
+          archived: !!row.archived,
           created_at: row.created_at,
           updated_at: row.updated_at,
           stock_count: row.stock_count,
@@ -86,7 +87,7 @@ export function registerAdminProductRoutes(router: RouterType) {
       ])
 
       const product = await env.DB.prepare(
-        `SELECT p.id, p.product_line_id, p.slug, p.name, p.description, p.price_thb, p.weight_g, p.image_url, p.active, p.created_at, p.updated_at,
+        `SELECT p.id, p.product_line_id, p.slug, p.name, p.description, p.price_thb, p.weight_g, p.image_url, p.active, p.archived, p.created_at, p.updated_at,
                 i.stock_count, i.reserved_count, (i.stock_count - i.reserved_count) AS available_count
          FROM products p
          JOIN inventory i ON i.product_id = p.id
@@ -113,6 +114,7 @@ export function registerAdminProductRoutes(router: RouterType) {
             weight_g: product.weight_g,
             image_url: product.image_url,
             active: !!product.active,
+            archived: !!product.archived,
             created_at: product.created_at,
             updated_at: product.updated_at,
             stock_count: product.stock_count,
@@ -164,6 +166,7 @@ export function registerAdminProductRoutes(router: RouterType) {
     if (data.weight_g !== undefined) { setParts.push('weight_g = ?'); binds.push(data.weight_g) }
     if (data.image_url !== undefined) { setParts.push('image_url = ?'); binds.push(data.image_url) }
     if (data.active !== undefined) { setParts.push('active = ?'); binds.push(data.active ? 1 : 0) }
+    if (data.archived !== undefined) { setParts.push('archived = ?'); binds.push(data.archived ? 1 : 0) }
     if (data.product_line_id !== undefined) { setParts.push('product_line_id = ?'); binds.push(data.product_line_id) }
 
     const now = nowIso()
@@ -184,7 +187,7 @@ export function registerAdminProductRoutes(router: RouterType) {
         .run()
 
       const product = await env.DB.prepare(
-        `SELECT p.id, p.product_line_id, p.slug, p.name, p.description, p.price_thb, p.weight_g, p.image_url, p.active, p.created_at, p.updated_at,
+        `SELECT p.id, p.product_line_id, p.slug, p.name, p.description, p.price_thb, p.weight_g, p.image_url, p.active, p.archived, p.created_at, p.updated_at,
                 i.stock_count, i.reserved_count, (i.stock_count - i.reserved_count) AS available_count
          FROM products p
          JOIN inventory i ON i.product_id = p.id

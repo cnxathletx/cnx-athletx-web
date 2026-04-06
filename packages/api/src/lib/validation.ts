@@ -354,7 +354,7 @@ export function validateUpdateProductBody(body: unknown): { errors: ValidationEr
   }
 
   const b = body as Record<string, unknown>
-  const allowed = ['slug', 'name', 'description', 'price_thb', 'weight_g', 'image_url', 'active', 'product_line_id']
+  const allowed = ['slug', 'name', 'description', 'price_thb', 'weight_g', 'image_url', 'active', 'archived', 'product_line_id']
   const provided = allowed.filter((key) => key in b)
 
   if (provided.length === 0) {
@@ -441,6 +441,14 @@ export function validateUpdateProductBody(body: unknown): { errors: ValidationEr
       errors.push({ field: 'active', message: 'active must be boolean' })
     } else {
       data.active = b.active
+    }
+  }
+
+  if ('archived' in b) {
+    if (typeof b.archived !== 'boolean') {
+      errors.push({ field: 'archived', message: 'archived must be boolean' })
+    } else {
+      data.archived = b.archived
     }
   }
 

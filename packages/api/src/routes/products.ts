@@ -11,7 +11,7 @@ export function registerProductRoutes(router: RouterType) {
          FROM products p
          JOIN inventory i ON i.product_id = p.id
          LEFT JOIN product_lines pl ON pl.id = p.product_line_id
-         WHERE p.active = 1
+         WHERE p.active = 1 AND p.archived = 0
          ORDER BY p.id ASC`
       ).all()
 
@@ -37,7 +37,7 @@ export function registerProductRoutes(router: RouterType) {
          FROM products p
          JOIN inventory i ON i.product_id = p.id
          LEFT JOIN product_lines pl ON pl.id = p.product_line_id
-         WHERE p.slug = ? AND p.active = 1`
+         WHERE p.slug = ? AND p.active = 1 AND p.archived = 0`
       )
         .bind(slug)
         .first()

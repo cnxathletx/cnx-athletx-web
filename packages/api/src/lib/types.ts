@@ -272,6 +272,7 @@ export interface AdminProductRow {
   weight_g: number
   image_url: string
   active: number
+  archived: number
   created_at: string
   updated_at: string
   stock_count: number
@@ -299,6 +300,7 @@ export interface AdminUpdateProductBody {
   weight_g?: number
   image_url?: string
   active?: boolean
+  archived?: boolean
   product_line_id?: number | null
 }
 

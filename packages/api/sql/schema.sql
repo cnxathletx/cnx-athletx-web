@@ -26,6 +26,7 @@ CREATE TABLE IF NOT EXISTS products (
     weight_g INTEGER NOT NULL,
     image_url TEXT NOT NULL,
     active INTEGER NOT NULL DEFAULT 1,
+    archived INTEGER NOT NULL DEFAULT 0,
     created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (product_line_id) REFERENCES product_lines(id) ON DELETE SET NULL
@@ -33,6 +34,7 @@ CREATE TABLE IF NOT EXISTS products (
 
 CREATE INDEX IF NOT EXISTS idx_products_slug ON products(slug);
 CREATE INDEX IF NOT EXISTS idx_products_active ON products(active);
+CREATE INDEX IF NOT EXISTS idx_products_archived ON products(archived);
 CREATE INDEX IF NOT EXISTS idx_products_product_line_id ON products(product_line_id);
 
 -- inventory table (separate for atomic stock operations)

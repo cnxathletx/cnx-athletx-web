@@ -33,6 +33,9 @@ export function useThaiAddress() {
   const selectedSubdistrict = ref('')
   const postalCode = ref('')
 
+  // Guard flag to skip reset watchers during programmatic restore
+  let restoring = false
+
   const filteredDistricts = computed(() => {
     const code = provinceByName.get(selectedProvince.value)
     if (code === undefined) return []
@@ -47,25 +50,53 @@ export function useThaiAddress() {
     return (subdistrictsByDistrict.get(distCode) ?? []).sort((a, b) => a.name.localeCompare(b.name))
   })
 
-  // Reset downstream when province changes
+  // Reset downstream when province changes (skipped during restore)
   watch(selectedProvince, () => {
+    if (restoring) return
     selectedDistrict.value = ''
     selectedSubdistrict.value = ''
     postalCode.value = ''
   })
 
-  // Reset subdistrict when district changes
+  // Reset subdistrict when district changes (skipped during restore)
   watch(selectedDistrict, () => {
+    if (restoring) return
     selectedSubdistrict.value = ''
     postalCode.value = ''
   })
 
   // Auto-fill postal code when subdistrict is selected
   watch(selectedSubdistrict, (name) => {
+    if (restoring) return
     if (!name) { postalCode.value = ''; return }
     const match = filteredSubdistricts.value.find((s) => s.name === name)
     if (match) postalCode.value = String(match.postalCode)
   })
+
+  /**
+   * Restore a saved address atomically without triggering reset watchers.
+   * Reverse-looks up the subdistrict from district + postal code.
+   */
+  function setAddress(addr: { province?: string; district?: string; postalCode?: string }) {
+    restoring = true
+    if (addr.province) selectedProvince.value = addr.province
+    if (addr.district) selectedDistrict.value = addr.district
+    if (addr.postalCode) postalCode.value = addr.postalCode
+
+    // Reverse-lookup subdistrict from district + postal code
+    if (addr.district && addr.postalCode) {
+      const provCode = provinceByName.get(selectedProvince.value)
+      if (provCode !== undefined) {
+        const distCode = districtByKey.get(`${provCode}:${addr.district}`)
+        if (distCode !== undefined) {
+          const subs = subdistrictsByDistrict.get(distCode) ?? []
+          const match = subs.find((s) => String(s.postalCode) === addr.postalCode)
+          if (match) selectedSubdistrict.value = match.name
+        }
+      }
+    }
+    restoring = false
+  }
 
   return {
     provinces,
@@ -75,5 +106,6 @@ export function useThaiAddress() {
     postalCode,
     filteredDistricts,
     filteredSubdistricts,
+    setAddress,
   }
 }

@@ -158,12 +158,11 @@ onMounted(async () => {
     if (!form.value.line1) form.value.line1 = address.line1
     if (!form.value.line2) form.value.line2 = address.line2 ?? ''
     if (!thaiAddr.selectedProvince.value && address.province) {
-      thaiAddr.selectedProvince.value = address.province
-      // Wait for district list to populate, then set district
-      await new Promise((r) => setTimeout(r, 0))
-      if (address.district) thaiAddr.selectedDistrict.value = address.district
-      await new Promise((r) => setTimeout(r, 0))
-      if (address.postal_code) thaiAddr.postalCode.value = address.postal_code
+      thaiAddr.setAddress({
+        province: address.province,
+        district: address.district,
+        postalCode: address.postal_code,
+      })
     }
   } catch {
     // Ignore prefill failures.

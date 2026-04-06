@@ -213,11 +213,11 @@ onMounted(async () => {
       address.value = saved
       // Pre-fill Thai address dropdowns
       if (saved.province) {
-        thaiAddr.selectedProvince.value = saved.province
-        await new Promise((r) => setTimeout(r, 0))
-        if (saved.district) thaiAddr.selectedDistrict.value = saved.district
-        await new Promise((r) => setTimeout(r, 0))
-        if (saved.postal_code) thaiAddr.postalCode.value = saved.postal_code
+        thaiAddr.setAddress({
+          province: saved.province,
+          district: saved.district,
+          postalCode: saved.postal_code,
+        })
       }
     }
   } catch {

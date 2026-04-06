@@ -270,9 +270,10 @@ async function submitEdit() {
 }
 
 async function toggleArchive(product: AdminProduct) {
+  const newArchived = !product.archived
   try {
-    const updated = await updateAdminProduct(product.id, { archived: !product.archived })
-    products.value = products.value.map((p) => (p.id === product.id ? updated : p))
+    const updated = await updateAdminProduct(product.id, { archived: newArchived })
+    products.value = products.value.map((p) => (p.id === product.id ? { ...updated, archived: newArchived } : p))
     if (editingId.value === product.id) cancelEdit()
   } catch (err) {
     error.value = err instanceof AdminApiErrorResponse ? err.message : 'Failed to update product.'

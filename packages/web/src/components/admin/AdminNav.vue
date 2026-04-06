@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import { useRoute } from 'vue-router'
-import SecondaryButton from '../ui/SecondaryButton.vue'
 
 const route = useRoute()
 
@@ -19,8 +18,13 @@ const filteredLinks = computed(() => links.filter((link) => link.to !== route.pa
 
 <template>
   <div class="flex items-center gap-2 flex-wrap">
-    <RouterLink v-for="link in filteredLinks" :key="link.to" :to="link.to">
-      <SecondaryButton size="sm">{{ link.label }}</SecondaryButton>
+    <RouterLink
+      v-for="link in filteredLinks"
+      :key="link.to"
+      :to="link.to"
+      class="inline-flex items-center justify-center rounded-md font-semibold transition-all duration-200 border-2 border-foreground text-foreground bg-transparent hover:bg-foreground hover:text-background focus:outline-none focus:ring-2 focus:ring-foreground focus:ring-offset-2 focus:ring-offset-background active:scale-[0.97] px-4 py-2 text-sm"
+    >
+      {{ link.label }}
     </RouterLink>
   </div>
 </template>

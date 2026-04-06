@@ -3,6 +3,7 @@ import { onMounted, reactive, ref } from 'vue'
 import { adjustInventory, fetchInventory, type AdminInventoryItem, AdminApiErrorResponse } from '../api/admin'
 import PrimaryButton from '../components/ui/PrimaryButton.vue'
 import SecondaryButton from '../components/ui/SecondaryButton.vue'
+import AdminNav from '../components/admin/AdminNav.vue'
 
 const loading = ref(true)
 const error = ref('')
@@ -92,11 +93,7 @@ onMounted(async () => {
           <h1 class="text-3xl sm:text-4xl font-bold text-foreground">Admin Inventory</h1>
           <p class="text-sm text-muted mt-1">Adjust stock counts and monitor available units.</p>
         </div>
-        <div class="flex items-center gap-2">
-          <RouterLink to="/admin/orders"><SecondaryButton size="sm">Orders</SecondaryButton></RouterLink>
-          <RouterLink to="/admin/products"><SecondaryButton size="sm">Products</SecondaryButton></RouterLink>
-          <RouterLink to="/admin/discounts"><SecondaryButton size="sm">Discounts</SecondaryButton></RouterLink>
-        </div>
+        <AdminNav />
       </div>
 
       <div v-if="loading" class="space-y-3 animate-pulse">

@@ -3,6 +3,7 @@ import { onMounted, ref } from 'vue'
 import { fetchAdminOrders, type AdminOrderListItem, AdminApiErrorResponse } from '../api/admin'
 import PrimaryButton from '../components/ui/PrimaryButton.vue'
 import SecondaryButton from '../components/ui/SecondaryButton.vue'
+import AdminNav from '../components/admin/AdminNav.vue'
 
 const loading = ref(true)
 const error = ref('')
@@ -111,17 +112,7 @@ onMounted(async () => {
           <h1 class="text-3xl sm:text-4xl font-bold text-foreground">Admin Orders</h1>
           <p class="text-sm text-muted mt-1">Manage order fulfillment workflow.</p>
         </div>
-        <div class="flex items-center gap-2">
-          <RouterLink to="/admin/inventory">
-            <SecondaryButton size="sm">Inventory</SecondaryButton>
-          </RouterLink>
-          <RouterLink to="/admin/products">
-            <SecondaryButton size="sm">Products</SecondaryButton>
-          </RouterLink>
-          <RouterLink to="/admin/discounts">
-            <SecondaryButton size="sm">Discounts</SecondaryButton>
-          </RouterLink>
-        </div>
+        <AdminNav />
       </div>
 
       <form class="bg-surface rounded-lg ring-1 ring-[var(--card-ring)] p-4 sm:p-6 grid grid-cols-1 sm:grid-cols-4 gap-3" @submit.prevent="applyFilters">

@@ -11,6 +11,7 @@ import {
 } from '../api/admin'
 import PrimaryButton from '../components/ui/PrimaryButton.vue'
 import SecondaryButton from '../components/ui/SecondaryButton.vue'
+import AdminNav from '../components/admin/AdminNav.vue'
 
 const loading = ref(true)
 const error = ref('')
@@ -197,10 +198,7 @@ onMounted(async () => {
           <h1 class="text-3xl sm:text-4xl font-bold text-foreground">Product Lines</h1>
           <p class="text-sm text-muted mt-1">Manage shared nutrition facts, ingredients, and usage instructions across product SKUs.</p>
         </div>
-        <div class="flex items-center gap-2">
-          <RouterLink to="/admin/products"><SecondaryButton size="sm">Products</SecondaryButton></RouterLink>
-          <RouterLink to="/admin/orders"><SecondaryButton size="sm">Orders</SecondaryButton></RouterLink>
-        </div>
+        <AdminNav />
       </div>
 
       <!-- Create Form -->

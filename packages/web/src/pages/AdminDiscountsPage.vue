@@ -12,6 +12,7 @@ import {
 import { RouterLink } from 'vue-router'
 import PrimaryButton from '../components/ui/PrimaryButton.vue'
 import SecondaryButton from '../components/ui/SecondaryButton.vue'
+import AdminNav from '../components/admin/AdminNav.vue'
 
 const loading = ref(true)
 const error = ref('')
@@ -173,11 +174,7 @@ onMounted(loadCodes)
           <RouterLink to="/admin" class="text-sm text-muted hover:text-primary transition-colors mb-1 inline-block">&larr; Dashboard</RouterLink>
           <h1 class="text-2xl font-bold text-foreground">Discount Codes</h1>
         </div>
-        <div class="flex items-center gap-2">
-          <RouterLink to="/admin/orders"><SecondaryButton size="sm">Orders</SecondaryButton></RouterLink>
-          <RouterLink to="/admin/products"><SecondaryButton size="sm">Products</SecondaryButton></RouterLink>
-          <RouterLink to="/admin/inventory"><SecondaryButton size="sm">Inventory</SecondaryButton></RouterLink>
-        </div>
+        <AdminNav />
       </div>
       <div class="flex justify-end mb-4">
         <PrimaryButton size="sm" @click="showCreate = !showCreate">

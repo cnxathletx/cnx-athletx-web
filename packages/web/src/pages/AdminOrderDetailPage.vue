@@ -12,6 +12,7 @@ import {
 } from '../api/admin'
 import PrimaryButton from '../components/ui/PrimaryButton.vue'
 import SecondaryButton from '../components/ui/SecondaryButton.vue'
+import AdminNav from '../components/admin/AdminNav.vue'
 
 const route = useRoute()
 const orderId = route.params.id as string
@@ -156,13 +157,7 @@ onMounted(async () => {
         <RouterLink to="/admin/orders" class="text-sm font-semibold text-primary hover:underline underline-offset-4">
           ← Back to Orders
         </RouterLink>
-        <div class="flex items-center gap-2">
-          <RouterLink to="/admin/inventory" class="text-xs font-semibold text-muted hover:text-primary">Inventory</RouterLink>
-          <span class="text-muted/40">|</span>
-          <RouterLink to="/admin/products" class="text-xs font-semibold text-muted hover:text-primary">Products</RouterLink>
-          <span class="text-muted/40">|</span>
-          <RouterLink to="/admin/discounts" class="text-xs font-semibold text-muted hover:text-primary">Discounts</RouterLink>
-        </div>
+        <AdminNav />
       </div>
 
       <div v-if="loading" class="space-y-4 animate-pulse">

@@ -13,6 +13,7 @@ import {
 } from '../api/admin'
 import PrimaryButton from '../components/ui/PrimaryButton.vue'
 import SecondaryButton from '../components/ui/SecondaryButton.vue'
+import AdminNav from '../components/admin/AdminNav.vue'
 
 const IMAGE_UPLOAD_MAX_BYTES = 1_500_000
 const ALLOWED_IMAGE_TYPES = new Set(['image/jpeg', 'image/png', 'image/webp', 'image/gif'])
@@ -284,12 +285,7 @@ onMounted(async () => {
           <h1 class="text-3xl sm:text-4xl font-bold text-foreground">Admin Products</h1>
           <p class="text-sm text-muted mt-1">Create, edit, and archive product catalog entries.</p>
         </div>
-        <div class="flex items-center gap-2">
-          <RouterLink to="/admin/product-lines"><SecondaryButton size="sm">Product Lines</SecondaryButton></RouterLink>
-          <RouterLink to="/admin/orders"><SecondaryButton size="sm">Orders</SecondaryButton></RouterLink>
-          <RouterLink to="/admin/inventory"><SecondaryButton size="sm">Inventory</SecondaryButton></RouterLink>
-          <RouterLink to="/admin/discounts"><SecondaryButton size="sm">Discounts</SecondaryButton></RouterLink>
-        </div>
+        <AdminNav />
       </div>
 
       <div class="bg-surface rounded-lg ring-1 ring-[var(--card-ring)] p-4 sm:p-6 space-y-4">

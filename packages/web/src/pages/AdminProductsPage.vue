@@ -3,8 +3,10 @@ import { computed, onMounted, reactive, ref } from 'vue'
 import {
   createAdminProduct,
   fetchAdminProducts,
+  fetchAdminProductLines,
   updateAdminProduct,
   type AdminProduct,
+  type AdminProductLine,
   type CreateAdminProductPayload,
   type UpdateAdminProductPayload,
   AdminApiErrorResponse,
@@ -18,6 +20,7 @@ const ALLOWED_IMAGE_TYPES = new Set(['image/jpeg', 'image/png', 'image/webp', 'i
 const loading = ref(true)
 const error = ref('')
 const products = ref<AdminProduct[]>([])
+const productLines = ref<AdminProductLine[]>([])
 
 const createLoading = ref(false)
 const createError = ref('')
@@ -41,6 +44,7 @@ const createForm = reactive<CreateAdminProductPayload>({
   image_url: '',
   active: true,
   stock_count: 0,
+  product_line_id: null,
 })
 
 const editForm = reactive<Required<UpdateAdminProductPayload>>({
@@ -51,17 +55,26 @@ const editForm = reactive<Required<UpdateAdminProductPayload>>({
   weight_g: 0,
   image_url: '',
   active: true,
+  product_line_id: null,
 })
 
 const sortedProducts = computed(() => [...products.value].sort((a, b) => a.id - b.id))
 const createImagePreview = computed(() => createForm.image_url.trim())
 const editImagePreview = computed(() => editForm.image_url.trim())
 
+function getProductLineName(id: number | null): string {
+  if (id === null) return 'None'
+  const pl = productLines.value.find((p) => p.id === id)
+  return pl ? pl.name : `ID ${id}`
+}
+
 async function loadProducts() {
   loading.value = true
   error.value = ''
   try {
-    products.value = await fetchAdminProducts()
+    const [prods, pls] = await Promise.all([fetchAdminProducts(), fetchAdminProductLines()])
+    products.value = prods
+    productLines.value = pls
   } catch (err) {
     if (err instanceof AdminApiErrorResponse) {
       error.value = err.message
@@ -82,6 +95,7 @@ function resetCreateForm() {
   createForm.image_url = ''
   createForm.active = true
   createForm.stock_count = 0
+  createForm.product_line_id = null
   createImageError.value = ''
 }
 
@@ -178,6 +192,7 @@ async function submitCreate() {
       description: createForm.description.trim(),
       image_url: createForm.image_url.trim(),
       price_thb: Math.round(createForm.price_thb * 100),
+      product_line_id: createForm.product_line_id,
     })
     products.value.push(product)
     createSuccess.value = 'Product created.'
@@ -206,6 +221,7 @@ function startEdit(product: AdminProduct) {
   editForm.weight_g = product.weight_g
   editForm.image_url = product.image_url
   editForm.active = product.active
+  editForm.product_line_id = product.product_line_id
 }
 
 function cancelEdit() {
@@ -231,6 +247,7 @@ async function submitEdit() {
       weight_g: Number(editForm.weight_g),
       image_url: editForm.image_url.trim(),
       active: editForm.active,
+      product_line_id: editForm.product_line_id,
     }
 
     const updated = await updateAdminProduct(editingId.value, payload)
@@ -268,6 +285,7 @@ onMounted(async () => {
           <p class="text-sm text-muted mt-1">Create, edit, and archive product catalog entries.</p>
         </div>
         <div class="flex items-center gap-2">
+          <RouterLink to="/admin/product-lines"><SecondaryButton size="sm">Product Lines</SecondaryButton></RouterLink>
           <RouterLink to="/admin/orders"><SecondaryButton size="sm">Orders</SecondaryButton></RouterLink>
           <RouterLink to="/admin/inventory"><SecondaryButton size="sm">Inventory</SecondaryButton></RouterLink>
           <RouterLink to="/admin/discounts"><SecondaryButton size="sm">Discounts</SecondaryButton></RouterLink>
@@ -287,6 +305,19 @@ onMounted(async () => {
           <input v-model.number="createForm.weight_g" type="number" min="1" step="1" placeholder="Weight (g)" class="rounded-md border border-sand px-4 py-3 text-sm bg-surface-alt text-foreground placeholder:text-muted focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent" />
           <input v-model.number="createForm.stock_count" type="number" min="0" step="1" placeholder="Initial stock" class="rounded-md border border-sand px-4 py-3 text-sm bg-surface-alt text-foreground placeholder:text-muted focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent" />
           <input v-model="createForm.image_url" type="text" placeholder="Image URL, /path, or data:image" class="rounded-md border border-sand px-4 py-3 text-sm bg-surface-alt text-foreground placeholder:text-muted focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent" />
+        </div>
+
+        <div class="space-y-1">
+          <label class="block text-sm font-medium text-foreground">Product Line</label>
+          <select
+            :value="createForm.product_line_id ?? ''"
+            @change="createForm.product_line_id = ($event.target as HTMLSelectElement).value ? Number(($event.target as HTMLSelectElement).value) : null"
+            class="w-full sm:w-auto rounded-md border border-sand px-4 py-3 text-sm bg-surface-alt text-foreground focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
+          >
+            <option value="">None</option>
+            <option v-for="pl in productLines" :key="pl.id" :value="pl.id">{{ pl.name }}</option>
+          </select>
+          <p class="text-xs text-muted">Links nutrition facts, ingredients, and usage instructions from the selected product line.</p>
         </div>
 
         <div class="space-y-2">
@@ -352,7 +383,7 @@ onMounted(async () => {
               <p class="text-sm font-semibold" :class="product.active ? 'text-primary' : 'text-muted'">
                 {{ product.active ? 'Active' : 'Inactive' }}
               </p>
-              <p class="text-xs text-muted">{{ formatMoney(product.price_thb) }} · {{ product.weight_g }}g</p>
+              <p class="text-xs text-muted">{{ formatMoney(product.price_thb) }} · {{ product.weight_g }}g · {{ getProductLineName(product.product_line_id) }}</p>
             </div>
           </div>
 
@@ -383,6 +414,18 @@ onMounted(async () => {
               <input v-model.number="editForm.price_thb" type="number" min="1" step="1" class="rounded-md border border-sand px-4 py-3 text-sm bg-surface-alt text-foreground focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent" />
               <input v-model.number="editForm.weight_g" type="number" min="1" step="1" class="rounded-md border border-sand px-4 py-3 text-sm bg-surface-alt text-foreground focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent" />
               <input v-model="editForm.image_url" type="text" class="sm:col-span-2 rounded-md border border-sand px-4 py-3 text-sm bg-surface-alt text-foreground focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent" />
+            </div>
+
+            <div class="space-y-1">
+              <label class="block text-sm font-medium text-foreground">Product Line</label>
+              <select
+                :value="editForm.product_line_id ?? ''"
+                @change="editForm.product_line_id = ($event.target as HTMLSelectElement).value ? Number(($event.target as HTMLSelectElement).value) : null"
+                class="w-full sm:w-auto rounded-md border border-sand px-4 py-3 text-sm bg-surface-alt text-foreground focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
+              >
+                <option value="">None</option>
+                <option v-for="pl in productLines" :key="pl.id" :value="pl.id">{{ pl.name }}</option>
+              </select>
             </div>
 
             <div class="space-y-2">

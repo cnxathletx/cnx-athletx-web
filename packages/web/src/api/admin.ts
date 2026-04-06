@@ -70,6 +70,7 @@ export interface AdminInventoryItem {
 
 export interface AdminProduct {
   id: number
+  product_line_id: number | null
   slug: string
   name: string
   description: string
@@ -93,6 +94,7 @@ export interface CreateAdminProductPayload {
   image_url: string
   active: boolean
   stock_count: number
+  product_line_id: number | null
 }
 
 export interface UpdateAdminProductPayload {
@@ -103,6 +105,36 @@ export interface UpdateAdminProductPayload {
   weight_g?: number
   image_url?: string
   active?: boolean
+  product_line_id?: number | null
+}
+
+// --- Admin Product Lines ---
+
+export interface AdminProductLine {
+  id: number
+  name: string
+  slug: string
+  nutrition_json: string
+  ingredients: string
+  how_to_use: string
+  created_at: string
+  updated_at: string
+}
+
+export interface CreateProductLinePayload {
+  name: string
+  slug: string
+  nutrition_json: string
+  ingredients: string
+  how_to_use: string
+}
+
+export interface UpdateProductLinePayload {
+  name?: string
+  slug?: string
+  nutrition_json?: string
+  ingredients?: string
+  how_to_use?: string
 }
 
 interface AdminApiError {
@@ -333,4 +365,37 @@ export async function updateAdminDiscountCode(id: number, payload: UpdateDiscoun
   if (!res.ok) await parseAdminError(res)
   const data = (await res.json()) as { success: true; discount_code: AdminDiscountCode }
   return data.discount_code
+}
+
+// --- Admin Product Lines ---
+
+export async function fetchAdminProductLines(): Promise<AdminProductLine[]> {
+  const res = await fetch(apiUrl('/api/admin/product-lines'), { credentials: 'include' })
+  if (!res.ok) await parseAdminError(res)
+  const data = (await res.json()) as { product_lines: AdminProductLine[] }
+  return data.product_lines
+}
+
+export async function createAdminProductLine(payload: CreateProductLinePayload): Promise<AdminProductLine> {
+  const res = await fetch(apiUrl('/api/admin/product-lines'), {
+    method: 'POST',
+    credentials: 'include',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload),
+  })
+  if (!res.ok) await parseAdminError(res)
+  const data = (await res.json()) as { success: true; product_line: AdminProductLine }
+  return data.product_line
+}
+
+export async function updateAdminProductLine(id: number, payload: UpdateProductLinePayload): Promise<AdminProductLine> {
+  const res = await fetch(apiUrl(`/api/admin/product-lines/${id}`), {
+    method: 'PATCH',
+    credentials: 'include',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload),
+  })
+  if (!res.ok) await parseAdminError(res)
+  const data = (await res.json()) as { success: true; product_line: AdminProductLine }
+  return data.product_line
 }

@@ -1,8 +1,19 @@
 -- CNX AthletX Seed Data
 
--- Products
-INSERT INTO products (slug, name, description, price_thb, weight_g, image_url, active) VALUES
+-- Product Lines
+INSERT INTO product_lines (name, slug, nutrition_json, ingredients, how_to_use) VALUES
 (
+    'Plant Protein',
+    'plant-protein',
+    '{"Serving Size":"30g (1 scoop)","Calories":"120","Protein":"25g","Carbohydrates":"3g","Fat":"1.5g","Fiber":"2g","Sodium":"150mg"}',
+    'Pea protein isolate, brown rice protein concentrate, natural vanilla flavoring, coconut MCT powder, sea salt, stevia leaf extract.',
+    'Mix one scoop (30g) with 250-300ml of cold water, plant milk, or your favorite smoothie. Shake or blend well. Best consumed within 30 minutes after training. Can also be added to oatmeal, pancakes, or baked goods.'
+);
+
+-- Products
+INSERT INTO products (product_line_id, slug, name, description, price_thb, weight_g, image_url, active) VALUES
+(
+    (SELECT id FROM product_lines WHERE slug = 'plant-protein'),
     'plant-protein-500g',
     'CNX Plant Protein 500g',
     'Premium pea and brown rice protein blend. 25g protein per serving. Made for athletes who care about what they put in their bodies. Neutral flavor, mixes smooth. Grown and produced in Thailand.',
@@ -12,6 +23,7 @@ INSERT INTO products (slug, name, description, price_thb, weight_g, image_url, a
     1
 ),
 (
+    (SELECT id FROM product_lines WHERE slug = 'plant-protein'),
     'plant-protein-1000g',
     'CNX Plant Protein 1kg',
     'Premium pea and brown rice protein blend. 25g protein per serving. Made for athletes who care about what they put in their bodies. Neutral flavor, mixes smooth. Grown and produced in Thailand. Better value for regular users.',

@@ -12,6 +12,8 @@ import type {
   AdminUpdateProductBody,
   AdminCreateDiscountBody,
   AdminUpdateDiscountBody,
+  AdminCreateProductLineBody,
+  AdminUpdateProductLineBody,
 } from './types'
 
 export function validateRequestLinkBody(body: unknown): { errors: ValidationError[]; data: RequestLinkBody | null } {
@@ -292,6 +294,7 @@ export function validateCreateProductBody(body: unknown): { errors: ValidationEr
   const imageUrl = typeof b.image_url === 'string' ? b.image_url.trim() : ''
   const active = typeof b.active === 'boolean' ? b.active : true
   const stockCount = typeof b.stock_count === 'number' ? b.stock_count : 0
+  const productLineId = b.product_line_id === null || b.product_line_id === undefined ? null : (typeof b.product_line_id === 'number' ? b.product_line_id : Number.NaN)
 
   if (!isValidProductSlug(slug)) {
     errors.push({ field: 'slug', message: 'slug must be 3-100 chars and contain only a-z, 0-9, or hyphen' })
@@ -319,6 +322,9 @@ export function validateCreateProductBody(body: unknown): { errors: ValidationEr
   if (!Number.isInteger(stockCount) || stockCount < 0 || stockCount > 1000000) {
     errors.push({ field: 'stock_count', message: 'stock_count must be an integer between 0 and 1000000' })
   }
+  if (productLineId !== null && (!Number.isInteger(productLineId) || productLineId < 1)) {
+    errors.push({ field: 'product_line_id', message: 'product_line_id must be a positive integer or null' })
+  }
 
   if (errors.length > 0) {
     return { errors, data: null }
@@ -335,6 +341,7 @@ export function validateCreateProductBody(body: unknown): { errors: ValidationEr
       image_url: imageUrl,
       active,
       stock_count: stockCount,
+      product_line_id: productLineId,
     },
   }
 }
@@ -347,7 +354,7 @@ export function validateUpdateProductBody(body: unknown): { errors: ValidationEr
   }
 
   const b = body as Record<string, unknown>
-  const allowed = ['slug', 'name', 'description', 'price_thb', 'weight_g', 'image_url', 'active']
+  const allowed = ['slug', 'name', 'description', 'price_thb', 'weight_g', 'image_url', 'active', 'product_line_id']
   const provided = allowed.filter((key) => key in b)
 
   if (provided.length === 0) {
@@ -434,6 +441,14 @@ export function validateUpdateProductBody(body: unknown): { errors: ValidationEr
       errors.push({ field: 'active', message: 'active must be boolean' })
     } else {
       data.active = b.active
+    }
+  }
+
+  if ('product_line_id' in b) {
+    if (b.product_line_id !== null && (typeof b.product_line_id !== 'number' || !Number.isInteger(b.product_line_id) || b.product_line_id < 1)) {
+      errors.push({ field: 'product_line_id', message: 'product_line_id must be a positive integer or null' })
+    } else {
+      data.product_line_id = b.product_line_id as number | null
     }
   }
 
@@ -577,6 +592,137 @@ export function validateUpdateDiscountBody(body: unknown): { errors: ValidationE
       errors.push({ field: 'expires_at', message: 'expires_at must be a valid ISO date string or null' })
     } else {
       data.expires_at = b.expires_at as string | null
+    }
+  }
+
+  if (errors.length > 0) {
+    return { errors, data: null }
+  }
+
+  return { errors: [], data }
+}
+
+export function validateCreateProductLineBody(body: unknown): { errors: ValidationError[]; data: AdminCreateProductLineBody | null } {
+  const errors: ValidationError[] = []
+
+  if (!body || typeof body !== 'object') {
+    return { errors: [{ field: 'body', message: 'Request body must be a JSON object' }], data: null }
+  }
+
+  const b = body as Record<string, unknown>
+  const name = typeof b.name === 'string' ? b.name.trim() : ''
+  const slug = typeof b.slug === 'string' ? b.slug.trim().toLowerCase() : ''
+  const nutritionJson = typeof b.nutrition_json === 'string' ? b.nutrition_json.trim() : '{}'
+  const ingredients = typeof b.ingredients === 'string' ? b.ingredients.trim() : ''
+  const howToUse = typeof b.how_to_use === 'string' ? b.how_to_use.trim() : ''
+
+  if (name.length < 2 || name.length > 120) {
+    errors.push({ field: 'name', message: 'name must be between 2 and 120 characters' })
+  }
+  if (!isValidProductSlug(slug)) {
+    errors.push({ field: 'slug', message: 'slug must be 3-100 chars and contain only a-z, 0-9, or hyphen' })
+  }
+  try {
+    JSON.parse(nutritionJson)
+  } catch {
+    errors.push({ field: 'nutrition_json', message: 'nutrition_json must be valid JSON' })
+  }
+  if (ingredients.length > 5000) {
+    errors.push({ field: 'ingredients', message: 'ingredients must be 5000 characters or fewer' })
+  }
+  if (howToUse.length > 5000) {
+    errors.push({ field: 'how_to_use', message: 'how_to_use must be 5000 characters or fewer' })
+  }
+
+  if (errors.length > 0) {
+    return { errors, data: null }
+  }
+
+  return {
+    errors: [],
+    data: { name, slug, nutrition_json: nutritionJson, ingredients, how_to_use: howToUse },
+  }
+}
+
+export function validateUpdateProductLineBody(body: unknown): { errors: ValidationError[]; data: AdminUpdateProductLineBody | null } {
+  const errors: ValidationError[] = []
+
+  if (!body || typeof body !== 'object') {
+    return { errors: [{ field: 'body', message: 'Request body must be a JSON object' }], data: null }
+  }
+
+  const b = body as Record<string, unknown>
+  const allowed = ['name', 'slug', 'nutrition_json', 'ingredients', 'how_to_use']
+  const provided = allowed.filter((key) => key in b)
+
+  if (provided.length === 0) {
+    return { errors: [{ field: 'body', message: 'At least one updatable field is required' }], data: null }
+  }
+
+  const data: AdminUpdateProductLineBody = {}
+
+  if ('name' in b) {
+    if (typeof b.name !== 'string') {
+      errors.push({ field: 'name', message: 'name must be a string' })
+    } else {
+      const name = b.name.trim()
+      if (name.length < 2 || name.length > 120) {
+        errors.push({ field: 'name', message: 'name must be between 2 and 120 characters' })
+      } else {
+        data.name = name
+      }
+    }
+  }
+
+  if ('slug' in b) {
+    if (typeof b.slug !== 'string') {
+      errors.push({ field: 'slug', message: 'slug must be a string' })
+    } else {
+      const slug = b.slug.trim().toLowerCase()
+      if (!isValidProductSlug(slug)) {
+        errors.push({ field: 'slug', message: 'slug must be 3-100 chars and contain only a-z, 0-9, or hyphen' })
+      } else {
+        data.slug = slug
+      }
+    }
+  }
+
+  if ('nutrition_json' in b) {
+    if (typeof b.nutrition_json !== 'string') {
+      errors.push({ field: 'nutrition_json', message: 'nutrition_json must be a string' })
+    } else {
+      try {
+        JSON.parse(b.nutrition_json)
+        data.nutrition_json = b.nutrition_json.trim()
+      } catch {
+        errors.push({ field: 'nutrition_json', message: 'nutrition_json must be valid JSON' })
+      }
+    }
+  }
+
+  if ('ingredients' in b) {
+    if (typeof b.ingredients !== 'string') {
+      errors.push({ field: 'ingredients', message: 'ingredients must be a string' })
+    } else {
+      const ingredients = b.ingredients.trim()
+      if (ingredients.length > 5000) {
+        errors.push({ field: 'ingredients', message: 'ingredients must be 5000 characters or fewer' })
+      } else {
+        data.ingredients = ingredients
+      }
+    }
+  }
+
+  if ('how_to_use' in b) {
+    if (typeof b.how_to_use !== 'string') {
+      errors.push({ field: 'how_to_use', message: 'how_to_use must be a string' })
+    } else {
+      const howToUse = b.how_to_use.trim()
+      if (howToUse.length > 5000) {
+        errors.push({ field: 'how_to_use', message: 'how_to_use must be 5000 characters or fewer' })
+      } else {
+        data.how_to_use = howToUse
+      }
     }
   }
 

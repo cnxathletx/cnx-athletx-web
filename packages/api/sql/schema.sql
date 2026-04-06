@@ -1,9 +1,24 @@
 -- CNX AthletX D1 Schema
 -- All monetary values stored as satang (THB * 100)
 
+-- product_lines table (shared nutrition, ingredients, usage across SKUs)
+CREATE TABLE IF NOT EXISTS product_lines (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    name TEXT NOT NULL,
+    slug TEXT NOT NULL UNIQUE,
+    nutrition_json TEXT NOT NULL DEFAULT '{}',
+    ingredients TEXT NOT NULL DEFAULT '',
+    how_to_use TEXT NOT NULL DEFAULT '',
+    created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX IF NOT EXISTS idx_product_lines_slug ON product_lines(slug);
+
 -- products table
 CREATE TABLE IF NOT EXISTS products (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
+    product_line_id INTEGER,
     slug TEXT NOT NULL UNIQUE,
     name TEXT NOT NULL,
     description TEXT NOT NULL,
@@ -12,11 +27,13 @@ CREATE TABLE IF NOT EXISTS products (
     image_url TEXT NOT NULL,
     active INTEGER NOT NULL DEFAULT 1,
     created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+    updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (product_line_id) REFERENCES product_lines(id) ON DELETE SET NULL
 );
 
 CREATE INDEX IF NOT EXISTS idx_products_slug ON products(slug);
 CREATE INDEX IF NOT EXISTS idx_products_active ON products(active);
+CREATE INDEX IF NOT EXISTS idx_products_product_line_id ON products(product_line_id);
 
 -- inventory table (separate for atomic stock operations)
 CREATE TABLE IF NOT EXISTS inventory (

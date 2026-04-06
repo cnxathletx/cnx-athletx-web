@@ -3,10 +3,12 @@ import { registerAdminOrderRoutes } from './admin/orders'
 import { registerAdminInventoryRoutes } from './admin/inventory'
 import { registerAdminProductRoutes } from './admin/products'
 import { registerAdminDiscountRoutes } from './admin/discounts'
+import { registerAdminProductLineRoutes } from './admin/product-lines'
 
 export function registerAdminRoutes(router: RouterType) {
   registerAdminOrderRoutes(router)
   registerAdminInventoryRoutes(router)
   registerAdminProductRoutes(router)
+  registerAdminProductLineRoutes(router)
   registerAdminDiscountRoutes(router)
 }

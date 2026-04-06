@@ -264,6 +264,7 @@ export interface AdminAuditLogRow {
 
 export interface AdminProductRow {
   id: number
+  product_line_id: number | null
   slug: string
   name: string
   description: string
@@ -287,6 +288,7 @@ export interface AdminCreateProductBody {
   image_url: string
   active: boolean
   stock_count: number
+  product_line_id: number | null
 }
 
 export interface AdminUpdateProductBody {
@@ -297,6 +299,36 @@ export interface AdminUpdateProductBody {
   weight_g?: number
   image_url?: string
   active?: boolean
+  product_line_id?: number | null
+}
+
+// --- Admin Product Line types ---
+
+export interface ProductLineRow {
+  id: number
+  name: string
+  slug: string
+  nutrition_json: string
+  ingredients: string
+  how_to_use: string
+  created_at: string
+  updated_at: string
+}
+
+export interface AdminCreateProductLineBody {
+  name: string
+  slug: string
+  nutrition_json: string
+  ingredients: string
+  how_to_use: string
+}
+
+export interface AdminUpdateProductLineBody {
+  name?: string
+  slug?: string
+  nutrition_json?: string
+  ingredients?: string
+  how_to_use?: string
 }
 
 // --- Admin Discount Code types ---

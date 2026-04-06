@@ -86,22 +86,22 @@ const tabs = [
   { key: 'howToUse' as const, label: 'How to Use' },
 ]
 
-// Static product detail data (will come from API in later phases)
-const nutritionFacts: Record<string, string> = {
-  'Serving Size': '30g (1 scoop)',
-  Calories: '120',
-  Protein: '25g',
-  Carbohydrates: '3g',
-  Fat: '1.5g',
-  Fiber: '2g',
-  Sodium: '150mg',
-}
+const nutritionFacts = computed<Record<string, string>>(() => {
+  const raw = product.value?.nutrition_json
+  if (!raw) return {}
+  try {
+    return JSON.parse(raw) as Record<string, string>
+  } catch {
+    return {}
+  }
+})
 
-const ingredientsText =
-  'Pea protein isolate, brown rice protein concentrate, natural vanilla flavoring, coconut MCT powder, sea salt, stevia leaf extract.'
+const ingredientsText = computed(() => product.value?.ingredients || '')
+const howToUseText = computed(() => product.value?.how_to_use || '')
 
-const howToUseText =
-  'Mix one scoop (30g) with 250-300ml of cold water, plant milk, or your favorite smoothie. Shake or blend well. Best consumed within 30 minutes after training. Can also be added to oatmeal, pancakes, or baked goods.'
+const hasProductLineData = computed(() =>
+  Object.keys(nutritionFacts.value).length > 0 || ingredientsText.value || howToUseText.value
+)
 
 async function loadProduct(slug: string) {
   loading.value = true
@@ -329,7 +329,7 @@ watch(
     </section>
 
     <!-- Details Tabs -->
-    <section class="bg-surface">
+    <section v-if="hasProductLineData" class="bg-surface">
       <div class="mx-auto max-w-[1280px] px-4 sm:px-6 lg:px-8 py-12 sm:py-16">
         <div class="border-b border-sand">
           <nav class="flex space-x-8 -mb-px overflow-x-auto">

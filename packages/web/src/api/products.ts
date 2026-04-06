@@ -9,6 +9,10 @@ export interface ApiProduct {
   weight_g: number
   image_url: string
   available_stock: number
+  nutrition_json: string | null
+  ingredients: string | null
+  how_to_use: string | null
+  product_line_name: string | null
 }
 
 export async function fetchProducts(): Promise<ApiProduct[]> {

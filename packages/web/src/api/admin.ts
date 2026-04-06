@@ -399,3 +399,24 @@ export async function updateAdminProductLine(id: number, payload: UpdateProductL
   const data = (await res.json()) as { success: true; product_line: AdminProductLine }
   return data.product_line
 }
+
+// --- Admin Site Settings ---
+
+export async function fetchAdminSettings(): Promise<Record<string, string>> {
+  const res = await fetch(apiUrl('/api/admin/settings'), { credentials: 'include' })
+  if (!res.ok) await parseAdminError(res)
+  const data = (await res.json()) as { settings: Record<string, string> }
+  return data.settings
+}
+
+export async function updateAdminSettings(settings: Record<string, string>): Promise<Record<string, string>> {
+  const res = await fetch(apiUrl('/api/admin/settings'), {
+    method: 'PATCH',
+    credentials: 'include',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ settings }),
+  })
+  if (!res.ok) await parseAdminError(res)
+  const data = (await res.json()) as { success: true; settings: Record<string, string> }
+  return data.settings
+}

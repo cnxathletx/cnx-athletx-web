@@ -5,6 +5,7 @@ import { fetchOrder, submitPaymentProof, CheckoutError, type CheckoutResponse, t
 import PrimaryButton from '../components/ui/PrimaryButton.vue'
 import SecondaryButton from '../components/ui/SecondaryButton.vue'
 import CheckoutStepper from '../components/ui/CheckoutStepper.vue'
+import PromptPayQR from '../components/ui/PromptPayQR.vue'
 
 const route = useRoute()
 const router = useRouter()
@@ -61,6 +62,12 @@ const amountDisplay = computed(() => {
   if (checkoutResult.value) return `฿${checkoutResult.value.total_thb.toLocaleString()}`
   if (order.value) return `฿${order.value.total_thb.toLocaleString()}`
   return ''
+})
+
+const amountThb = computed(() => {
+  if (checkoutResult.value) return checkoutResult.value.total_thb / 100
+  if (order.value) return order.value.total_thb / 100
+  return undefined
 })
 
 async function copyToClipboard(text: string, label: string) {
@@ -186,11 +193,10 @@ async function handleSubmitProof() {
 
               <div class="flex justify-center py-4">
                 <div class="bg-white rounded-lg p-4">
-                  <img
-                    :src="checkoutResult.payment_instructions.promptpay.qr_url"
-                    alt="PromptPay QR Code"
-                    loading="lazy"
-                    class="w-48 h-48"
+                  <PromptPayQR
+                    :promptpay-id="checkoutResult.payment_instructions.promptpay.number"
+                    :amount="amountThb"
+                    :size="192"
                   />
                 </div>
               </div>

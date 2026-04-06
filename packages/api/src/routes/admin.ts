@@ -4,6 +4,7 @@ import { registerAdminInventoryRoutes } from './admin/inventory'
 import { registerAdminProductRoutes } from './admin/products'
 import { registerAdminDiscountRoutes } from './admin/discounts'
 import { registerAdminProductLineRoutes } from './admin/product-lines'
+import { registerAdminSettingsRoutes } from './admin/settings'
 
 export function registerAdminRoutes(router: RouterType) {
   registerAdminOrderRoutes(router)
@@ -11,4 +12,5 @@ export function registerAdminRoutes(router: RouterType) {
   registerAdminProductRoutes(router)
   registerAdminProductLineRoutes(router)
   registerAdminDiscountRoutes(router)
+  registerAdminSettingsRoutes(router)
 }

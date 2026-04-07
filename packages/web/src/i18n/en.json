@@ -297,6 +297,28 @@
     "note3": "Payment must be completed within 24 hours or the order will be cancelled",
     "note4": "You'll receive a confirmation email once payment is verified"
   },
+  "about": {
+    "badge": "Our Story",
+    "title": "Born in Chiang Mai's Active Community",
+    "subtitle": "Clean, plant-based nutrition for people who move — founded by athletes and wellness enthusiasts in the heart of Northern Thailand.",
+    "originTitle": "How It Started",
+    "originP1": "CNX AthletX started with a simple idea: clean, plant-based nutrition for people who move. Founded by athletes and wellness enthusiasts in the heart of Chiang Mai, we wanted a protein powder that matched our values — no fillers, no artificial sweeteners, just real ingredients.",
+    "originP2": "We spent months working with nutritionists and food scientists to develop a formula that delivers 25g of high-quality plant protein per serving, using a blend of pea and brown rice protein for a complete amino acid profile.",
+    "valuesTitle": "What We Stand For",
+    "value1Title": "Clean Ingredients",
+    "value1Desc": "No fillers, no artificial sweeteners, no unnecessary additives. Every ingredient has a purpose.",
+    "value2Title": "Plant-Based Power",
+    "value2Desc": "100% vegan protein from pea and brown rice. Complete amino acid profile, easy on digestion.",
+    "value3Title": "Community Driven",
+    "value3Desc": "Built for the runners, climbers, yogis, and gym-goers of Chiang Mai and beyond.",
+    "value4Title": "Transparency",
+    "value4Desc": "Full ingredient lists, nutrition facts, and no hidden anything. You know exactly what you're getting.",
+    "chiangMaiTitle": "Why Chiang Mai?",
+    "chiangMaiP1": "Chiang Mai is one of Southeast Asia's most active communities. From trail runners in Doi Suthep to Muay Thai fighters in the old city, this is a place where people move — and need real fuel to keep going.",
+    "chiangMaiP2": "Every scoop is designed for this community: athletes who care about what they put in their bodies, and who expect their nutrition to match their effort.",
+    "ctaText": "Ready to fuel your next session?",
+    "ctaButton": "Shop Now"
+  },
   "notFound": {
     "title": "Page Not Found",
     "message": "The page you're looking for doesn't exist or has been moved.",

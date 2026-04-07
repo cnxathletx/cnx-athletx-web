@@ -219,7 +219,9 @@ onMounted(async () => {
               <p>{{ t('home.brandStoryP1') }}</p>
               <p>{{ t('home.brandStoryP2') }}</p>
             </div>
-            <GhostButton>{{ t('home.learnMore') }}</GhostButton>
+            <RouterLink to="/about">
+              <GhostButton>{{ t('home.learnMore') }}</GhostButton>
+            </RouterLink>
           </div>
 
           <!-- Image Column -->

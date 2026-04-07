@@ -72,6 +72,7 @@ describe('PATCH /api/account/address', () => {
     const address = {
       line1: '123 Nimmanhaemin Road, Suite 7',
       line2: 'Soi 5',
+      subdistrict: 'Suthep',
       district: 'Suthep',
       province: 'Chiang Mai',
       postal_code: '50200',
@@ -96,7 +97,7 @@ describe('PATCH /api/account/address', () => {
     await workerFetch('/api/account/address', {
       method: 'PATCH',
       cookie,
-      body: { line1: '999 Huay Kaew Road, Building B', district: 'Mueang', province: 'Chiang Mai', postal_code: '50300' },
+      body: { line1: '999 Huay Kaew Road, Building B', subdistrict: 'Chang Phueak', district: 'Mueang', province: 'Chiang Mai', postal_code: '50300' },
     })
 
     const res = await workerFetch('/api/account/address', { cookie })
@@ -145,7 +146,7 @@ describe('GET /api/account/last-address', () => {
     await workerFetch('/api/account/address', {
       method: 'PATCH',
       cookie,
-      body: { line1: '555 Saved Address Lane, Floor 3', district: 'Suthep', province: 'Chiang Mai', postal_code: '50200' },
+      body: { line1: '555 Saved Address Lane, Floor 3', subdistrict: 'Suthep', district: 'Suthep', province: 'Chiang Mai', postal_code: '50200' },
     })
 
     const res = await workerFetch('/api/account/last-address', { cookie })

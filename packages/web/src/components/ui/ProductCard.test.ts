@@ -4,6 +4,7 @@ import { createPinia, setActivePinia } from 'pinia'
 import { createRouter, createMemoryHistory } from 'vue-router'
 import ProductCard from './ProductCard.vue'
 import { useCartStore } from '../../stores/cart'
+import i18n from '../../i18n'
 
 // happy-dom's localStorage is limited — stub it
 const store: Record<string, string> = {}
@@ -32,7 +33,7 @@ const baseProps = {
 function mountCard(propsOverride: Record<string, unknown> = {}) {
   return mount(ProductCard, {
     props: { ...baseProps, ...propsOverride },
-    global: { plugins: [router] },
+    global: { plugins: [router, i18n] },
   })
 }
 

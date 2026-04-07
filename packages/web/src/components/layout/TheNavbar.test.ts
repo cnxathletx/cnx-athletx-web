@@ -5,6 +5,7 @@ import { createRouter, createMemoryHistory } from 'vue-router'
 import TheNavbar from './TheNavbar.vue'
 import { useCartStore } from '../../stores/cart'
 import { useAuthStore } from '../../stores/auth'
+import i18n from '../../i18n'
 
 // happy-dom's localStorage is limited — stub it
 const store: Record<string, string> = {}
@@ -33,7 +34,7 @@ const router = createRouter({
 
 function mountNavbar() {
   return mount(TheNavbar, {
-    global: { plugins: [router] },
+    global: { plugins: [router, i18n] },
   })
 }
 

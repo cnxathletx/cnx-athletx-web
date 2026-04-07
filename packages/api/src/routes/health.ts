@@ -32,8 +32,11 @@ export function registerHealthRoutes(router: RouterType) {
     })
   })
 
-  // Test-only endpoint: reset DB with schema + seed (localhost only)
+  // Test-only endpoint: reset DB with schema + seed (local dev only)
   router.post('/api/__test-reset', async (request: Request, env: Env) => {
+    if (env.ENVIRONMENT) {
+      return Response.json({ error: 'Not available' }, { status: 403 })
+    }
     const url = new URL(request.url)
     const host = url.hostname
     const isLocal = host === 'localhost' || host === '127.0.0.1' || host === '0.0.0.0' || host.startsWith('[') || host === '::1'

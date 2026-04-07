@@ -36,7 +36,7 @@ export async function workerFetch(
   if (!worker) throw new Error('Worker not started — call startWorker() first')
   const headers: Record<string, string> = { ...options.headers }
   if (options.admin) {
-    headers['X-Admin-Email'] = 'test-admin@cnxnature.com'
+    headers['X-Admin-Email'] = 'jdelaire@gmail.com'
   }
   if (options.cookie) {
     headers['Cookie'] = options.cookie

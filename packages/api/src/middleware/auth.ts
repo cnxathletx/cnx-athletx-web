@@ -145,34 +145,29 @@ async function getEmailFromCfAccessJwt(request: Request, env: Env): Promise<stri
 export async function getAdminUser(request: Request, env: Env): Promise<AdminUser | null> {
   const adminEmails = getAdminEmails(env)
 
-  // 1. CF Access header (set when request goes through CF Access proxy)
-  const cfAccessEmail = request.headers.get('Cf-Access-Authenticated-User-Email')?.trim()?.toLowerCase()
-  if (cfAccessEmail && adminEmails.includes(cfAccessEmail)) {
-    return { email: cfAccessEmail }
-  }
-
-  // 2. CF Access JWT cookie (sent cross-subdomain from Pages → API)
+  // 1. CF Access JWT cookie (cryptographically verified)
   const jwtEmail = await getEmailFromCfAccessJwt(request, env)
   if (jwtEmail && adminEmails.includes(jwtEmail)) {
     return { email: jwtEmail }
   }
 
-  // 3. Customer session — check if logged-in user is admin
+  // 2. Customer session — check if logged-in user is admin
   const sessionUser = await getSessionUser(request, env)
   if (sessionUser && adminEmails.includes(sessionUser.email.toLowerCase())) {
     return { email: sessionUser.email.toLowerCase() }
   }
 
-  // 4. Local dev fallback
+  // 3. Local dev fallback (only when ENVIRONMENT is not set, i.e. local wrangler dev)
+  if (env.ENVIRONMENT) return null
   const isLocal =
     new URL(request.url).hostname === 'localhost' ||
     new URL(request.url).hostname === '127.0.0.1'
   if (!isLocal) return null
 
   const localHeader = request.headers.get('X-Admin-Email')?.trim()?.toLowerCase()
-  if (localHeader) {
-    return { email: localHeader.toLowerCase() }
+  if (localHeader && adminEmails.includes(localHeader)) {
+    return { email: localHeader }
   }
 
-  return { email: 'local-admin@cnxnature.com' }
+  return null
 }

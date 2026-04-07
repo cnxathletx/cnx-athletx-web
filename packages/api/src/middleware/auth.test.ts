@@ -150,48 +150,43 @@ describe('parseJsonBody', () => {
 // --- getAdminUser ---
 
 describe('getAdminUser', () => {
-  it('authenticates via Cf-Access-Authenticated-User-Email header', async () => {
+  it('ignores Cf-Access-Authenticated-User-Email header (spoofable)', async () => {
     const request = makeLocalRequest({
       'Cf-Access-Authenticated-User-Email': 'jdelaire@gmail.com',
     })
-    const result = await getAdminUser(request, makeEnv())
-    expect(result).toEqual({ email: 'jdelaire@gmail.com' })
+    // With ENVIRONMENT set, local fallback is disabled and header is not trusted
+    const result = await getAdminUser(request, makeEnv({ ENVIRONMENT: 'production' }))
+    expect(result).toBeNull()
   })
 
-  it('rejects non-admin email via CF Access header', async () => {
-    const request = makeRequest('https://api.cnxnature.com/api/admin/orders', {
-      'Cf-Access-Authenticated-User-Email': 'random@user.com',
-    })
+  it('returns null on localhost with no headers', async () => {
+    const request = makeLocalRequest()
     const result = await getAdminUser(request, makeEnv())
     expect(result).toBeNull()
   })
 
-  it('is case-insensitive for CF Access email', async () => {
-    const request = makeLocalRequest({
-      'Cf-Access-Authenticated-User-Email': 'JDelaire@Gmail.COM',
-    })
+  it('uses X-Admin-Email header on localhost when email is in admin list', async () => {
+    const request = makeLocalRequest({ 'X-Admin-Email': 'jdelaire@gmail.com' })
     const result = await getAdminUser(request, makeEnv())
     expect(result).toEqual({ email: 'jdelaire@gmail.com' })
   })
 
-  it('uses ADMIN_EMAILS env var when set', async () => {
-    const request = makeLocalRequest({
-      'Cf-Access-Authenticated-User-Email': 'custom@admin.com',
-    })
+  it('rejects X-Admin-Email header when email is not in admin list', async () => {
+    const request = makeLocalRequest({ 'X-Admin-Email': 'random@user.com' })
+    const result = await getAdminUser(request, makeEnv())
+    expect(result).toBeNull()
+  })
+
+  it('uses ADMIN_EMAILS env var for local dev validation', async () => {
+    const request = makeLocalRequest({ 'X-Admin-Email': 'custom@admin.com' })
     const result = await getAdminUser(request, makeEnv({ ADMIN_EMAILS: 'custom@admin.com, other@admin.com' }))
     expect(result).toEqual({ email: 'custom@admin.com' })
   })
 
-  it('falls back to local-admin on localhost with no headers', async () => {
-    const request = makeLocalRequest()
-    const result = await getAdminUser(request, makeEnv())
-    expect(result).toEqual({ email: 'local-admin@cnxnature.com' })
-  })
-
-  it('uses X-Admin-Email header on localhost', async () => {
-    const request = makeLocalRequest({ 'X-Admin-Email': 'dev@test.com' })
-    const result = await getAdminUser(request, makeEnv())
-    expect(result).toEqual({ email: 'dev@test.com' })
+  it('disables local dev fallback when ENVIRONMENT is set', async () => {
+    const request = makeLocalRequest({ 'X-Admin-Email': 'jdelaire@gmail.com' })
+    const result = await getAdminUser(request, makeEnv({ ENVIRONMENT: 'production' }))
+    expect(result).toBeNull()
   })
 
   it('returns null for non-local, non-admin request with no session', async () => {
@@ -211,12 +206,16 @@ describe('requireAdmin', () => {
 
     const wrapped = requireAdmin(handler)
     const fakeCtx = { waitUntil: vi.fn(), passThroughOnException: vi.fn() } as unknown as ExecutionContext
-    const response = await wrapped(makeLocalRequest(), makeEnv(), fakeCtx)
+    const response = await wrapped(
+      makeLocalRequest({ 'X-Admin-Email': 'jdelaire@gmail.com' }),
+      makeEnv(),
+      fakeCtx,
+    )
 
     expect(handler).toHaveBeenCalledOnce()
     expect(response.status).toBe(200)
     const body = await response.json() as { admin: string }
-    expect(body.admin).toBe('local-admin@cnxnature.com')
+    expect(body.admin).toBe('jdelaire@gmail.com')
   })
 
   it('returns 403 when not admin', async () => {

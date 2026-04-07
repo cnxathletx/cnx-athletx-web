@@ -5,6 +5,7 @@ export interface Env {
   ADMIN_EMAILS?: string
   CF_ACCESS_TEAM?: string
   CF_ACCESS_AUD?: string
+  ENVIRONMENT?: string
 }
 
 export interface SessionUser {

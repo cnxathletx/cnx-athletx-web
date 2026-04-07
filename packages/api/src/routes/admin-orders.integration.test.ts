@@ -52,10 +52,7 @@ describe('GET /api/admin/orders', () => {
 
   it('requires admin auth', async () => {
     const res = await workerFetch('/api/admin/orders')
-    // Without admin header on localhost, local-admin fallback kicks in, so this may still be 200
-    // But from non-localhost without CF Access header, it would be 403
-    // With unstable_dev on 127.0.0.1, local fallback grants access
-    expect(res.status).toBe(200)
+    expect(res.status).toBe(403)
   })
 })
 

@@ -53,6 +53,16 @@ This project follows **TDD (Test-Driven Development)**. Every feature and bug fi
 - Vue components: PascalCase filenames (e.g. `ProductCard.vue`).
 - Prefer small, composable modules under each package's `src/`.
 
+## Internationalization (i18n)
+- **All customer-facing text must be localized.** Never hardcode user-visible strings in Vue templates — always use `t()` from vue-i18n.
+- Setup: `const { t } = useI18n({ useScope: 'global' })` in each component's `<script setup>`.
+- Translation files: `packages/web/src/i18n/en.json` (English) and `packages/web/src/i18n/th.json` (Thai).
+- When adding new text, add keys to **both** locale files in the same commit.
+- Use parameterized messages for dynamic values: `t('key', { count: 5 })`.
+- For translation-dependent arrays (e.g. tab labels, step lists), use `computed()` so they stay reactive to locale changes.
+- Locale is persisted in `localStorage` under the `cnx-locale` key.
+- Admin pages are **not** localized (English only).
+
 ## Security & Configuration Tips
 - Never commit `.env`, `.dev.vars`, or secrets.
 - Manage Worker secrets via Wrangler/GitHub Secrets, not source control.

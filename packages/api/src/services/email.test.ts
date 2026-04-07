@@ -8,6 +8,7 @@ import {
   buildPaymentConfirmedEmail,
   buildOrderShippedEmail,
   buildAdminNewOrderEmail,
+  buildOrderCancelledEmail,
 } from './email'
 import type { OrderEmailData, PaymentInstructions, ShipmentData, EmailItem } from './email'
 
@@ -242,6 +243,34 @@ describe('buildOrderShippedEmail', () => {
     expect(html).not.toContain('<b>Bad</b>')
     expect(html).toContain('&lt;b&gt;Bad&lt;/b&gt;')
     expect(html).not.toContain('<script>')
+  })
+})
+
+// --- buildOrderCancelledEmail ---
+
+describe('buildOrderCancelledEmail', () => {
+  it('contains order ID and cancellation message', () => {
+    const html = buildOrderCancelledEmail(makeOrderData())
+    expect(html).toContain('ORD-TEST-001')
+    expect(html).toContain('Order Cancelled')
+    expect(html).toContain('has been cancelled')
+  })
+
+  it('includes items and totals', () => {
+    const html = buildOrderCancelledEmail(makeOrderData())
+    expect(html).toContain('Protein 500g')
+    expect(html).toContain('Total')
+  })
+
+  it('includes contact info for questions', () => {
+    const html = buildOrderCancelledEmail(makeOrderData())
+    expect(html).toContain('orders@cnxnature.com')
+  })
+
+  it('escapes customer name', () => {
+    const html = buildOrderCancelledEmail(makeOrderData({ customer_name: '<b>Bad</b>' }))
+    expect(html).not.toContain('<b>Bad</b>')
+    expect(html).toContain('&lt;b&gt;Bad&lt;/b&gt;')
   })
 })
 

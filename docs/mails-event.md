@@ -10,6 +10,7 @@ All transactional emails are sent via **Resend** (`orders@cnxnature.com`). Email
 | **Order Created** | Checkout completes successfully (`POST /api/checkout`) | Customer email | Order confirmation with items, totals, and payment instructions (PromptPay + bank transfer) | `checkout.ts:395` → `sendOrderEmail('order_created')` |
 | **Payment Confirmed** | Admin marks order as paid (`POST /api/admin/orders/:id/mark-paid`) | Customer email | Payment verified notice, items, totals, "order is being packed" | `admin/orders.ts:250` → `sendOrderEmail('payment_confirmed')` |
 | **Order Shipped** | Admin records shipment (`POST /api/admin/orders/:id/ship`) | Customer email | Shipping notice with carrier name and tracking number, items, totals | `admin/orders.ts:337` → `sendOrderEmail('order_shipped')` |
+| **Order Cancelled** | Admin cancels order (`POST /api/admin/orders/:id/cancel`) | Customer email | Cancellation notice with items, totals, and contact info for questions | `admin/orders.ts:408` → `sendOrderEmail('order_cancelled')` |
 
 ## Admin Emails
 
@@ -40,4 +41,7 @@ Admin marks paid (POST /api/admin/orders/:id/mark-paid)
 
 Admin ships order (POST /api/admin/orders/:id/ship)
   └─► sendOrderEmail('order_shipped') ──► Customer
+
+Admin cancels order (POST /api/admin/orders/:id/cancel)
+  └─► sendOrderEmail('order_cancelled') ──► Customer
 ```

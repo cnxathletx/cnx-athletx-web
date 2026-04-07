@@ -232,6 +232,23 @@ export function buildOrderShippedEmail(order: OrderEmailData, shipment: Shipment
   return emailLayout('Your Order Has Shipped — CNX AthletX', body)
 }
 
+export function buildOrderCancelledEmail(order: OrderEmailData): string {
+  const body = `<h2 style="margin: 0 0 8px; font-size: 20px; color: #2E2B26;">Order Cancelled</h2>
+    <p style="margin: 0 0 20px; font-size: 15px; color: #555;">Hi ${escapeHtml(order.customer_name)}, your order has been cancelled.</p>
+
+    <div style="background: #F2EDE4; border-radius: 8px; padding: 12px 16px; margin-bottom: 20px;">
+      <p style="margin: 0; font-size: 13px; color: #555;">Order ID</p>
+      <p style="margin: 4px 0 0; font-size: 16px; font-weight: 700; font-family: monospace; letter-spacing: 0.5px;">${order.order_id}</p>
+    </div>
+
+    ${itemsTableHtml(order.items)}
+    ${orderTotalsHtml(order)}
+
+    <p style="margin: 24px 0 0; font-size: 14px; color: #555;">If you believe this was a mistake or have any questions, please contact us at orders@cnxnature.com.</p>`
+
+  return emailLayout('Order Cancelled — CNX AthletX', body)
+}
+
 export interface AdminOrderAddress {
   line1: string
   line2?: string
@@ -311,7 +328,7 @@ export async function sendAdminNewOrderEmail(
 /** Fire-and-forget: sends email and logs result, never throws */
 export async function sendOrderEmail(
   env: Env,
-  event: 'order_created' | 'payment_confirmed' | 'order_shipped',
+  event: 'order_created' | 'payment_confirmed' | 'order_shipped' | 'order_cancelled',
   order: OrderEmailData,
   extra?: { payment?: PaymentInstructions; shipment?: ShipmentData }
 ): Promise<void> {
@@ -331,6 +348,10 @@ export async function sendOrderEmail(
       case 'order_shipped':
         subject = `Your Order Has Shipped — ${order.order_id}`
         html = buildOrderShippedEmail(order, extra!.shipment!)
+        break
+      case 'order_cancelled':
+        subject = `Order Cancelled — ${order.order_id}`
+        html = buildOrderCancelledEmail(order)
         break
     }
 

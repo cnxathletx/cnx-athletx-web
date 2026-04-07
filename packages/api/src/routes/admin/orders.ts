@@ -403,6 +403,13 @@ export function registerAdminOrderRoutes(router: RouterType) {
       )
 
       await env.DB.batch(statements)
+
+      ctx.waitUntil(
+        fetchOrderEmailData(env, orderId).then((emailData) => {
+          if (emailData) return sendOrderEmail(env, 'order_cancelled', emailData)
+        }).catch((err) => console.error('order_cancelled email failed:', err))
+      )
+
       return Response.json({ success: true })
     } catch {
       return Response.json({ error: 'Database error' }, { status: 500 })

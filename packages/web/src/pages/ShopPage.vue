@@ -1,8 +1,11 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
+import { useI18n } from 'vue-i18n'
 import ProductCard from '../components/ui/ProductCard.vue'
 import { fetchProducts, formatPrice, formatWeight, type ApiProduct } from '../api/products'
 import { useHead } from '../composables/useHead'
+
+const { t } = useI18n({ useScope: 'global' })
 
 useHead({
   title: 'Shop',
@@ -30,8 +33,8 @@ onMounted(async () => {
     <!-- ============ HEADER ============ -->
     <section class="bg-background">
       <div class="mx-auto max-w-[1280px] px-4 sm:px-6 lg:px-8 py-12 text-center">
-        <h1 class="text-4xl sm:text-5xl font-bold tracking-tight text-foreground">Shop</h1>
-        <p class="mt-4 text-lg text-muted">Choose your plant-based protein powder</p>
+        <h1 class="text-4xl sm:text-5xl font-bold tracking-tight text-foreground">{{ t('shop.title') }}</h1>
+        <p class="mt-4 text-lg text-muted">{{ t('shop.subtitle') }}</p>
       </div>
     </section>
 
@@ -70,13 +73,13 @@ onMounted(async () => {
               d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z"
             />
           </svg>
-          <p class="text-foreground font-semibold">Failed to load products</p>
+          <p class="text-foreground font-semibold">{{ t('shop.failedToLoad') }}</p>
           <p class="text-sm text-muted">{{ error }}</p>
           <button
             @click="$router.go(0)"
             class="text-primary font-semibold hover:underline underline-offset-4"
           >
-            Try again
+            {{ t('common.tryAgain') }}
           </button>
         </div>
 
@@ -116,7 +119,7 @@ onMounted(async () => {
                 d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4"
               />
             </svg>
-            <span class="text-sm font-semibold text-foreground">Free Shipping over ฿1,500</span>
+            <span class="text-sm font-semibold text-foreground">{{ t('shop.freeShipping') }}</span>
           </div>
           <div class="flex flex-col items-center text-center space-y-2">
             <svg
@@ -132,7 +135,7 @@ onMounted(async () => {
                 d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"
               />
             </svg>
-            <span class="text-sm font-semibold text-foreground">100% Quality Guarantee</span>
+            <span class="text-sm font-semibold text-foreground">{{ t('shop.qualityGuarantee') }}</span>
           </div>
           <div class="flex flex-col items-center text-center space-y-2">
             <svg
@@ -148,7 +151,7 @@ onMounted(async () => {
                 d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"
               />
             </svg>
-            <span class="text-sm font-semibold text-foreground">Secure Payment</span>
+            <span class="text-sm font-semibold text-foreground">{{ t('shop.securePayment') }}</span>
           </div>
         </div>
       </div>

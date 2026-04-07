@@ -1,9 +1,12 @@
 <script setup lang="ts">
 import { ref, onMounted, computed } from 'vue'
 import { useRoute } from 'vue-router'
+import { useI18n } from 'vue-i18n'
 import { fetchOrder, type ApiOrder } from '../api/checkout'
 import SecondaryButton from '../components/ui/SecondaryButton.vue'
 import { useHead } from '../composables/useHead'
+
+const { t } = useI18n({ useScope: 'global' })
 
 const route = useRoute()
 const orderId = route.params.id as string
@@ -28,11 +31,11 @@ const statusSteps = computed(() => {
   if (!order.value) return []
 
   const steps = [
-    { key: 'pending_payment', label: 'Order Placed', description: 'Awaiting payment and verification' },
-    { key: 'paid', label: 'Payment Confirmed', description: 'Your payment has been verified' },
-    { key: 'packed', label: 'Packed', description: 'Your order is packed and ready for shipment' },
-    { key: 'shipped', label: 'Shipped', description: 'Your order is on its way' },
-    { key: 'delivered', label: 'Delivered', description: 'Your order has been delivered' },
+    { key: 'pending_payment', label: t('orderStatus.steps.orderPlaced'), description: t('orderStatus.steps.orderPlacedDesc') },
+    { key: 'paid', label: t('orderStatus.steps.paymentConfirmed'), description: t('orderStatus.steps.paymentConfirmedDesc') },
+    { key: 'packed', label: t('orderStatus.steps.packed'), description: t('orderStatus.steps.packedDesc') },
+    { key: 'shipped', label: t('orderStatus.steps.shipped'), description: t('orderStatus.steps.shippedDesc') },
+    { key: 'delivered', label: t('orderStatus.steps.delivered'), description: t('orderStatus.steps.deliveredDesc') },
   ]
 
   const statusOrder = ['pending_payment', 'paid', 'packed', 'shipped', 'delivered']
@@ -68,15 +71,7 @@ const formattedDate = computed(() => {
 
 const statusLabel = computed(() => {
   if (!order.value) return ''
-  const labels: Record<string, string> = {
-    pending_payment: 'Awaiting Payment',
-    paid: 'Payment Confirmed',
-    packed: 'Packed',
-    shipped: 'Shipped',
-    delivered: 'Delivered',
-    cancelled: 'Cancelled',
-  }
-  return labels[order.value.status] || order.value.status
+  return t(`orderStatus.statusLabels.${order.value.status}`) || order.value.status
 })
 
 const statusColor = computed(() => {
@@ -122,7 +117,7 @@ const paymentProofDate = computed(() => {
         </svg>
         <p class="text-xl font-semibold text-foreground">{{ error }}</p>
         <RouterLink to="/shop">
-          <SecondaryButton>Back to Shop</SecondaryButton>
+          <SecondaryButton>{{ t('common.backToShop') }}</SecondaryButton>
         </RouterLink>
       </div>
 
@@ -131,9 +126,9 @@ const paymentProofDate = computed(() => {
         <!-- Header -->
         <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div>
-            <h1 class="text-3xl sm:text-4xl font-bold text-foreground">Order Status</h1>
+            <h1 class="text-3xl sm:text-4xl font-bold text-foreground">{{ t('orderStatus.title') }}</h1>
             <p class="mt-1 text-muted">
-              Order <span class="font-mono text-foreground">{{ orderId }}</span>
+              {{ t('orderStatus.order') }} <span class="font-mono text-foreground">{{ orderId }}</span>
             </p>
           </div>
           <span :class="['px-4 py-2 rounded-full text-sm font-semibold', statusColor]">
@@ -143,7 +138,7 @@ const paymentProofDate = computed(() => {
 
         <!-- Timeline -->
         <div class="bg-surface rounded-lg ring-1 ring-[var(--card-ring)] p-6">
-          <h2 class="text-xl font-bold text-foreground mb-6">Order Timeline</h2>
+          <h2 class="text-xl font-bold text-foreground mb-6">{{ t('orderStatus.orderTimeline') }}</h2>
           <div class="space-y-0">
             <div
               v-for="(step, index) in statusSteps"
@@ -198,13 +193,13 @@ const paymentProofDate = computed(() => {
           v-if="order.payment_submitted"
           class="bg-primary/10 border border-primary/30 rounded-lg p-6 space-y-2"
         >
-          <h2 class="text-xl font-bold text-foreground">Payment Proof Submitted</h2>
-          <p class="text-sm text-muted">We received your payment proof and will verify it shortly.</p>
+          <h2 class="text-xl font-bold text-foreground">{{ t('orderStatus.paymentProofSubmitted') }}</h2>
+          <p class="text-sm text-muted">{{ t('orderStatus.paymentProofDesc') }}</p>
           <p
             v-if="order.latest_payment_proof"
             class="text-sm text-muted"
           >
-            Reference:
+            {{ t('orderStatus.reference') }}
             <span class="font-mono text-foreground">{{ order.latest_payment_proof.proof_value }}</span>
             on {{ paymentProofDate }}
           </p>
@@ -214,10 +209,10 @@ const paymentProofDate = computed(() => {
           v-else-if="order.status === 'pending_payment'"
           class="bg-accent/10 border border-accent/30 rounded-lg p-6 space-y-3"
         >
-          <h2 class="text-xl font-bold text-foreground">Payment Pending</h2>
-          <p class="text-sm text-muted">Complete payment and submit your transfer reference to speed up verification.</p>
+          <h2 class="text-xl font-bold text-foreground">{{ t('orderStatus.paymentPending') }}</h2>
+          <p class="text-sm text-muted">{{ t('orderStatus.paymentPendingDesc') }}</p>
           <RouterLink :to="`/order/${orderId}/payment`" class="inline-block text-primary font-semibold hover:underline underline-offset-4">
-            Go to Payment Instructions
+            {{ t('orderStatus.goToPayment') }}
           </RouterLink>
         </div>
 
@@ -226,14 +221,14 @@ const paymentProofDate = computed(() => {
           v-if="order.shipment"
           class="bg-surface rounded-lg ring-1 ring-[var(--card-ring)] p-6 space-y-3"
         >
-          <h2 class="text-xl font-bold text-foreground">Shipping Details</h2>
+          <h2 class="text-xl font-bold text-foreground">{{ t('orderStatus.shippingDetails') }}</h2>
           <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div class="bg-surface-alt rounded-md px-4 py-3">
-              <p class="text-xs text-muted">Carrier</p>
+              <p class="text-xs text-muted">{{ t('orderStatus.carrier') }}</p>
               <p class="font-medium text-foreground">{{ order.shipment.carrier }}</p>
             </div>
             <div class="bg-surface-alt rounded-md px-4 py-3">
-              <p class="text-xs text-muted">Tracking Number</p>
+              <p class="text-xs text-muted">{{ t('orderStatus.trackingNumber') }}</p>
               <p class="font-mono text-foreground">{{ order.shipment.tracking_number }}</p>
             </div>
           </div>
@@ -241,7 +236,7 @@ const paymentProofDate = computed(() => {
 
         <!-- Order Items -->
         <div class="bg-surface rounded-lg ring-1 ring-[var(--card-ring)] p-6 space-y-4">
-          <h2 class="text-xl font-bold text-foreground">Items</h2>
+          <h2 class="text-xl font-bold text-foreground">{{ t('orderStatus.items') }}</h2>
           <div class="space-y-3 divide-y divide-sand">
             <div
               v-for="item in order.items"
@@ -250,7 +245,7 @@ const paymentProofDate = computed(() => {
             >
               <div>
                 <p class="text-sm font-medium text-foreground">{{ item.product_name }}</p>
-                <p class="text-xs text-muted">Qty: {{ item.quantity }}</p>
+                <p class="text-xs text-muted">{{ t('orderStatus.qty', { qty: item.quantity }) }}</p>
               </div>
               <p class="text-sm font-semibold text-foreground">
                 ฿{{ item.line_total_thb.toLocaleString() }}
@@ -260,22 +255,22 @@ const paymentProofDate = computed(() => {
 
           <div class="border-t border-sand pt-4 space-y-2 text-sm">
             <div class="flex justify-between">
-              <span class="text-muted">Subtotal</span>
+              <span class="text-muted">{{ t('orderStatus.subtotal') }}</span>
               <span class="font-semibold text-foreground">฿{{ order.subtotal_thb.toLocaleString() }}</span>
             </div>
             <div class="flex justify-between">
-              <span class="text-muted">Shipping</span>
+              <span class="text-muted">{{ t('orderStatus.shipping') }}</span>
               <span class="font-semibold text-foreground">฿{{ order.shipping_thb.toLocaleString() }}</span>
             </div>
             <div v-if="order.discount_thb > 0" class="flex justify-between">
-              <span class="text-muted">Discount</span>
+              <span class="text-muted">{{ t('orderStatus.discount') }}</span>
               <span class="font-semibold text-primary">-฿{{ order.discount_thb.toLocaleString() }}</span>
             </div>
           </div>
 
           <div class="border-t border-sand pt-4">
             <div class="flex justify-between">
-              <span class="text-lg font-bold text-foreground">Total</span>
+              <span class="text-lg font-bold text-foreground">{{ t('orderStatus.total') }}</span>
               <span class="text-lg font-bold text-foreground">
                 ฿{{ order.total_thb.toLocaleString() }}
               </span>
@@ -285,9 +280,9 @@ const paymentProofDate = computed(() => {
 
         <!-- Order Info -->
         <div class="text-center text-sm text-muted space-y-1">
-          <p>Ordered on {{ formattedDate }}</p>
+          <p>{{ t('orderStatus.orderedOn', { date: formattedDate }) }}</p>
           <p>
-            Questions? Contact us at
+            {{ t('common.questions') }}
             <a href="mailto:hello@cnxnature.com" class="text-primary hover:underline underline-offset-4">
               hello@cnxnature.com
             </a>

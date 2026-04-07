@@ -1,11 +1,14 @@
 <script setup lang="ts">
 import { computed, onMounted, onUnmounted, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
+import { useI18n } from 'vue-i18n'
 import { AuthApiErrorResponse, requestMagicLink } from '../api/auth'
 import PrimaryButton from '../components/ui/PrimaryButton.vue'
 import SecondaryButton from '../components/ui/SecondaryButton.vue'
 import { useAuthStore } from '../stores/auth'
 import { useHead } from '../composables/useHead'
+
+const { t } = useI18n({ useScope: 'global' })
 
 useHead({ title: 'Log In', description: 'Sign in to your CNX AthletX account.' })
 
@@ -94,13 +97,13 @@ async function goToAccount() {
     <div class="mx-auto max-w-[1280px] px-4 sm:px-6 lg:px-8 py-10">
       <div class="max-w-md mx-auto bg-surface rounded-lg ring-1 ring-[var(--card-ring)] p-6 sm:p-8 space-y-6">
         <div class="text-center space-y-2">
-          <h1 class="text-3xl font-bold text-foreground">Log In</h1>
-          <p class="text-muted">Enter your email to receive a secure login link.</p>
+          <h1 class="text-3xl font-bold text-foreground">{{ t('auth.loginTitle') }}</h1>
+          <p class="text-muted">{{ t('auth.loginSubtitle') }}</p>
         </div>
 
         <form class="space-y-4" @submit.prevent="handleSubmit">
           <div>
-            <label class="block text-sm font-medium text-foreground mb-1">Email</label>
+            <label class="block text-sm font-medium text-foreground mb-1">{{ t('auth.emailLabel') }}</label>
             <input
               v-model="email"
               type="email"
@@ -115,23 +118,23 @@ async function goToAccount() {
           <PrimaryButton full-width size="lg" :disabled="!canSubmit || submitting">
             {{
               submitting
-                ? 'Sending...'
+                ? t('auth.sending')
                 : sentTo && resendCooldown === 0
-                  ? 'Resend Login Link'
+                  ? t('auth.resendLink')
                   : sentTo && resendCooldown > 0
-                    ? `Resend in ${resendCooldown}s`
-                    : 'Send Login Link'
+                    ? t('auth.resendIn', { seconds: resendCooldown })
+                    : t('auth.sendLink')
             }}
           </PrimaryButton>
         </form>
 
         <div v-if="sentTo" class="bg-primary/10 border border-primary/30 rounded-md p-4 space-y-2">
-          <p class="font-semibold text-foreground">Check your email</p>
+          <p class="font-semibold text-foreground">{{ t('auth.checkEmail') }}</p>
           <p class="text-sm text-muted">
-            We sent a login link to <span class="font-medium text-foreground">{{ sentTo }}</span>.
+            {{ t('auth.checkEmailDesc') }} <span class="font-medium text-foreground">{{ sentTo }}</span>.
           </p>
           <p class="text-xs text-muted">
-            The link expires in 15 minutes.
+            {{ t('auth.linkExpires') }}
           </p>
           <p v-if="apiSuccess" class="text-xs text-muted">{{ apiSuccess }}</p>
 
@@ -144,7 +147,7 @@ async function goToAccount() {
           </a>
 
           <div class="pt-1">
-            <SecondaryButton size="sm" @click="goToAccount">I already logged in</SecondaryButton>
+            <SecondaryButton size="sm" @click="goToAccount">{{ t('auth.alreadyLoggedIn') }}</SecondaryButton>
           </div>
         </div>
       </div>

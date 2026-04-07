@@ -1,12 +1,15 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
 import { RouterLink } from 'vue-router'
+import { useI18n } from 'vue-i18n'
 import PrimaryButton from '../components/ui/PrimaryButton.vue'
 import ProductCard from '../components/ui/ProductCard.vue'
 import GhostButton from '../components/ui/GhostButton.vue'
 import { fetchProducts, formatPrice, formatWeight, type ApiProduct } from '../api/products'
 import { useHead } from '../composables/useHead'
 import { useJsonLd } from '../composables/useJsonLd'
+
+const { t } = useI18n({ useScope: 'global' })
 
 useHead({
   title: undefined, // Just "CNX AthletX" for homepage
@@ -59,17 +62,16 @@ onMounted(async () => {
             <span
               class="inline-flex items-center bg-accent/10 text-accent text-xs font-semibold uppercase tracking-wider rounded-full px-3 py-1"
             >
-              Plant-Based Power
+              {{ t('home.badge') }}
             </span>
             <h1 class="text-4xl sm:text-5xl font-bold tracking-tight text-foreground leading-tight">
-              Fuel Your Active Life
+              {{ t('home.heroTitle') }}
             </h1>
             <p class="text-lg text-muted max-w-lg leading-relaxed">
-              Premium plant-based protein powder from Chiang Mai's athletic community. Clean
-              ingredients, real results.
+              {{ t('home.heroSubtitle') }}
             </p>
             <RouterLink to="/shop">
-              <PrimaryButton size="lg">Shop Now</PrimaryButton>
+              <PrimaryButton size="lg">{{ t('home.shopNow') }}</PrimaryButton>
             </RouterLink>
           </div>
 
@@ -92,7 +94,7 @@ onMounted(async () => {
                     d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"
                   />
                 </svg>
-                <p class="text-sm text-muted/50">Product Image</p>
+                <p class="text-sm text-muted/50">{{ t('home.productImage') }}</p>
               </div>
             </div>
           </div>
@@ -111,7 +113,7 @@ onMounted(async () => {
               <path stroke-linecap="round" stroke-linejoin="round" d="M7 12c1-4 4-6 5-6s4 2 5 6c-1 4-4 6-5 6s-4-2-5-6z" />
               <path stroke-linecap="round" stroke-linejoin="round" d="M12 6v12" />
             </svg>
-            <span class="text-sm font-semibold text-foreground">100% Natural</span>
+            <span class="text-sm font-semibold text-foreground">{{ t('home.socialProof.natural') }}</span>
           </div>
           <!-- Vegan -->
           <div class="flex flex-col items-center text-center space-y-2">
@@ -120,7 +122,7 @@ onMounted(async () => {
               <path stroke-linecap="round" stroke-linejoin="round" d="M6 20c1-6 4-10 6-12 2 2 5 6 6 12" />
               <path stroke-linecap="round" stroke-linejoin="round" d="M12 12v8" />
             </svg>
-            <span class="text-sm font-semibold text-foreground">Vegan</span>
+            <span class="text-sm font-semibold text-foreground">{{ t('home.socialProof.vegan') }}</span>
           </div>
           <!-- Muscle Support -->
           <div class="flex flex-col items-center text-center space-y-2">
@@ -129,7 +131,7 @@ onMounted(async () => {
               <path stroke-linecap="round" stroke-linejoin="round" d="M3 15h1M20 15h1" />
               <path stroke-linecap="round" stroke-linejoin="round" d="M6 11c0-2 1-4 3-4M15 7c2 0 3 2 3 4" />
             </svg>
-            <span class="text-sm font-semibold text-foreground">Muscle Support</span>
+            <span class="text-sm font-semibold text-foreground">{{ t('home.socialProof.muscleSupport') }}</span>
           </div>
           <!-- Gluten Free -->
           <div class="flex flex-col items-center text-center space-y-2">
@@ -138,7 +140,7 @@ onMounted(async () => {
               <path stroke-linecap="round" stroke-linejoin="round" d="M8 6c2 1 2 3 4 3s2-2 4-3M8 10c2 1 2 3 4 3s2-2 4-3M8 14c2 1 2 3 4 3s2-2 4-3" />
               <line x1="4" y1="4" x2="20" y2="20" stroke-width="2" />
             </svg>
-            <span class="text-sm font-semibold text-foreground">Gluten Free</span>
+            <span class="text-sm font-semibold text-foreground">{{ t('home.socialProof.glutenFree') }}</span>
           </div>
           <!-- Dairy Free -->
           <div class="flex flex-col items-center text-center space-y-2">
@@ -147,7 +149,7 @@ onMounted(async () => {
               <path stroke-linecap="round" stroke-linejoin="round" d="M9 11h6" />
               <line x1="5" y1="4" x2="19" y2="20" stroke-width="2" />
             </svg>
-            <span class="text-sm font-semibold text-foreground">Dairy Free</span>
+            <span class="text-sm font-semibold text-foreground">{{ t('home.socialProof.dairyFree') }}</span>
           </div>
           <!-- No Added Sugar -->
           <div class="flex flex-col items-center text-center space-y-2">
@@ -156,7 +158,7 @@ onMounted(async () => {
               <path stroke-linecap="round" stroke-linejoin="round" d="M10 10h4M10 14h2" />
               <line x1="5" y1="4" x2="19" y2="20" stroke-width="2" />
             </svg>
-            <span class="text-sm font-semibold text-foreground">No Added Sugar</span>
+            <span class="text-sm font-semibold text-foreground">{{ t('home.socialProof.noAddedSugar') }}</span>
           </div>
         </div>
       </div>
@@ -166,7 +168,7 @@ onMounted(async () => {
     <section class="bg-background">
       <div class="mx-auto max-w-[1280px] px-4 sm:px-6 lg:px-8 py-16 sm:py-24">
         <h2 class="text-3xl sm:text-4xl font-bold text-foreground text-center mb-12">
-          Our Products
+          {{ t('home.ourProducts') }}
         </h2>
         <div v-if="productsLoaded && products.length" class="grid grid-cols-1 sm:grid-cols-2 gap-8 max-w-3xl mx-auto">
           <ProductCard
@@ -208,24 +210,16 @@ onMounted(async () => {
           <!-- Text Column -->
           <div class="space-y-6">
             <span class="text-xs font-medium uppercase tracking-[0.05em] text-primary">
-              Our Story
+              {{ t('home.ourStory') }}
             </span>
             <h2 class="text-3xl sm:text-4xl font-bold text-foreground leading-tight">
-              Born in Chiang Mai's Active Community
+              {{ t('home.brandStoryTitle') }}
             </h2>
             <div class="space-y-4 text-muted leading-relaxed">
-              <p>
-                CNX AthletX started with a simple idea: clean, plant-based nutrition for people who
-                move. Founded by athletes and wellness enthusiasts in the heart of Chiang Mai, we
-                wanted a protein powder that matched our values — no fillers, no artificial
-                sweeteners, just real ingredients.
-              </p>
-              <p>
-                Every scoop is designed for the runners, climbers, yogis, and gym-goers who make
-                this city one of Southeast Asia's most active communities.
-              </p>
+              <p>{{ t('home.brandStoryP1') }}</p>
+              <p>{{ t('home.brandStoryP2') }}</p>
             </div>
-            <GhostButton>Learn More</GhostButton>
+            <GhostButton>{{ t('home.learnMore') }}</GhostButton>
           </div>
 
           <!-- Image Column -->
@@ -247,7 +241,7 @@ onMounted(async () => {
                     d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"
                   />
                 </svg>
-                <p class="text-sm text-muted/50">Community Photo</p>
+                <p class="text-sm text-muted/50">{{ t('home.communityImage') }}</p>
               </div>
             </div>
           </div>
@@ -259,7 +253,7 @@ onMounted(async () => {
     <section class="bg-background">
       <div class="mx-auto max-w-[1280px] px-4 sm:px-6 lg:px-8 py-16 sm:py-24">
         <h2 class="text-3xl sm:text-4xl font-bold text-foreground text-center mb-12">
-          Join the Community
+          {{ t('home.communityTitle') }}
         </h2>
         <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
           <div
@@ -291,7 +285,7 @@ onMounted(async () => {
                     d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"
                   />
                 </svg>
-                <p class="text-xs text-muted/40">Community Image {{ i }}</p>
+                <p class="text-xs text-muted/40">{{ t('home.communityImage') }} {{ i }}</p>
               </div>
             </div>
           </div>
@@ -303,10 +297,10 @@ onMounted(async () => {
     <section class="bg-primary">
       <div class="mx-auto max-w-[1280px] px-4 sm:px-6 lg:px-8 py-16 text-center space-y-6">
         <h2 class="text-3xl sm:text-4xl font-bold text-background">
-          Ready to fuel your next session?
+          {{ t('home.ctaTitle') }}
         </h2>
         <RouterLink to="/shop">
-          <PrimaryButton variant="inverse" size="lg">Shop Now</PrimaryButton>
+          <PrimaryButton variant="inverse" size="lg">{{ t('home.ctaButton') }}</PrimaryButton>
         </RouterLink>
       </div>
     </section>

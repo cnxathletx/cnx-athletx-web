@@ -1,11 +1,14 @@
 <script setup lang="ts">
 import { ref, onMounted, computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
+import { useI18n } from 'vue-i18n'
 import { fetchOrder, submitPaymentProof, CheckoutError, type CheckoutResponse, type ApiOrder } from '../api/checkout'
 import PrimaryButton from '../components/ui/PrimaryButton.vue'
 import SecondaryButton from '../components/ui/SecondaryButton.vue'
 import CheckoutStepper from '../components/ui/CheckoutStepper.vue'
 import PromptPayQR from '../components/ui/PromptPayQR.vue'
+
+const { t } = useI18n({ useScope: 'global' })
 
 const route = useRoute()
 const router = useRouter()
@@ -21,14 +24,14 @@ const proofSubmitting = ref(false)
 const proofSuccess = ref('')
 const proofError = ref('')
 
-const statusLabelMap: Record<string, string> = {
-  pending_payment: 'Awaiting Payment',
-  paid: 'Paid',
-  packed: 'Packed',
-  shipped: 'Shipped',
-  delivered: 'Delivered',
-  cancelled: 'Cancelled',
-}
+const statusLabelMap = computed<Record<string, string>>(() => ({
+  pending_payment: t('orderStatus.statusLabels.pending_payment'),
+  paid: t('orderStatus.statusLabels.paid'),
+  packed: t('orderStatus.statusLabels.packed'),
+  shipped: t('orderStatus.statusLabels.shipped'),
+  delivered: t('orderStatus.statusLabels.delivered'),
+  cancelled: t('orderStatus.statusLabels.cancelled'),
+}))
 
 async function loadOrder() {
   order.value = await fetchOrder(orderId)
@@ -99,7 +102,7 @@ const latestProofDateDisplay = computed(() => {
 
 const orderStatusLabel = computed(() => {
   if (!order.value) return ''
-  return statusLabelMap[order.value.status] ?? order.value.status
+  return statusLabelMap.value[order.value.status] ?? order.value.status
 })
 
 async function handleSubmitProof() {
@@ -150,16 +153,16 @@ async function handleSubmitProof() {
       <div v-else-if="error" class="text-center py-16 space-y-4">
         <p class="text-xl font-semibold text-error">{{ error }}</p>
         <RouterLink to="/shop">
-          <SecondaryButton>Back to Shop</SecondaryButton>
+          <SecondaryButton>{{ t('common.backToShop') }}</SecondaryButton>
         </RouterLink>
       </div>
 
       <!-- Payment Instructions -->
       <div v-else-if="order" class="space-y-8">
         <div>
-          <h1 class="text-3xl sm:text-4xl font-bold text-foreground">Payment Instructions</h1>
+          <h1 class="text-3xl sm:text-4xl font-bold text-foreground">{{ t('payment.title') }}</h1>
           <p class="mt-2 text-muted">
-            Complete your payment to confirm order
+            {{ t('payment.completePayment') }}
             <span class="font-mono text-foreground">{{ orderId }}</span>
           </p>
         </div>
@@ -169,7 +172,7 @@ async function handleSubmitProof() {
           <div class="lg:col-span-2 space-y-6">
             <!-- Amount Due -->
             <div class="bg-primary/10 border border-primary/30 rounded-lg p-6 text-center">
-              <p class="text-sm text-muted mb-1">Amount Due</p>
+              <p class="text-sm text-muted mb-1">{{ t('payment.amountDue') }}</p>
               <p class="text-4xl font-bold text-primary">{{ amountDisplay }}</p>
             </div>
 
@@ -186,8 +189,8 @@ async function handleSubmitProof() {
                   </svg>
                 </div>
                 <div>
-                  <h2 class="text-xl font-bold text-foreground">PromptPay</h2>
-                  <p class="text-sm text-muted">Scan QR code with your banking app</p>
+                  <h2 class="text-xl font-bold text-foreground">{{ t('payment.promptpay') }}</h2>
+                  <p class="text-sm text-muted">{{ t('payment.scanQRDesc') }}</p>
                 </div>
               </div>
 
@@ -203,7 +206,7 @@ async function handleSubmitProof() {
 
               <div class="flex items-center justify-between bg-surface-alt rounded-md px-4 py-3">
                 <div>
-                  <p class="text-xs text-muted">PromptPay Number</p>
+                  <p class="text-xs text-muted">{{ t('payment.promptpayNumber') }}</p>
                   <p class="font-mono text-foreground">
                     {{ checkoutResult.payment_instructions.promptpay.number }}
                   </p>
@@ -212,7 +215,7 @@ async function handleSubmitProof() {
                   @click="copyToClipboard(checkoutResult!.payment_instructions.promptpay!.number, 'promptpay')"
                   class="text-primary text-sm font-semibold hover:underline underline-offset-4"
                 >
-                  {{ copied === 'promptpay' ? 'Copied!' : 'Copy' }}
+                  {{ copied === 'promptpay' ? t('payment.copied') : t('payment.copy') }}
                 </button>
               </div>
             </div>
@@ -230,15 +233,15 @@ async function handleSubmitProof() {
                   </svg>
                 </div>
                 <div>
-                  <h2 class="text-xl font-bold text-foreground">Bank Transfer</h2>
-                  <p class="text-sm text-muted">Transfer to the account below</p>
+                  <h2 class="text-xl font-bold text-foreground">{{ t('payment.bankTransfer') }}</h2>
+                  <p class="text-sm text-muted">{{ t('payment.transferToAccount') }}</p>
                 </div>
               </div>
 
               <div class="space-y-3">
                 <div class="flex items-center justify-between bg-surface-alt rounded-md px-4 py-3">
                   <div>
-                    <p class="text-xs text-muted">Bank</p>
+                    <p class="text-xs text-muted">{{ t('payment.bankName') }}</p>
                     <p class="font-medium text-foreground">
                       {{ checkoutResult.payment_instructions.bank_transfer.bank_name }}
                     </p>
@@ -246,7 +249,7 @@ async function handleSubmitProof() {
                 </div>
                 <div class="flex items-center justify-between bg-surface-alt rounded-md px-4 py-3">
                   <div>
-                    <p class="text-xs text-muted">Account Name</p>
+                    <p class="text-xs text-muted">{{ t('payment.accountName') }}</p>
                     <p class="font-medium text-foreground">
                       {{ checkoutResult.payment_instructions.bank_transfer.account_name }}
                     </p>
@@ -254,7 +257,7 @@ async function handleSubmitProof() {
                 </div>
                 <div class="flex items-center justify-between bg-surface-alt rounded-md px-4 py-3">
                   <div>
-                    <p class="text-xs text-muted">Account Number</p>
+                    <p class="text-xs text-muted">{{ t('payment.accountNumber') }}</p>
                     <p class="font-mono text-foreground">
                       {{ checkoutResult.payment_instructions.bank_transfer.account_number }}
                     </p>
@@ -263,7 +266,7 @@ async function handleSubmitProof() {
                     @click="copyToClipboard(checkoutResult!.payment_instructions.bank_transfer.account_number, 'account')"
                     class="text-primary text-sm font-semibold hover:underline underline-offset-4"
                   >
-                    {{ copied === 'account' ? 'Copied!' : 'Copy' }}
+                    {{ copied === 'account' ? t('payment.copied') : t('payment.copy') }}
                   </button>
                 </div>
               </div>
@@ -274,19 +277,18 @@ async function handleSubmitProof() {
               v-if="!checkoutResult"
               class="bg-surface rounded-lg ring-1 ring-[var(--card-ring)] p-6 space-y-4"
             >
-              <h2 class="text-xl font-bold text-foreground">Payment Details</h2>
+              <h2 class="text-xl font-bold text-foreground">{{ t('payment.paymentDetails') }}</h2>
               <p class="text-muted">
-                Payment instructions were shown after checkout. If you need them again,
-                please check your email or contact us.
+                {{ t('payment.paymentDetailsFallback') }}
               </p>
             </div>
 
             <!-- Payment Proof -->
             <div class="bg-surface rounded-lg ring-1 ring-[var(--card-ring)] p-6 space-y-4">
               <div>
-                <h2 class="text-xl font-bold text-foreground">Submit Payment Proof</h2>
+                <h2 class="text-xl font-bold text-foreground">{{ t('payment.submitProof') }}</h2>
                 <p class="text-sm text-muted mt-1">
-                  Submit your transfer reference so we can verify payment faster.
+                  {{ t('payment.submitProofDesc') }}
                 </p>
               </div>
 
@@ -294,26 +296,26 @@ async function handleSubmitProof() {
                 v-if="order.payment_submitted && order.latest_payment_proof"
                 class="rounded-md border border-primary/30 bg-primary/10 px-4 py-3 text-sm"
               >
-                <p class="font-semibold text-foreground">Latest proof submitted</p>
+                <p class="font-semibold text-foreground">{{ t('payment.latestProof') }}</p>
                 <p class="text-muted mt-1">
-                  Reference:
+                  {{ t('payment.reference') }}
                   <span class="font-mono text-foreground">{{ order.latest_payment_proof.proof_value }}</span>
                 </p>
-                <p class="text-muted">Submitted: {{ latestProofDateDisplay }}</p>
+                <p class="text-muted">{{ t('payment.submitted') }} {{ latestProofDateDisplay }}</p>
               </div>
 
               <div
                 v-if="!canSubmitProof"
                 class="rounded-md border border-muted/30 bg-surface-alt px-4 py-3 text-sm text-muted"
               >
-                Proof submission is unavailable while order is
+                {{ t('payment.proofUnavailable') }}
                 <span class="font-semibold text-foreground">{{ orderStatusLabel }}</span>.
               </div>
 
               <form v-else class="space-y-3" @submit.prevent="handleSubmitProof">
                 <div>
                   <label for="proof-value" class="block text-sm font-medium text-foreground mb-1">
-                    Transfer Reference
+                    {{ t('payment.transferReference') }}
                   </label>
                   <input
                     id="proof-value"
@@ -329,7 +331,7 @@ async function handleSubmitProof() {
                 <p v-if="proofSuccess" class="text-sm text-primary">{{ proofSuccess }}</p>
 
                 <PrimaryButton :disabled="proofSubmitting" size="md">
-                  {{ proofSubmitting ? 'Submitting...' : (order.payment_submitted ? 'Submit Updated Reference' : 'Submit Payment Proof') }}
+                  {{ proofSubmitting ? t('payment.submitting') : (order.payment_submitted ? t('payment.submitUpdatedRef') : t('payment.submitProof')) }}
                 </PrimaryButton>
               </form>
             </div>
@@ -338,7 +340,7 @@ async function handleSubmitProof() {
           <!-- Order Summary Sidebar -->
           <div class="lg:col-span-1">
             <div class="bg-surface rounded-lg ring-1 ring-[var(--card-ring)] p-6 space-y-4 sticky top-20">
-              <h2 class="text-xl font-bold text-foreground">Order Summary</h2>
+              <h2 class="text-xl font-bold text-foreground">{{ t('payment.orderSummary') }}</h2>
 
               <div class="space-y-3 divide-y divide-sand">
                 <div
@@ -348,7 +350,7 @@ async function handleSubmitProof() {
                 >
                   <div>
                     <p class="text-sm font-medium text-foreground">{{ item.product_name }}</p>
-                    <p class="text-xs text-muted">Qty: {{ item.quantity }}</p>
+                    <p class="text-xs text-muted">{{ t('payment.qty', { qty: item.quantity }) }}</p>
                   </div>
                   <p class="text-sm font-semibold text-foreground">
                     ฿{{ item.line_total_thb.toLocaleString() }}
@@ -358,33 +360,33 @@ async function handleSubmitProof() {
 
               <div class="border-t border-sand pt-4 space-y-2 text-sm">
                 <div class="flex justify-between">
-                  <span class="text-muted">Subtotal</span>
+                  <span class="text-muted">{{ t('payment.subtotal') }}</span>
                   <span class="font-semibold text-foreground">฿{{ order.subtotal_thb.toLocaleString() }}</span>
                 </div>
                 <div class="flex justify-between">
-                  <span class="text-muted">Shipping</span>
+                  <span class="text-muted">{{ t('payment.shipping') }}</span>
                   <span class="font-semibold text-foreground">฿{{ order.shipping_thb.toLocaleString() }}</span>
                 </div>
                 <div v-if="order.discount_thb > 0" class="flex justify-between">
-                  <span class="text-muted">Discount</span>
+                  <span class="text-muted">{{ t('payment.discount') }}</span>
                   <span class="font-semibold text-primary">-฿{{ order.discount_thb.toLocaleString() }}</span>
                 </div>
               </div>
 
               <div class="border-t border-sand pt-4">
                 <div class="flex justify-between">
-                  <span class="text-lg font-bold text-foreground">Total</span>
+                  <span class="text-lg font-bold text-foreground">{{ t('payment.total') }}</span>
                   <span class="text-lg font-bold text-foreground">{{ amountDisplay }}</span>
                 </div>
               </div>
 
               <div class="space-y-3 pt-2">
                 <PrimaryButton full-width size="lg" @click="goToConfirmation">
-                  I've Made the Payment
+                  {{ t('payment.madePayment') }}
                 </PrimaryButton>
                 <RouterLink :to="`/order/${orderId}`" class="block text-center">
                   <button class="text-primary font-semibold text-sm hover:underline underline-offset-4">
-                    Track Order Status
+                    {{ t('payment.trackOrderStatus') }}
                   </button>
                 </RouterLink>
               </div>
@@ -399,13 +401,13 @@ async function handleSubmitProof() {
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                 d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
             </svg>
-            Important
+            {{ t('payment.important') }}
           </h3>
           <ul class="text-sm text-muted space-y-1 list-disc list-inside">
-            <li>Please transfer the exact amount shown above</li>
-            <li>Include your order ID <span class="font-mono text-foreground">{{ orderId }}</span> in the transfer note</li>
-            <li>Payment must be completed within 24 hours or the order will be cancelled</li>
-            <li>You'll receive a confirmation email once payment is verified</li>
+            <li>{{ t('payment.note1') }}</li>
+            <li>{{ t('payment.note2', { orderId }) }}</li>
+            <li>{{ t('payment.note3') }}</li>
+            <li>{{ t('payment.note4') }}</li>
           </ul>
         </div>
       </div>

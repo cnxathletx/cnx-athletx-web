@@ -1,12 +1,15 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
 import { useRoute } from 'vue-router'
+import { useI18n } from 'vue-i18n'
 import { fetchOrder, type ApiOrder } from '../api/checkout'
 import { AuthApiErrorResponse, requestMagicLink } from '../api/auth'
 import PrimaryButton from '../components/ui/PrimaryButton.vue'
 import SecondaryButton from '../components/ui/SecondaryButton.vue'
 import CheckoutStepper from '../components/ui/CheckoutStepper.vue'
 import { useAuthStore } from '../stores/auth'
+
+const { t } = useI18n({ useScope: 'global' })
 
 const route = useRoute()
 const orderId = route.params.id as string
@@ -79,7 +82,7 @@ async function sendAccountLink() {
       <div v-else-if="error" class="text-center py-16 space-y-4">
         <p class="text-xl font-semibold text-error">{{ error }}</p>
         <RouterLink to="/shop">
-          <SecondaryButton>Back to Shop</SecondaryButton>
+          <SecondaryButton>{{ t('common.backToShop') }}</SecondaryButton>
         </RouterLink>
       </div>
 
@@ -92,16 +95,16 @@ async function sendAccountLink() {
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
             </svg>
           </div>
-          <h1 class="text-3xl sm:text-4xl font-bold text-foreground">Order Placed!</h1>
+          <h1 class="text-3xl sm:text-4xl font-bold text-foreground">{{ t('orderConfirmation.title') }}</h1>
           <p class="text-muted text-lg">
-            Thank you for your order. We'll process it once payment is confirmed.
+            {{ t('orderConfirmation.thankYou') }}
           </p>
         </div>
 
         <!-- Order Details Card -->
         <div class="bg-surface rounded-lg ring-1 ring-[var(--card-ring)] p-6 space-y-4">
           <div class="flex items-center justify-between">
-            <h2 class="text-xl font-bold text-foreground">Order Details</h2>
+            <h2 class="text-xl font-bold text-foreground">{{ t('orderConfirmation.orderDetails') }}</h2>
             <span class="text-xs font-mono bg-surface-alt px-3 py-1 rounded text-muted">
               {{ orderId }}
             </span>
@@ -116,7 +119,7 @@ async function sendAccountLink() {
             >
               <div>
                 <p class="text-sm font-medium text-foreground">{{ item.product_name }}</p>
-                <p class="text-xs text-muted">Qty: {{ item.quantity }}</p>
+                <p class="text-xs text-muted">{{ t('orderConfirmation.qty', { qty: item.quantity }) }}</p>
               </div>
               <p class="text-sm font-semibold text-foreground">
                 ฿{{ item.line_total_thb.toLocaleString() }}
@@ -127,22 +130,22 @@ async function sendAccountLink() {
           <!-- Totals -->
           <div class="border-t border-sand pt-4 space-y-2 text-sm">
             <div class="flex justify-between">
-              <span class="text-muted">Subtotal</span>
+              <span class="text-muted">{{ t('orderConfirmation.subtotal') }}</span>
               <span class="font-semibold text-foreground">฿{{ order.subtotal_thb.toLocaleString() }}</span>
             </div>
             <div class="flex justify-between">
-              <span class="text-muted">Shipping</span>
+              <span class="text-muted">{{ t('orderConfirmation.shipping') }}</span>
               <span class="font-semibold text-foreground">฿{{ order.shipping_thb.toLocaleString() }}</span>
             </div>
             <div v-if="order.discount_thb > 0" class="flex justify-between">
-              <span class="text-muted">Discount</span>
+              <span class="text-muted">{{ t('orderConfirmation.discount') }}</span>
               <span class="font-semibold text-primary">-฿{{ order.discount_thb.toLocaleString() }}</span>
             </div>
           </div>
 
           <div class="border-t border-sand pt-4">
             <div class="flex justify-between">
-              <span class="text-lg font-bold text-foreground">Total</span>
+              <span class="text-lg font-bold text-foreground">{{ t('orderConfirmation.total') }}</span>
               <span class="text-lg font-bold text-foreground">
                 ฿{{ order.total_thb.toLocaleString() }}
               </span>
@@ -152,27 +155,27 @@ async function sendAccountLink() {
 
         <!-- What's Next -->
         <div class="bg-surface rounded-lg ring-1 ring-[var(--card-ring)] p-6 space-y-4">
-          <h2 class="text-xl font-bold text-foreground">What's Next?</h2>
+          <h2 class="text-xl font-bold text-foreground">{{ t('orderConfirmation.whatsNext') }}</h2>
           <ol class="space-y-4">
             <li class="flex gap-4">
               <span class="shrink-0 w-8 h-8 bg-primary/15 rounded-full flex items-center justify-center text-sm font-bold text-primary">1</span>
               <div>
-                <p class="font-semibold text-foreground">Complete Payment</p>
-                <p class="text-sm text-muted">Transfer the exact amount using the payment details provided.</p>
+                <p class="font-semibold text-foreground">{{ t('orderConfirmation.step1Title') }}</p>
+                <p class="text-sm text-muted">{{ t('orderConfirmation.step1Desc') }}</p>
               </div>
             </li>
             <li class="flex gap-4">
               <span class="shrink-0 w-8 h-8 bg-primary/15 rounded-full flex items-center justify-center text-sm font-bold text-primary">2</span>
               <div>
-                <p class="font-semibold text-foreground">Payment Verification</p>
-                <p class="text-sm text-muted">We'll verify your payment within 1-2 business hours.</p>
+                <p class="font-semibold text-foreground">{{ t('orderConfirmation.step2Title') }}</p>
+                <p class="text-sm text-muted">{{ t('orderConfirmation.step2Desc') }}</p>
               </div>
             </li>
             <li class="flex gap-4">
               <span class="shrink-0 w-8 h-8 bg-primary/15 rounded-full flex items-center justify-center text-sm font-bold text-primary">3</span>
               <div>
-                <p class="font-semibold text-foreground">Order Shipped</p>
-                <p class="text-sm text-muted">You'll receive an email with tracking information once shipped.</p>
+                <p class="font-semibold text-foreground">{{ t('orderConfirmation.step3Title') }}</p>
+                <p class="text-sm text-muted">{{ t('orderConfirmation.step3Desc') }}</p>
               </div>
             </li>
           </ol>
@@ -182,26 +185,24 @@ async function sendAccountLink() {
           v-if="!auth.user && checkoutEmail"
           class="bg-primary/10 border border-primary/30 rounded-lg p-6 space-y-3"
         >
-          <h2 class="text-xl font-bold text-foreground">Create an Account to Track Orders</h2>
+          <h2 class="text-xl font-bold text-foreground">{{ t('orderConfirmation.createAccountTitle') }}</h2>
           <p class="text-sm text-muted">
-            We can create your account with
-            <span class="font-medium text-foreground">{{ checkoutEmail }}</span>
-            and link your past guest orders automatically.
+            {{ t('orderConfirmation.createAccountWithEmail', { email: checkoutEmail }) }}
           </p>
           <p v-if="accountPromptError" class="text-sm text-error">{{ accountPromptError }}</p>
           <p v-if="accountPromptSuccess" class="text-sm text-primary">{{ accountPromptSuccess }}</p>
           <PrimaryButton size="sm" :disabled="sendingAccountLink" @click="sendAccountLink">
-            {{ sendingAccountLink ? 'Sending...' : 'Send Account Login Link' }}
+            {{ sendingAccountLink ? t('orderConfirmation.sendingLink') : t('orderConfirmation.sendLoginLink') }}
           </PrimaryButton>
         </div>
 
         <!-- Actions -->
         <div class="flex flex-col sm:flex-row gap-4 justify-center">
           <RouterLink :to="`/order/${orderId}`">
-            <PrimaryButton size="lg">Track My Order</PrimaryButton>
+            <PrimaryButton size="lg">{{ t('orderConfirmation.trackMyOrder') }}</PrimaryButton>
           </RouterLink>
           <RouterLink to="/shop">
-            <SecondaryButton size="lg">Continue Shopping</SecondaryButton>
+            <SecondaryButton size="lg">{{ t('common.continueShopping') }}</SecondaryButton>
           </RouterLink>
         </div>
       </div>

@@ -1,9 +1,12 @@
 <script setup lang="ts">
 import { ref, watch } from 'vue'
 import { RouterLink } from 'vue-router'
+import { useI18n } from 'vue-i18n'
 import AppBadge from './AppBadge.vue'
 import PrimaryButton from './PrimaryButton.vue'
 import { useCartStore } from '../../stores/cart'
+
+const { t } = useI18n({ useScope: 'global' })
 
 const props = defineProps<{
   productId: number
@@ -79,7 +82,7 @@ function addToCart() {
           <span
             class="bg-foreground/80 text-background text-sm font-semibold px-4 py-2 rounded-md"
           >
-            Out of Stock
+            {{ t('product.outOfStock') }}
           </span>
         </div>
       </div>
@@ -99,7 +102,7 @@ function addToCart() {
       <p class="text-2xl font-bold text-foreground">{{ priceFormatted }}</p>
 
       <PrimaryButton full-width :disabled="!inStock" @click="addToCart">
-        {{ inStock ? 'Add to Cart' : 'Sold Out' }}
+        {{ inStock ? t('common.addToCart') : t('common.soldOut') }}
       </PrimaryButton>
     </div>
   </div>

@@ -10,6 +10,9 @@ import CheckoutStepper from '../components/ui/CheckoutStepper.vue'
 import { useAuthStore } from '../stores/auth'
 import { useHead } from '../composables/useHead'
 import { useThaiAddress } from '../composables/useThaiAddress'
+import { useI18n } from 'vue-i18n'
+
+const { t } = useI18n({ useScope: 'global' })
 
 useHead({ title: 'Checkout', description: 'Complete your order with CNX AthletX.' })
 
@@ -236,17 +239,17 @@ async function handleSubmit() {
     <CheckoutStepper :current-step="2" />
 
     <div class="mx-auto max-w-[1280px] px-4 sm:px-6 lg:px-8 pb-16">
-      <h1 class="text-3xl sm:text-4xl font-bold text-foreground mb-8">Checkout</h1>
+      <h1 class="text-3xl sm:text-4xl font-bold text-foreground mb-8">{{ t('checkout.title') }}</h1>
 
       <form @submit.prevent="handleSubmit" class="grid grid-cols-1 lg:grid-cols-3 gap-8">
         <!-- Form Column -->
         <div class="lg:col-span-2 space-y-8">
           <!-- Contact Information -->
           <div class="space-y-4">
-            <h2 class="text-xl font-bold text-foreground">Contact Information</h2>
+            <h2 class="text-xl font-bold text-foreground">{{ t('checkout.contactInfo') }}</h2>
             <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
-                <label class="block text-sm font-medium text-foreground mb-1">Full Name</label>
+                <label class="block text-sm font-medium text-foreground mb-1">{{ t('checkout.name') }}</label>
                 <input
                   v-model="form.name"
                   type="text"
@@ -259,7 +262,7 @@ async function handleSubmit() {
                 <p v-if="fieldErrors.name" class="mt-1 text-xs text-error">{{ fieldErrors.name }}</p>
               </div>
               <div>
-                <label class="block text-sm font-medium text-foreground mb-1">Email</label>
+                <label class="block text-sm font-medium text-foreground mb-1">{{ t('checkout.email') }}</label>
                 <input
                   v-model="form.email"
                   type="email"
@@ -271,11 +274,11 @@ async function handleSubmit() {
                   placeholder="you@example.com"
                 />
                 <p v-if="fieldErrors.email" class="mt-1 text-xs text-error">{{ fieldErrors.email }}</p>
-                <p v-else-if="auth.user" class="mt-1 text-xs text-muted">Using your account email.</p>
+                <p v-else-if="auth.user" class="mt-1 text-xs text-muted">{{ t('checkout.usingAccountEmail') }}</p>
               </div>
             </div>
             <div class="max-w-sm">
-              <label class="block text-sm font-medium text-foreground mb-1">Phone Number</label>
+              <label class="block text-sm font-medium text-foreground mb-1">{{ t('checkout.phoneNumber') }}</label>
               <div class="flex gap-2">
                 <select
                   v-model="phoneCountryCode"
@@ -303,9 +306,9 @@ async function handleSubmit() {
 
           <!-- Shipping Address -->
           <div class="space-y-4">
-            <h2 class="text-xl font-bold text-foreground">Shipping Address</h2>
+            <h2 class="text-xl font-bold text-foreground">{{ t('checkout.shippingAddress') }}</h2>
             <div>
-              <label class="block text-sm font-medium text-foreground mb-1">Address Line 1</label>
+              <label class="block text-sm font-medium text-foreground mb-1">{{ t('checkout.addressLine1') }}</label>
               <input
                 v-model="form.line1"
                 type="text"
@@ -318,7 +321,7 @@ async function handleSubmit() {
               <p v-if="fieldErrors.line1" class="mt-1 text-xs text-error">{{ fieldErrors.line1 }}</p>
             </div>
             <div>
-              <label class="block text-sm font-medium text-foreground mb-1">Address Line 2 (Optional)</label>
+              <label class="block text-sm font-medium text-foreground mb-1">{{ t('checkout.addressLine2') }}</label>
               <input
                 v-model="form.line2"
                 type="text"
@@ -328,7 +331,7 @@ async function handleSubmit() {
             </div>
             <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
-                <label class="block text-sm font-medium text-foreground mb-1">Province</label>
+                <label class="block text-sm font-medium text-foreground mb-1">{{ t('checkout.province') }}</label>
                 <select
                   v-model="thaiAddr.selectedProvince.value"
                   :class="[
@@ -336,13 +339,13 @@ async function handleSubmit() {
                     fieldErrors.province ? 'border-error' : 'border-sand',
                   ]"
                 >
-                  <option value="">Select province</option>
+                  <option value="">{{ t('checkout.selectProvince') }}</option>
                   <option v-for="p in thaiAddr.provinces" :key="p.code" :value="p.name">{{ p.name }}</option>
                 </select>
                 <p v-if="fieldErrors.province" class="mt-1 text-xs text-error">{{ fieldErrors.province }}</p>
               </div>
               <div>
-                <label class="block text-sm font-medium text-foreground mb-1">District</label>
+                <label class="block text-sm font-medium text-foreground mb-1">{{ t('checkout.district') }}</label>
                 <select
                   v-model="thaiAddr.selectedDistrict.value"
                   :disabled="!thaiAddr.selectedProvince.value"
@@ -351,13 +354,13 @@ async function handleSubmit() {
                     fieldErrors.district ? 'border-error' : 'border-sand',
                   ]"
                 >
-                  <option value="">Select district</option>
+                  <option value="">{{ t('checkout.selectDistrict') }}</option>
                   <option v-for="d in thaiAddr.filteredDistricts.value" :key="d.code" :value="d.name">{{ d.name }}</option>
                 </select>
                 <p v-if="fieldErrors.district" class="mt-1 text-xs text-error">{{ fieldErrors.district }}</p>
               </div>
               <div>
-                <label class="block text-sm font-medium text-foreground mb-1">Sub-district</label>
+                <label class="block text-sm font-medium text-foreground mb-1">{{ t('checkout.subdistrict') }}</label>
                 <select
                   v-model="thaiAddr.selectedSubdistrict.value"
                   :disabled="!thaiAddr.selectedDistrict.value"
@@ -365,12 +368,12 @@ async function handleSubmit() {
                     'w-full rounded-md border px-4 py-3 text-sm bg-surface-alt text-foreground transition-colors focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent disabled:opacity-50',
                   ]"
                 >
-                  <option value="">Select sub-district</option>
+                  <option value="">{{ t('checkout.selectSubdistrict') }}</option>
                   <option v-for="s in thaiAddr.filteredSubdistricts.value" :key="s.name" :value="s.name">{{ s.name }}</option>
                 </select>
               </div>
               <div>
-                <label class="block text-sm font-medium text-foreground mb-1">Postal Code</label>
+                <label class="block text-sm font-medium text-foreground mb-1">{{ t('checkout.postalCode') }}</label>
                 <input
                   v-model="thaiAddr.postalCode.value"
                   type="text"
@@ -390,7 +393,7 @@ async function handleSubmit() {
 
           <!-- Discount Code -->
           <div class="space-y-2">
-            <label class="block text-sm font-medium text-foreground">Discount Code (Optional)</label>
+            <label class="block text-sm font-medium text-foreground">{{ t('checkout.discountCode') }}</label>
             <div class="flex gap-2 max-w-sm">
               <input
                 v-model="form.discount_code"
@@ -409,7 +412,7 @@ async function handleSubmit() {
         <!-- Order Summary Sidebar -->
         <div class="lg:col-span-1">
           <div class="bg-surface rounded-lg ring-1 ring-[var(--card-ring)] p-6 space-y-4 sticky top-20">
-            <h2 class="text-xl font-bold text-foreground">Order Summary</h2>
+            <h2 class="text-xl font-bold text-foreground">{{ t('checkout.orderSummary') }}</h2>
 
             <div class="space-y-3 divide-y divide-sand">
               <div
@@ -429,12 +432,12 @@ async function handleSubmit() {
 
             <div class="border-t border-sand pt-4 space-y-2 text-sm">
               <div class="flex justify-between">
-                <span class="text-muted">Subtotal</span>
+                <span class="text-muted">{{ t('checkout.subtotal') }}</span>
                 <span class="font-semibold text-foreground">{{ formatPrice(cart.subtotalSatang) }}</span>
               </div>
               <div class="flex justify-between">
-                <span class="text-muted">Shipping</span>
-                <span class="text-muted">Calculated on submit</span>
+                <span class="text-muted">{{ t('checkout.shipping') }}</span>
+                <span class="text-muted">{{ t('checkout.calculatedOnSubmit') }}</span>
               </div>
             </div>
 
@@ -452,7 +455,7 @@ async function handleSubmit() {
               :disabled="!canSubmit"
               @click="handleSubmit"
             >
-              {{ submitting ? 'Placing Order...' : 'Place Order' }}
+              {{ submitting ? t('checkout.placing') : t('checkout.placeOrder') }}
             </PrimaryButton>
           </div>
         </div>

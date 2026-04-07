@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { RouterLink } from 'vue-router'
+import { useI18n } from 'vue-i18n'
 import { useCartStore } from '../stores/cart'
 import { formatPrice } from '../api/products'
 import PrimaryButton from '../components/ui/PrimaryButton.vue'
@@ -7,6 +8,8 @@ import SecondaryButton from '../components/ui/SecondaryButton.vue'
 import AppBadge from '../components/ui/AppBadge.vue'
 import CheckoutStepper from '../components/ui/CheckoutStepper.vue'
 import { useHead } from '../composables/useHead'
+
+const { t } = useI18n({ useScope: 'global' })
 
 useHead({ title: 'Cart', description: 'Review your cart before checkout.' })
 
@@ -26,7 +29,7 @@ function decrement(productId: number, current: number) {
     <CheckoutStepper :current-step="1" />
 
     <div class="mx-auto max-w-[1280px] px-4 sm:px-6 lg:px-8 pb-16">
-      <h1 class="text-3xl sm:text-4xl font-bold text-foreground mb-8">Shopping Cart</h1>
+      <h1 class="text-3xl sm:text-4xl font-bold text-foreground mb-8">{{ t('cart.title') }}</h1>
 
       <!-- Empty State -->
       <div v-if="cart.items.length === 0" class="text-center py-16 space-y-4">
@@ -43,10 +46,10 @@ function decrement(productId: number, current: number) {
             d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"
           />
         </svg>
-        <p class="text-xl font-semibold text-foreground">Your cart is empty</p>
-        <p class="text-muted">Add some products to get started.</p>
+        <p class="text-xl font-semibold text-foreground">{{ t('cart.empty') }}</p>
+        <p class="text-muted">{{ t('cart.emptySubtitle') }}</p>
         <RouterLink to="/shop">
-          <SecondaryButton>Continue Shopping</SecondaryButton>
+          <SecondaryButton>{{ t('cart.continueShopping') }}</SecondaryButton>
         </RouterLink>
       </div>
 
@@ -96,7 +99,7 @@ function decrement(productId: number, current: number) {
                 </h3>
               </RouterLink>
               <AppBadge :label="item.weightLabel" />
-              <p class="text-sm text-muted">{{ formatPrice(item.priceSatang) }} each</p>
+              <p class="text-sm text-muted">{{ formatPrice(item.priceSatang) }} {{ t('common.each') }}</p>
             </div>
 
             <!-- Quantity Selector -->
@@ -150,33 +153,33 @@ function decrement(productId: number, current: number) {
         <!-- Order Summary Sidebar -->
         <div class="lg:col-span-1">
           <div class="bg-surface rounded-lg ring-1 ring-[var(--card-ring)] p-6 space-y-4 sticky top-20">
-            <h2 class="text-xl font-bold text-foreground">Order Summary</h2>
+            <h2 class="text-xl font-bold text-foreground">{{ t('cart.orderSummary') }}</h2>
 
             <div class="space-y-2 text-sm">
               <div class="flex justify-between">
-                <span class="text-muted">Subtotal ({{ cart.totalItems }} items)</span>
+                <span class="text-muted">{{ t('cart.subtotal') }} ({{ cart.totalItems }} {{ t('common.items') }})</span>
                 <span class="font-semibold text-foreground">{{ formatPrice(cart.subtotalSatang) }}</span>
               </div>
               <div class="flex justify-between">
-                <span class="text-muted">Shipping</span>
-                <span class="text-muted">Calculated at checkout</span>
+                <span class="text-muted">{{ t('cart.shipping') }}</span>
+                <span class="text-muted">{{ t('common.calculatedAtCheckout') }}</span>
               </div>
             </div>
 
             <div class="border-t border-sand pt-4">
               <div class="flex justify-between">
-                <span class="text-lg font-bold text-foreground">Total</span>
+                <span class="text-lg font-bold text-foreground">{{ t('cart.total') }}</span>
                 <span class="text-lg font-bold text-foreground">{{ formatPrice(cart.subtotalSatang) }}</span>
               </div>
             </div>
 
             <RouterLink to="/checkout">
-              <PrimaryButton full-width size="lg">Proceed to Checkout</PrimaryButton>
+              <PrimaryButton full-width size="lg">{{ t('cart.checkout') }}</PrimaryButton>
             </RouterLink>
 
             <RouterLink to="/shop" class="block text-center">
               <button class="text-primary font-semibold text-sm hover:underline underline-offset-4">
-                Continue Shopping
+                {{ t('cart.continueShopping') }}
               </button>
             </RouterLink>
           </div>

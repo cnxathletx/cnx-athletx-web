@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { ref, watch, computed } from 'vue'
 import { useRoute, RouterLink } from 'vue-router'
+import { useI18n } from 'vue-i18n'
 import PrimaryButton from '../components/ui/PrimaryButton.vue'
 import AppBadge from '../components/ui/AppBadge.vue'
 import ProductCard from '../components/ui/ProductCard.vue'
@@ -14,6 +15,8 @@ import {
 import { useCartStore } from '../stores/cart'
 import { useHead } from '../composables/useHead'
 import { useJsonLd } from '../composables/useJsonLd'
+
+const { t } = useI18n({ useScope: 'global' })
 
 const cart = useCartStore()
 
@@ -80,11 +83,11 @@ useJsonLd(() => {
 
 const activeTab = ref<'nutrition' | 'ingredients' | 'howToUse'>('nutrition')
 
-const tabs = [
-  { key: 'nutrition' as const, label: 'Nutrition Facts' },
-  { key: 'ingredients' as const, label: 'Ingredients' },
-  { key: 'howToUse' as const, label: 'How to Use' },
-]
+const tabs = computed(() => [
+  { key: 'nutrition' as const, label: t('product.nutritionFacts') },
+  { key: 'ingredients' as const, label: t('product.ingredients') },
+  { key: 'howToUse' as const, label: t('product.howToUse') },
+])
 
 const nutritionFacts = computed<Record<string, string>>(() => {
   const raw = product.value?.nutrition_json
@@ -179,11 +182,11 @@ watch(
         />
       </svg>
       <h1 class="text-3xl font-bold text-foreground">
-        {{ error === 'Product not found' ? 'Product Not Found' : 'Error Loading Product' }}
+        {{ error === 'Product not found' ? t('product.productNotFound') : t('product.errorLoading') }}
       </h1>
       <p class="text-muted">{{ error }}</p>
       <RouterLink to="/shop">
-        <PrimaryButton>Back to Shop</PrimaryButton>
+        <PrimaryButton>{{ t('common.backToShop') }}</PrimaryButton>
       </RouterLink>
     </div>
   </div>
@@ -194,9 +197,9 @@ watch(
     <section class="bg-background">
       <div class="mx-auto max-w-[1280px] px-4 sm:px-6 lg:px-8 py-4">
         <nav class="flex items-center space-x-2 text-sm text-muted">
-          <RouterLink to="/" class="hover:text-foreground transition-colors">Home</RouterLink>
+          <RouterLink to="/" class="hover:text-foreground transition-colors">{{ t('nav.home') }}</RouterLink>
           <span>/</span>
-          <RouterLink to="/shop" class="hover:text-foreground transition-colors">Shop</RouterLink>
+          <RouterLink to="/shop" class="hover:text-foreground transition-colors">{{ t('nav.shop') }}</RouterLink>
           <span>/</span>
           <span class="text-foreground font-medium">
             {{ product.name }} {{ formatWeight(product.weight_g) }}
@@ -238,7 +241,7 @@ watch(
                     d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"
                   />
                 </svg>
-                <p class="text-sm text-muted/40">Product Image</p>
+                <p class="text-sm text-muted/40">{{ t('product.productImage') }}</p>
               </div>
             </div>
           </div>
@@ -256,7 +259,7 @@ watch(
 
             <!-- Quantity Selector -->
             <div class="flex items-center space-x-4">
-              <span class="text-sm font-medium text-muted">Quantity</span>
+              <span class="text-sm font-medium text-muted">{{ t('product.quantity') }}</span>
               <div class="flex items-center space-x-3">
                 <button
                   @click="decrement"
@@ -308,7 +311,7 @@ watch(
               :disabled="product.available_stock <= 0"
               @click="cart.addItem({ productId: product.id, slug: product.slug, name: product.name, weightLabel: formatWeight(product.weight_g), priceSatang: product.price_thb, imageUrl: product.image_url }, quantity)"
             >
-              {{ product.available_stock > 0 ? 'Add to Cart' : 'Sold Out' }}
+              {{ product.available_stock > 0 ? t('product.addToCart') : t('product.soldOut') }}
             </PrimaryButton>
 
             <!-- Stock Indicator -->
@@ -317,11 +320,11 @@ watch(
               class="text-sm text-success flex items-center gap-1.5"
             >
               <span class="w-2 h-2 rounded-full bg-success inline-block" />
-              In Stock
+              {{ t('product.inStock') }}
             </p>
             <p v-else class="text-sm text-error flex items-center gap-1.5">
               <span class="w-2 h-2 rounded-full bg-error inline-block" />
-              Out of Stock
+              {{ t('product.outOfStock') }}
             </p>
           </div>
         </div>
@@ -377,7 +380,7 @@ watch(
     <!-- Related Product -->
     <section v-if="relatedProduct" class="bg-background">
       <div class="mx-auto max-w-[1280px] px-4 sm:px-6 lg:px-8 py-12 sm:py-16">
-        <h2 class="text-2xl font-bold text-foreground mb-8">Also Available</h2>
+        <h2 class="text-2xl font-bold text-foreground mb-8">{{ t('product.alsoAvailable') }}</h2>
         <div class="max-w-sm">
           <ProductCard
             :product-id="relatedProduct.id"

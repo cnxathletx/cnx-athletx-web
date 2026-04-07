@@ -15,6 +15,9 @@ import SecondaryButton from '../components/ui/SecondaryButton.vue'
 import { useAuthStore } from '../stores/auth'
 import { useHead } from '../composables/useHead'
 import { useThaiAddress } from '../composables/useThaiAddress'
+import { useI18n } from 'vue-i18n'
+
+const { t } = useI18n({ useScope: 'global' })
 
 useHead({ title: 'My Account', description: 'View your order history and manage your account.' })
 
@@ -61,14 +64,14 @@ const totalPages = computed(() => Math.max(1, Math.ceil(total.value / limit)))
 const canPrev = computed(() => page.value > 1)
 const canNext = computed(() => page.value < totalPages.value)
 
-const statusLabels: Record<string, string> = {
-  pending_payment: 'Awaiting Payment',
-  paid: 'Paid',
-  packed: 'Packed',
-  shipped: 'Shipped',
-  delivered: 'Delivered',
-  cancelled: 'Cancelled',
-}
+const statusLabels = computed<Record<string, string>>(() => ({
+  pending_payment: t('orderStatus.statusLabels.pending_payment'),
+  paid: t('orderStatus.statusLabels.paid'),
+  packed: t('orderStatus.statusLabels.packed'),
+  shipped: t('orderStatus.statusLabels.shipped'),
+  delivered: t('orderStatus.statusLabels.delivered'),
+  cancelled: t('orderStatus.statusLabels.cancelled'),
+}))
 
 const statusClasses: Record<string, string> = {
   pending_payment: 'bg-accent/15 text-accent',
@@ -249,17 +252,17 @@ onMounted(async () => {
       <div v-else-if="auth.user" class="max-w-4xl mx-auto space-y-8">
         <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div>
-            <h1 class="text-3xl sm:text-4xl font-bold text-foreground">My Account</h1>
+            <h1 class="text-3xl sm:text-4xl font-bold text-foreground">{{ t('account.title') }}</h1>
             <p class="text-muted mt-1">{{ auth.user.email }}</p>
           </div>
-          <SecondaryButton size="sm" @click="handleLogout">Log Out</SecondaryButton>
+          <SecondaryButton size="sm" @click="handleLogout">{{ t('account.logOut') }}</SecondaryButton>
         </div>
 
         <div class="bg-surface rounded-lg ring-1 ring-[var(--card-ring)] p-6 space-y-4">
-          <h2 class="text-xl font-bold text-foreground">Profile</h2>
+          <h2 class="text-xl font-bold text-foreground">{{ t('account.profile') }}</h2>
           <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
-              <label class="block text-sm font-medium text-foreground mb-1">Name</label>
+              <label class="block text-sm font-medium text-foreground mb-1">{{ t('account.nameLabel') }}</label>
               <input
                 v-model="profile.name"
                 type="text"
@@ -268,7 +271,7 @@ onMounted(async () => {
               />
             </div>
             <div>
-              <label class="block text-sm font-medium text-foreground mb-1">Phone</label>
+              <label class="block text-sm font-medium text-foreground mb-1">{{ t('account.phoneLabel') }}</label>
               <input
                 v-model="profile.phone"
                 type="tel"
@@ -280,16 +283,16 @@ onMounted(async () => {
           <p v-if="saveError" class="text-sm text-error">{{ saveError }}</p>
           <p v-if="saveSuccess" class="text-sm text-primary">{{ saveSuccess }}</p>
           <PrimaryButton size="sm" :disabled="saving" @click="saveProfile">
-            {{ saving ? 'Saving...' : 'Save Profile' }}
+            {{ saving ? t('account.savingProfile') : t('account.saveProfile') }}
           </PrimaryButton>
         </div>
 
         <div class="bg-surface rounded-lg ring-1 ring-[var(--card-ring)] p-6 space-y-4">
-          <h2 class="text-xl font-bold text-foreground">Shipping Address</h2>
-          <p class="text-sm text-muted">This address will be pre-filled at checkout.</p>
+          <h2 class="text-xl font-bold text-foreground">{{ t('account.shippingAddress') }}</h2>
+          <p class="text-sm text-muted">{{ t('account.shippingAddressHint') }}</p>
           <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div class="sm:col-span-2">
-              <label class="block text-sm font-medium text-foreground mb-1">Address Line 1</label>
+              <label class="block text-sm font-medium text-foreground mb-1">{{ t('checkout.addressLine1') }}</label>
               <input
                 v-model="address.line1"
                 type="text"
@@ -298,7 +301,7 @@ onMounted(async () => {
               />
             </div>
             <div class="sm:col-span-2">
-              <label class="block text-sm font-medium text-foreground mb-1">Address Line 2 <span class="text-muted font-normal">(optional)</span></label>
+              <label class="block text-sm font-medium text-foreground mb-1">{{ t('checkout.addressLine2') }}</label>
               <input
                 v-model="address.line2"
                 type="text"
@@ -307,39 +310,39 @@ onMounted(async () => {
               />
             </div>
             <div>
-              <label class="block text-sm font-medium text-foreground mb-1">Province</label>
+              <label class="block text-sm font-medium text-foreground mb-1">{{ t('checkout.province') }}</label>
               <select
                 v-model="thaiAddr.selectedProvince.value"
                 class="w-full rounded-md border border-sand px-4 py-3 text-sm bg-surface-alt text-foreground transition-colors focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
               >
-                <option value="">Select province</option>
+                <option value="">{{ t('checkout.selectProvince') }}</option>
                 <option v-for="p in thaiAddr.provinces" :key="p.code" :value="p.name">{{ p.name }}</option>
               </select>
             </div>
             <div>
-              <label class="block text-sm font-medium text-foreground mb-1">District</label>
+              <label class="block text-sm font-medium text-foreground mb-1">{{ t('checkout.district') }}</label>
               <select
                 v-model="thaiAddr.selectedDistrict.value"
                 :disabled="!thaiAddr.selectedProvince.value"
                 class="w-full rounded-md border border-sand px-4 py-3 text-sm bg-surface-alt text-foreground transition-colors focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent disabled:opacity-50"
               >
-                <option value="">Select district</option>
+                <option value="">{{ t('checkout.selectDistrict') }}</option>
                 <option v-for="d in thaiAddr.filteredDistricts.value" :key="d.code" :value="d.name">{{ d.name }}</option>
               </select>
             </div>
             <div>
-              <label class="block text-sm font-medium text-foreground mb-1">Sub-district</label>
+              <label class="block text-sm font-medium text-foreground mb-1">{{ t('checkout.subdistrict') }}</label>
               <select
                 v-model="thaiAddr.selectedSubdistrict.value"
                 :disabled="!thaiAddr.selectedDistrict.value"
                 class="w-full rounded-md border border-sand px-4 py-3 text-sm bg-surface-alt text-foreground transition-colors focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent disabled:opacity-50"
               >
-                <option value="">Select sub-district</option>
+                <option value="">{{ t('checkout.selectSubdistrict') }}</option>
                 <option v-for="s in thaiAddr.filteredSubdistricts.value" :key="s.name" :value="s.name">{{ s.name }}</option>
               </select>
             </div>
             <div>
-              <label class="block text-sm font-medium text-foreground mb-1">Postal Code</label>
+              <label class="block text-sm font-medium text-foreground mb-1">{{ t('checkout.postalCode') }}</label>
               <input
                 v-model="thaiAddr.postalCode.value"
                 type="text"
@@ -353,19 +356,19 @@ onMounted(async () => {
           <p v-if="addressError" class="text-sm text-error">{{ addressError }}</p>
           <p v-if="addressSuccess" class="text-sm text-primary">{{ addressSuccess }}</p>
           <PrimaryButton size="sm" :disabled="savingAddress" @click="saveAddress">
-            {{ savingAddress ? 'Saving...' : 'Save Address' }}
+            {{ savingAddress ? t('account.savingAddress') : t('account.saveAddress') }}
           </PrimaryButton>
         </div>
 
         <div class="bg-surface rounded-lg ring-1 ring-[var(--card-ring)] p-6 space-y-4">
-          <h2 class="text-xl font-bold text-foreground">Order History</h2>
+          <h2 class="text-xl font-bold text-foreground">{{ t('account.orderHistory') }}</h2>
 
           <p v-if="fetchError" class="text-sm text-error">{{ fetchError }}</p>
 
           <div v-else-if="orders.length === 0" class="text-center py-8 space-y-3">
-            <p class="text-muted">No orders yet.</p>
+            <p class="text-muted">{{ t('account.noOrders') }}</p>
             <RouterLink to="/shop">
-              <PrimaryButton size="sm">Shop Now</PrimaryButton>
+              <PrimaryButton size="sm">{{ t('common.shopNow') }}</PrimaryButton>
             </RouterLink>
           </div>
 
@@ -388,14 +391,14 @@ onMounted(async () => {
                   <span class="text-sm font-semibold text-foreground">฿{{ order.total_thb.toLocaleString() }}</span>
                 </div>
               </div>
-              <p class="text-xs text-muted mt-2">{{ order.items_count }} item(s)</p>
+              <p class="text-xs text-muted mt-2">{{ t('account.itemsCount', { count: order.items_count }) }}</p>
             </RouterLink>
           </div>
 
           <div v-if="orders.length > 0" class="flex items-center justify-between pt-2">
-            <SecondaryButton size="sm" :disabled="!canPrev" @click="prevPage">Previous</SecondaryButton>
-            <p class="text-xs text-muted">Page {{ page }} of {{ totalPages }}</p>
-            <SecondaryButton size="sm" :disabled="!canNext" @click="nextPage">Next</SecondaryButton>
+            <SecondaryButton size="sm" :disabled="!canPrev" @click="prevPage">{{ t('account.previous') }}</SecondaryButton>
+            <p class="text-xs text-muted">{{ t('account.page', { page, total: totalPages }) }}</p>
+            <SecondaryButton size="sm" :disabled="!canNext" @click="nextPage">{{ t('account.next') }}</SecondaryButton>
           </div>
         </div>
       </div>

@@ -64,6 +64,9 @@ const archivedProducts = computed(() => products.value.filter((p) => p.archived)
 const showArchived = ref(false)
 const createImagePreview = computed(() => createForm.image_url.trim())
 const editImagePreview = computed(() => editForm.image_url.trim())
+const showCreatePreview = computed(() => createForm.name.trim() || createImagePreview.value)
+const createPreviewWeight = computed(() => createForm.weight_g ? `${createForm.weight_g >= 1000 ? `${createForm.weight_g / 1000}kg` : `${createForm.weight_g}g`}` : '')
+const createPreviewPrice = computed(() => createForm.price_thb ? `฿${Number(createForm.price_thb).toLocaleString()}` : '฿0')
 
 function getProductLineName(id: number | null): string {
   if (id === null) return 'None'
@@ -342,11 +345,6 @@ onMounted(async () => {
           <p v-if="createImageError" class="text-xs text-error">{{ createImageError }}</p>
         </div>
 
-        <div v-if="createImagePreview" class="rounded-md border border-sand p-3 bg-surface-alt">
-          <p class="text-xs text-muted mb-2">Image preview</p>
-          <img :src="createImagePreview" alt="Create product preview" class="w-32 h-32 object-cover rounded-md ring-1 ring-[var(--card-ring)]" />
-        </div>
-
         <textarea
           v-model="createForm.description"
           rows="4"
@@ -359,6 +357,39 @@ onMounted(async () => {
             <input v-model="createForm.active" type="checkbox" class="h-4 w-4 rounded border-sand bg-surface-alt text-primary focus:ring-primary" />
             Active product
           </label>
+        </div>
+
+        <!-- Live Preview -->
+        <div v-if="showCreatePreview" class="space-y-2">
+          <p class="text-sm font-medium text-muted">Shop Preview</p>
+          <div class="max-w-xs">
+            <div class="bg-surface rounded-lg shadow-sm ring-1 ring-[var(--card-ring)] overflow-hidden">
+              <div class="aspect-[4/3] overflow-hidden bg-sand relative">
+                <img
+                  v-if="createImagePreview"
+                  :src="createImagePreview"
+                  alt="Preview"
+                  class="w-full h-full object-cover"
+                />
+                <div
+                  v-else
+                  class="w-full h-full bg-gradient-to-br from-primary/20 via-sage/15 to-primary/10 flex items-center justify-center"
+                >
+                  <svg class="w-20 h-20 text-muted/40" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
+                  </svg>
+                </div>
+              </div>
+              <div class="p-6 space-y-4">
+                <div class="space-y-2">
+                  <h3 class="text-xl font-semibold text-foreground">{{ createForm.name.trim() || 'Product Name' }}</h3>
+                  <span v-if="createPreviewWeight" class="inline-block rounded-full bg-surface-alt px-3 py-1 text-xs font-medium text-muted ring-1 ring-[var(--card-ring)]">{{ createPreviewWeight }}</span>
+                </div>
+                <p class="text-2xl font-bold text-foreground">{{ createPreviewPrice }}</p>
+                <div class="inline-flex items-center justify-center rounded-md font-semibold w-full px-6 py-3 text-base bg-primary text-background opacity-75 cursor-default">Add to Cart</div>
+              </div>
+            </div>
+          </div>
         </div>
 
         <PrimaryButton :disabled="createLoading || createImageUploading" @click="submitCreate">Create Product</PrimaryButton>

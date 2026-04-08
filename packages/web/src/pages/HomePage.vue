@@ -104,60 +104,88 @@ onMounted(async () => {
 
     <!-- ============ SOCIAL PROOF BAR ============ -->
     <section class="bg-surface-alt">
-      <div class="mx-auto max-w-[1280px] px-4 sm:px-6 lg:px-8 py-12">
-        <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-8">
-          <!-- 100% Natural -->
-          <div class="flex flex-col items-center text-center space-y-2">
-            <svg class="w-9 h-9 text-primary" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
-              <circle cx="12" cy="12" r="10" />
-              <path stroke-linecap="round" stroke-linejoin="round" d="M7 12c1-4 4-6 5-6s4 2 5 6c-1 4-4 6-5 6s-4-2-5-6z" />
-              <path stroke-linecap="round" stroke-linejoin="round" d="M12 6v12" />
-            </svg>
+      <div class="mx-auto max-w-[1280px] px-4 sm:px-6 lg:px-8 py-14 sm:py-16">
+        <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-x-6 gap-y-10">
+          <!-- 100% Natural — Leaf -->
+          <div class="group flex flex-col items-center text-center space-y-3">
+            <div class="flex items-center justify-center w-16 h-16 rounded-full bg-primary/10 ring-1 ring-primary/20 transition-all duration-200 group-hover:bg-primary/15 group-hover:-translate-y-0.5">
+              <svg class="w-8 h-8 text-primary" fill="none" stroke="currentColor" stroke-width="1.75" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M20 4c0 9-5 15-13 16-1 0-3-1-3-3 0-8 6-13 16-13z" />
+                <path stroke-linecap="round" stroke-linejoin="round" d="M4 20c4-5 9-9 15-13" />
+              </svg>
+            </div>
             <span class="text-sm font-semibold text-foreground">{{ t('home.socialProof.natural') }}</span>
           </div>
-          <!-- Vegan -->
-          <div class="flex flex-col items-center text-center space-y-2">
-            <svg class="w-9 h-9 text-primary" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" d="M17 8c-2 0-4.5 1-5 5-1.5-3-1-6.5 3-8" />
-              <path stroke-linecap="round" stroke-linejoin="round" d="M6 20c1-6 4-10 6-12 2 2 5 6 6 12" />
-              <path stroke-linecap="round" stroke-linejoin="round" d="M12 12v8" />
-            </svg>
+
+          <!-- Vegan — Sprout -->
+          <div class="group flex flex-col items-center text-center space-y-3">
+            <div class="flex items-center justify-center w-16 h-16 rounded-full bg-primary/10 ring-1 ring-primary/20 transition-all duration-200 group-hover:bg-primary/15 group-hover:-translate-y-0.5">
+              <svg class="w-8 h-8 text-primary" fill="none" stroke="currentColor" stroke-width="1.75" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M12 21v-9" />
+                <path stroke-linecap="round" stroke-linejoin="round" d="M12 12c0-3-2-5-6-5 0 4 2 6 6 6z" />
+                <path stroke-linecap="round" stroke-linejoin="round" d="M12 11c0-4 3-7 8-7 0 5-3 8-8 8z" />
+                <path stroke-linecap="round" stroke-linejoin="round" d="M8 21h8" />
+              </svg>
+            </div>
             <span class="text-sm font-semibold text-foreground">{{ t('home.socialProof.vegan') }}</span>
           </div>
-          <!-- Muscle Support -->
-          <div class="flex flex-col items-center text-center space-y-2">
-            <svg class="w-9 h-9 text-primary" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" d="M4 15c1-2 2-4 4-4s2 3 4 3 2-3 4-3 3 2 4 4" />
-              <path stroke-linecap="round" stroke-linejoin="round" d="M3 15h1M20 15h1" />
-              <path stroke-linecap="round" stroke-linejoin="round" d="M6 11c0-2 1-4 3-4M15 7c2 0 3 2 3 4" />
-            </svg>
+
+          <!-- Muscle Support — Dumbbell -->
+          <div class="group flex flex-col items-center text-center space-y-3">
+            <div class="flex items-center justify-center w-16 h-16 rounded-full bg-primary/10 ring-1 ring-primary/20 transition-all duration-200 group-hover:bg-primary/15 group-hover:-translate-y-0.5">
+              <svg class="w-8 h-8 text-primary" fill="none" stroke="currentColor" stroke-width="1.75" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M2 9v6" />
+                <path stroke-linecap="round" stroke-linejoin="round" d="M22 9v6" />
+                <rect x="3" y="7" width="3" height="10" rx="1" />
+                <rect x="18" y="7" width="3" height="10" rx="1" />
+                <rect x="6" y="9" width="2" height="6" rx="0.5" />
+                <rect x="16" y="9" width="2" height="6" rx="0.5" />
+                <line x1="8" y1="12" x2="16" y2="12" stroke-width="2.25" stroke-linecap="round" />
+              </svg>
+            </div>
             <span class="text-sm font-semibold text-foreground">{{ t('home.socialProof.muscleSupport') }}</span>
           </div>
-          <!-- Gluten Free -->
-          <div class="flex flex-col items-center text-center space-y-2">
-            <svg class="w-9 h-9 text-primary" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" d="M12 3v18" />
-              <path stroke-linecap="round" stroke-linejoin="round" d="M8 6c2 1 2 3 4 3s2-2 4-3M8 10c2 1 2 3 4 3s2-2 4-3M8 14c2 1 2 3 4 3s2-2 4-3" />
-              <line x1="4" y1="4" x2="20" y2="20" stroke-width="2" />
-            </svg>
+
+          <!-- Gluten Free — Wheat with strike -->
+          <div class="group flex flex-col items-center text-center space-y-3">
+            <div class="flex items-center justify-center w-16 h-16 rounded-full bg-primary/10 ring-1 ring-primary/20 transition-all duration-200 group-hover:bg-primary/15 group-hover:-translate-y-0.5">
+              <svg class="w-8 h-8 text-primary" fill="none" stroke="currentColor" stroke-width="1.75" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M12 3v18" />
+                <path stroke-linecap="round" stroke-linejoin="round" d="M12 8c-1.5-1.5-3-2-4.5-1.5C8 8 9.5 9 12 9" />
+                <path stroke-linecap="round" stroke-linejoin="round" d="M12 8c1.5-1.5 3-2 4.5-1.5C16 8 14.5 9 12 9" />
+                <path stroke-linecap="round" stroke-linejoin="round" d="M12 13c-1.5-1.5-3-2-4.5-1.5C8 13 9.5 14 12 14" />
+                <path stroke-linecap="round" stroke-linejoin="round" d="M12 13c1.5-1.5 3-2 4.5-1.5C16 13 14.5 14 12 14" />
+                <path stroke-linecap="round" stroke-linejoin="round" d="M12 18c-1.5-1.5-3-2-4.5-1.5C8 18 9.5 19 12 19" />
+                <path stroke-linecap="round" stroke-linejoin="round" d="M12 18c1.5-1.5 3-2 4.5-1.5C16 18 14.5 19 12 19" />
+                <line x1="4" y1="4" x2="20" y2="20" stroke-width="2.25" stroke-linecap="round" />
+              </svg>
+            </div>
             <span class="text-sm font-semibold text-foreground">{{ t('home.socialProof.glutenFree') }}</span>
           </div>
-          <!-- Dairy Free -->
-          <div class="flex flex-col items-center text-center space-y-2">
-            <svg class="w-9 h-9 text-primary" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" d="M9 4h6l1 4v10a2 2 0 01-2 2h-4a2 2 0 01-2-2V8l1-4z" />
-              <path stroke-linecap="round" stroke-linejoin="round" d="M9 11h6" />
-              <line x1="5" y1="4" x2="19" y2="20" stroke-width="2" />
-            </svg>
+
+          <!-- Dairy Free — Milk carton with strike -->
+          <div class="group flex flex-col items-center text-center space-y-3">
+            <div class="flex items-center justify-center w-16 h-16 rounded-full bg-primary/10 ring-1 ring-primary/20 transition-all duration-200 group-hover:bg-primary/15 group-hover:-translate-y-0.5">
+              <svg class="w-8 h-8 text-primary" fill="none" stroke="currentColor" stroke-width="1.75" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M9 3h6v3l1.5 3v10a2 2 0 01-2 2h-5a2 2 0 01-2-2V9L9 6V3z" />
+                <path stroke-linecap="round" stroke-linejoin="round" d="M9 6h6" />
+                <path stroke-linecap="round" stroke-linejoin="round" d="M10 13h4" />
+                <line x1="4" y1="4" x2="20" y2="20" stroke-width="2.25" stroke-linecap="round" />
+              </svg>
+            </div>
             <span class="text-sm font-semibold text-foreground">{{ t('home.socialProof.dairyFree') }}</span>
           </div>
-          <!-- No Added Sugar -->
-          <div class="flex flex-col items-center text-center space-y-2">
-            <svg class="w-9 h-9 text-primary" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
-              <rect x="6" y="6" width="12" height="12" rx="2" />
-              <path stroke-linecap="round" stroke-linejoin="round" d="M10 10h4M10 14h2" />
-              <line x1="5" y1="4" x2="19" y2="20" stroke-width="2" />
-            </svg>
+
+          <!-- No Added Sugar — Sugar cubes with strike -->
+          <div class="group flex flex-col items-center text-center space-y-3">
+            <div class="flex items-center justify-center w-16 h-16 rounded-full bg-primary/10 ring-1 ring-primary/20 transition-all duration-200 group-hover:bg-primary/15 group-hover:-translate-y-0.5">
+              <svg class="w-8 h-8 text-primary" fill="none" stroke="currentColor" stroke-width="1.75" viewBox="0 0 24 24">
+                <rect x="3" y="13" width="8" height="8" rx="1" />
+                <rect x="13" y="13" width="8" height="8" rx="1" />
+                <rect x="8" y="3" width="8" height="8" rx="1" />
+                <line x1="4" y1="4" x2="20" y2="20" stroke-width="2.25" stroke-linecap="round" />
+              </svg>
+            </div>
             <span class="text-sm font-semibold text-foreground">{{ t('home.socialProof.noAddedSugar') }}</span>
           </div>
         </div>

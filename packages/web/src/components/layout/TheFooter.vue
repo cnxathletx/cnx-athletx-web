@@ -12,9 +12,14 @@ const { t } = useI18n({ useScope: 'global' })
       <div class="grid grid-cols-1 md:grid-cols-3 gap-12">
         <!-- Brand Info -->
         <div class="space-y-4">
-          <div class="flex items-center gap-2">
-            <span class="text-xl font-bold tracking-tight text-foreground">CNX</span>
-            <span class="text-xl font-bold tracking-tight text-primary">AthletX</span>
+          <div class="flex flex-col leading-none">
+            <div class="flex items-center gap-2">
+              <span class="text-xl font-bold tracking-tight text-foreground">CNX</span>
+              <span class="text-xl font-bold tracking-tight text-primary">AthletX</span>
+            </div>
+            <span class="mt-1 text-[10px] font-medium uppercase tracking-[0.15em] text-foreground/60">
+              {{ t('brand.slogan') }}
+            </span>
           </div>
           <p class="text-sm leading-relaxed">
             {{ t('footer.tagline') }}

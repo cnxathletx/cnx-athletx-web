@@ -108,6 +108,11 @@ const router = createRouter({
       component: () => import('../pages/AdminDiscountsPage.vue'),
     },
     {
+      path: '/admin/income',
+      name: 'admin-income',
+      component: () => import('../pages/AdminIncomePage.vue'),
+    },
+    {
       path: '/admin/settings',
       name: 'admin-settings',
       component: () => import('../pages/AdminSettingsPage.vue'),

@@ -402,6 +402,30 @@ export async function updateAdminProductLine(id: number, payload: UpdateProductL
   return data.product_line
 }
 
+// --- Admin Income Reports ---
+
+export interface IncomeReportProduct {
+  product_name: string
+  total_revenue: number
+  total_quantity: number
+}
+
+export interface IncomeReport {
+  year: number
+  month: number
+  total_revenue: number
+  total_orders: number
+  products: IncomeReportProduct[]
+}
+
+export async function fetchAdminIncomeReport(year: number, month: number): Promise<IncomeReport> {
+  const res = await fetch(apiUrl(`/api/admin/reports/income?year=${year}&month=${month}`), {
+    credentials: 'include',
+  })
+  if (!res.ok) await parseAdminError(res)
+  return (await res.json()) as IncomeReport
+}
+
 // --- Admin Site Settings ---
 
 export async function fetchAdminSettings(): Promise<Record<string, string>> {

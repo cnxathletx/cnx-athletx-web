@@ -2,6 +2,25 @@
   "brand": {
     "slogan": "Natural Performance"
   },
+  "chat": {
+    "openLabel": "Chat with us",
+    "closeLabel": "Close chat",
+    "title": "Support chat",
+    "emptyHint": "We usually reply within a few hours.",
+    "preFormHint": "Tell us a bit about yourself and we'll get back to you soon.",
+    "nameLabel": "Name",
+    "namePlaceholder": "Your name",
+    "emailLabel": "Email",
+    "emailPlaceholder": "you@example.com",
+    "messageLabel": "Message",
+    "messagePlaceholder": "Type a message...",
+    "sendLabel": "Send",
+    "sending": "Sending...",
+    "startLabel": "Start chat",
+    "starting": "Starting...",
+    "closedNotice": "This conversation has been closed.",
+    "errorGeneric": "Unable to send. Try again."
+  },
   "nav": {
     "home": "Home",
     "shop": "Shop",

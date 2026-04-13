@@ -6,6 +6,7 @@ import { registerAdminDiscountRoutes } from './admin/discounts'
 import { registerAdminProductLineRoutes } from './admin/product-lines'
 import { registerAdminSettingsRoutes } from './admin/settings'
 import { registerAdminReportRoutes } from './admin/reports'
+import { registerAdminChatRoutes } from './admin/chat'
 
 export function registerAdminRoutes(router: RouterType) {
   registerAdminOrderRoutes(router)
@@ -15,4 +16,5 @@ export function registerAdminRoutes(router: RouterType) {
   registerAdminDiscountRoutes(router)
   registerAdminSettingsRoutes(router)
   registerAdminReportRoutes(router)
+  registerAdminChatRoutes(router)
 }

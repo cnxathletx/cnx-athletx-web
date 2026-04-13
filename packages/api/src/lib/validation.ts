@@ -14,7 +14,14 @@ import type {
   AdminUpdateDiscountBody,
   AdminCreateProductLineBody,
   AdminUpdateProductLineBody,
+  CreateChatConversationBody,
+  PostChatMessageBody,
+  AdminUpdateChatStatusBody,
 } from './types'
+
+const CHAT_MESSAGE_MIN = 1
+const CHAT_MESSAGE_MAX = 2000
+const VISITOR_ID_REGEX = /^[a-zA-Z0-9_-]{8,64}$/
 
 export function validateRequestLinkBody(body: unknown): { errors: ValidationError[]; data: RequestLinkBody | null } {
   const errors: ValidationError[] = []
@@ -739,6 +746,104 @@ export function validateUpdateProductLineBody(body: unknown): { errors: Validati
   }
 
   return { errors: [], data }
+}
+
+export function validateCreateChatConversationBody(
+  body: unknown,
+  hasSession: boolean,
+): { errors: ValidationError[]; data: CreateChatConversationBody | null } {
+  const errors: ValidationError[] = []
+
+  if (!body || typeof body !== 'object') {
+    return { errors: [{ field: 'body', message: 'Request body must be a JSON object' }], data: null }
+  }
+
+  const b = body as Record<string, unknown>
+  const visitorId = typeof b.visitor_id === 'string' ? b.visitor_id.trim() : ''
+  const initialMessage = typeof b.initial_message === 'string' ? b.initial_message.trim() : ''
+  const guestName = typeof b.guest_name === 'string' ? b.guest_name.trim() : ''
+  const guestEmail = typeof b.guest_email === 'string' ? b.guest_email.trim().toLowerCase() : ''
+
+  if (!VISITOR_ID_REGEX.test(visitorId)) {
+    errors.push({ field: 'visitor_id', message: 'visitor_id must be 8-64 chars of [a-zA-Z0-9_-]' })
+  }
+
+  if (initialMessage.length < CHAT_MESSAGE_MIN || initialMessage.length > CHAT_MESSAGE_MAX) {
+    errors.push({
+      field: 'initial_message',
+      message: `initial_message must be between ${CHAT_MESSAGE_MIN} and ${CHAT_MESSAGE_MAX} characters`,
+    })
+  }
+
+  if (!hasSession) {
+    if (guestName.length < 2 || guestName.length > 100) {
+      errors.push({ field: 'guest_name', message: 'guest_name must be between 2 and 100 characters' })
+    }
+    if (!isValidEmail(guestEmail)) {
+      errors.push({ field: 'guest_email', message: 'guest_email must be a valid email address' })
+    }
+  }
+
+  if (errors.length > 0) {
+    return { errors, data: null }
+  }
+
+  return {
+    errors: [],
+    data: {
+      visitor_id: visitorId,
+      initial_message: initialMessage,
+      guest_name: hasSession ? undefined : guestName,
+      guest_email: hasSession ? undefined : guestEmail,
+    },
+  }
+}
+
+export function validatePostChatMessageBody(
+  body: unknown,
+): { errors: ValidationError[]; data: PostChatMessageBody | null } {
+  const errors: ValidationError[] = []
+
+  if (!body || typeof body !== 'object') {
+    return { errors: [{ field: 'body', message: 'Request body must be a JSON object' }], data: null }
+  }
+
+  const b = body as Record<string, unknown>
+  const messageBody = typeof b.body === 'string' ? b.body.trim() : ''
+
+  if (messageBody.length < CHAT_MESSAGE_MIN || messageBody.length > CHAT_MESSAGE_MAX) {
+    errors.push({
+      field: 'body',
+      message: `body must be between ${CHAT_MESSAGE_MIN} and ${CHAT_MESSAGE_MAX} characters`,
+    })
+  }
+
+  if (errors.length > 0) {
+    return { errors, data: null }
+  }
+
+  return { errors: [], data: { body: messageBody } }
+}
+
+export function validateUpdateChatStatusBody(
+  body: unknown,
+): { errors: ValidationError[]; data: AdminUpdateChatStatusBody | null } {
+  const errors: ValidationError[] = []
+
+  if (!body || typeof body !== 'object') {
+    return { errors: [{ field: 'body', message: 'Request body must be a JSON object' }], data: null }
+  }
+
+  const b = body as Record<string, unknown>
+  if (b.status !== 'open' && b.status !== 'closed') {
+    errors.push({ field: 'status', message: 'status must be "open" or "closed"' })
+  }
+
+  if (errors.length > 0) {
+    return { errors, data: null }
+  }
+
+  return { errors: [], data: { status: b.status as 'open' | 'closed' } }
 }
 
 export function parseAdminPagination(url: URL): { page: number; limit: number; offset: number } {

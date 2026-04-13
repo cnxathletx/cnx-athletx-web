@@ -228,3 +228,39 @@ CREATE TABLE IF NOT EXISTS email_logs (
 
 CREATE INDEX IF NOT EXISTS idx_email_logs_order_id ON email_logs(order_id);
 CREATE INDEX IF NOT EXISTS idx_email_logs_status ON email_logs(status);
+
+-- chat_conversations table
+CREATE TABLE IF NOT EXISTS chat_conversations (
+    id TEXT PRIMARY KEY,
+    visitor_id TEXT NOT NULL,
+    user_id TEXT,
+    guest_name TEXT,
+    guest_email TEXT,
+    status TEXT NOT NULL DEFAULT 'open',
+    last_message_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    last_admin_read_at TEXT,
+    last_customer_read_at TEXT,
+    created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE SET NULL,
+    CHECK (status IN ('open', 'closed'))
+);
+
+CREATE INDEX IF NOT EXISTS idx_chat_conversations_status ON chat_conversations(status, last_message_at DESC);
+CREATE INDEX IF NOT EXISTS idx_chat_conversations_visitor_id ON chat_conversations(visitor_id);
+CREATE INDEX IF NOT EXISTS idx_chat_conversations_user_id ON chat_conversations(user_id);
+CREATE INDEX IF NOT EXISTS idx_chat_conversations_created_at ON chat_conversations(created_at DESC);
+
+-- chat_messages table
+CREATE TABLE IF NOT EXISTS chat_messages (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    conversation_id TEXT NOT NULL,
+    sender_type TEXT NOT NULL,
+    sender_email TEXT,
+    body TEXT NOT NULL,
+    created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (conversation_id) REFERENCES chat_conversations(id) ON DELETE CASCADE,
+    CHECK (sender_type IN ('customer', 'admin', 'system'))
+);
+
+CREATE INDEX IF NOT EXISTS idx_chat_messages_conversation_id ON chat_messages(conversation_id, created_at);

@@ -2,6 +2,25 @@
   "brand": {
     "slogan": "Natural Performance"
   },
+  "chat": {
+    "openLabel": "แชทกับเรา",
+    "closeLabel": "ปิดแชท",
+    "title": "ฝ่ายสนับสนุน",
+    "emptyHint": "เรามักจะตอบกลับภายในไม่กี่ชั่วโมง",
+    "preFormHint": "แจ้งข้อมูลของคุณให้เราทราบ แล้วเราจะติดต่อกลับเร็วๆ นี้",
+    "nameLabel": "ชื่อ",
+    "namePlaceholder": "ชื่อของคุณ",
+    "emailLabel": "อีเมล",
+    "emailPlaceholder": "you@example.com",
+    "messageLabel": "ข้อความ",
+    "messagePlaceholder": "พิมพ์ข้อความ...",
+    "sendLabel": "ส่ง",
+    "sending": "กำลังส่ง...",
+    "startLabel": "เริ่มแชท",
+    "starting": "กำลังเริ่ม...",
+    "closedNotice": "การสนทนานี้ถูกปิดแล้ว",
+    "errorGeneric": "ไม่สามารถส่งได้ กรุณาลองใหม่"
+  },
   "nav": {
     "home": "หน้าแรก",
     "shop": "สินค้า",

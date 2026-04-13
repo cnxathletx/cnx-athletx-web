@@ -217,6 +217,120 @@ export async function markOrderPaid(orderId: string): Promise<void> {
   if (!res.ok) await parseAdminError(res)
 }
 
+// --- Admin Chat ---
+
+export type AdminChatSenderType = 'customer' | 'admin' | 'system'
+export type AdminChatStatus = 'open' | 'closed'
+
+export interface AdminChatConversation {
+  id: string
+  visitor_id: string
+  user_id: string | null
+  guest_name: string | null
+  guest_email: string | null
+  status: AdminChatStatus
+  last_message_at: string
+  last_admin_read_at: string | null
+  created_at: string
+  message_count: number
+  unread_count: number
+}
+
+export interface AdminChatMessage {
+  id: number
+  conversation_id: string
+  sender_type: AdminChatSenderType
+  sender_email: string | null
+  body: string
+  created_at: string
+}
+
+export interface AdminChatConversationDetail {
+  id: string
+  visitor_id: string
+  user_id: string | null
+  guest_name: string | null
+  guest_email: string | null
+  status: AdminChatStatus
+  last_message_at: string
+  last_admin_read_at: string | null
+  last_customer_read_at: string | null
+  created_at: string
+  updated_at: string
+  messages: AdminChatMessage[]
+  unread_count: number
+}
+
+export async function fetchAdminChatConversations(params?: {
+  status?: AdminChatStatus
+  q?: string
+  page?: number
+  limit?: number
+}): Promise<{
+  conversations: AdminChatConversation[]
+  pagination: { page: number; limit: number; total: number }
+}> {
+  const search = new URLSearchParams()
+  if (params?.status) search.set('status', params.status)
+  if (params?.q) search.set('q', params.q)
+  if (params?.page) search.set('page', String(params.page))
+  if (params?.limit) search.set('limit', String(params.limit))
+
+  const res = await fetch(
+    apiUrl(`/api/admin/chat/conversations${search.toString() ? `?${search.toString()}` : ''}`),
+    { credentials: 'include' },
+  )
+  if (!res.ok) await parseAdminError(res)
+  return (await res.json()) as {
+    conversations: AdminChatConversation[]
+    pagination: { page: number; limit: number; total: number }
+  }
+}
+
+export async function fetchAdminChatConversation(id: string): Promise<AdminChatConversationDetail> {
+  const res = await fetch(apiUrl(`/api/admin/chat/conversations/${encodeURIComponent(id)}`), {
+    credentials: 'include',
+  })
+  if (!res.ok) await parseAdminError(res)
+  const data = (await res.json()) as { conversation: AdminChatConversationDetail }
+  return data.conversation
+}
+
+export async function postAdminChatMessage(id: string, body: string): Promise<void> {
+  const res = await fetch(apiUrl(`/api/admin/chat/conversations/${encodeURIComponent(id)}/messages`), {
+    method: 'POST',
+    credentials: 'include',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ body }),
+  })
+  if (!res.ok) await parseAdminError(res)
+}
+
+export async function markAdminChatRead(id: string): Promise<void> {
+  const res = await fetch(apiUrl(`/api/admin/chat/conversations/${encodeURIComponent(id)}/read`), {
+    method: 'POST',
+    credentials: 'include',
+  })
+  if (!res.ok) await parseAdminError(res)
+}
+
+export async function updateAdminChatStatus(id: string, status: AdminChatStatus): Promise<void> {
+  const res = await fetch(apiUrl(`/api/admin/chat/conversations/${encodeURIComponent(id)}`), {
+    method: 'PATCH',
+    credentials: 'include',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ status }),
+  })
+  if (!res.ok) await parseAdminError(res)
+}
+
+export async function fetchAdminChatUnreadCount(): Promise<number> {
+  const res = await fetch(apiUrl('/api/admin/chat/unread-count'), { credentials: 'include' })
+  if (!res.ok) await parseAdminError(res)
+  const data = (await res.json()) as { unread_count: number }
+  return data.unread_count
+}
+
 export async function packOrder(orderId: string): Promise<void> {
   const res = await fetch(apiUrl(`/api/admin/orders/${encodeURIComponent(orderId)}/pack`), {
     method: 'POST',

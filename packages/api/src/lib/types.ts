@@ -368,3 +368,82 @@ export interface AdminUpdateDiscountBody {
   active?: boolean
   expires_at?: string | null
 }
+
+// --- Chat types ---
+
+export type ChatSenderType = 'customer' | 'admin' | 'system'
+export type ChatConversationStatus = 'open' | 'closed'
+
+export interface ChatConversationRow {
+  id: string
+  visitor_id: string
+  user_id: string | null
+  guest_name: string | null
+  guest_email: string | null
+  status: ChatConversationStatus
+  last_message_at: string
+  last_admin_read_at: string | null
+  last_customer_read_at: string | null
+  created_at: string
+  updated_at: string
+}
+
+export interface ChatMessageRow {
+  id: number
+  conversation_id: string
+  sender_type: ChatSenderType
+  sender_email: string | null
+  body: string
+  created_at: string
+}
+
+export interface CreateChatConversationBody {
+  visitor_id: string
+  guest_name?: string
+  guest_email?: string
+  initial_message: string
+}
+
+export interface PostChatMessageBody {
+  body: string
+}
+
+export interface ChatConversationPublicView {
+  id: string
+  status: ChatConversationStatus
+  guest_name: string | null
+  guest_email: string | null
+  last_message_at: string
+  unread_count: number
+  messages: ChatMessagePublicView[]
+}
+
+export interface ChatMessagePublicView {
+  id: number
+  sender_type: ChatSenderType
+  body: string
+  created_at: string
+}
+
+export interface AdminChatConversationListRow {
+  id: string
+  visitor_id: string
+  user_id: string | null
+  guest_name: string | null
+  guest_email: string | null
+  status: ChatConversationStatus
+  last_message_at: string
+  last_admin_read_at: string | null
+  created_at: string
+  message_count: number
+  unread_count: number
+}
+
+export interface AdminChatConversationDetail extends ChatConversationRow {
+  messages: ChatMessageRow[]
+  unread_count: number
+}
+
+export interface AdminUpdateChatStatusBody {
+  status: ChatConversationStatus
+}

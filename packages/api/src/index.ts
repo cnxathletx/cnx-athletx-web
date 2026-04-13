@@ -7,6 +7,7 @@ import { registerAuthRoutes } from './routes/auth'
 import { registerAccountRoutes } from './routes/account'
 import { registerCheckoutRoutes } from './routes/checkout'
 import { registerOrderRoutes } from './routes/orders'
+import { registerChatRoutes } from './routes/chat'
 import { registerAdminRoutes } from './routes/admin'
 
 const router = Router()
@@ -21,6 +22,7 @@ registerAuthRoutes(router)
 registerAccountRoutes(router)
 registerCheckoutRoutes(router)
 registerOrderRoutes(router)
+registerChatRoutes(router)
 registerAdminRoutes(router)
 
 // 404

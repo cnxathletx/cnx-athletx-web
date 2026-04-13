@@ -2,6 +2,7 @@
 import { onMounted } from 'vue'
 import TheNavbar from './components/layout/TheNavbar.vue'
 import TheFooter from './components/layout/TheFooter.vue'
+import ChatWidget from './components/chat/ChatWidget.vue'
 import { useAuthStore } from './stores/auth'
 
 const auth = useAuthStore()
@@ -18,5 +19,6 @@ onMounted(async () => {
       <RouterView />
     </main>
     <TheFooter />
+    <ChatWidget />
   </div>
 </template>

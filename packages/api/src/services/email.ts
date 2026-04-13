@@ -393,6 +393,57 @@ export async function fetchOrderEmailData(env: Env, orderId: string): Promise<Or
   }
 }
 
+export interface NewChatEmailData {
+  conversation_id: string
+  guest_name: string
+  guest_email: string
+  initial_message: string
+  created_at: string
+}
+
+export function buildAdminNewChatEmail(data: NewChatEmailData): string {
+  const adminUrl = 'https://cnxnature.com/admin/chat'
+  const body = `<h2 style="margin: 0 0 8px; font-size: 20px; color: #2E2B26;">New Chat Started</h2>
+    <p style="margin: 0 0 20px; font-size: 15px; color: #555;">A visitor has started a new support conversation.</p>
+
+    <div style="background: #F2EDE4; border-radius: 8px; padding: 20px; margin: 24px 0;">
+      <p style="margin: 0 0 4px; font-size: 14px;"><strong>From:</strong> ${escapeHtml(data.guest_name)}</p>
+      <p style="margin: 0 0 4px; font-size: 14px;"><strong>Email:</strong> ${escapeHtml(data.guest_email)}</p>
+      <p style="margin: 0 0 12px; font-size: 13px; color: #555;"><strong>Started:</strong> ${escapeHtml(data.created_at)}</p>
+      <p style="margin: 12px 0 4px; font-size: 13px; color: #555;"><strong>First message:</strong></p>
+      <div style="background: #ffffff; border-radius: 6px; padding: 12px 16px; font-size: 14px; white-space: pre-wrap;">${escapeHtml(data.initial_message)}</div>
+    </div>
+
+    <p style="text-align: center; margin: 30px 0;">
+      <a href="${adminUrl}" style="display: inline-block; background-color: #8B9A7B; color: #ffffff; padding: 14px 32px; text-decoration: none; border-radius: 6px; font-weight: 600;">
+        Open Chat Dashboard
+      </a>
+    </p>`
+
+  return emailLayout('New Chat — CNX AthletX', body)
+}
+
+/** Fire-and-forget: notifies admins of new chat conversation, never throws */
+export async function sendAdminNewChatEmail(env: Env, data: NewChatEmailData): Promise<void> {
+  if (!env.ADMIN_EMAILS) return
+
+  const emails = env.ADMIN_EMAILS.split(',').map((e) => e.trim()).filter(Boolean)
+  if (emails.length === 0) return
+
+  const subject = `New chat from ${data.guest_name}`
+  const html = buildAdminNewChatEmail(data)
+
+  for (const adminEmail of emails) {
+    try {
+      const ok = await sendResendEmail(env, adminEmail, subject, html)
+      await logEmail(env, null, 'admin_new_chat', adminEmail, ok ? 'sent' : 'failed', ok ? undefined : 'Resend API returned non-OK')
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Unknown error'
+      await logEmail(env, null, 'admin_new_chat', adminEmail, 'failed', message)
+    }
+  }
+}
+
 export async function sendMagicLinkEmail(env: Env, toEmail: string, magicLinkUrl: string, expiryMinutes: number): Promise<void> {
   if (!env.RESEND_API_KEY) return
 

@@ -42,22 +42,28 @@ export function registerAdminChatRoutes(router: RouterType) {
         binds.push(status)
       }
       if (q) {
-        whereParts.push('(c.guest_name LIKE ? OR c.guest_email LIKE ?)')
-        binds.push(`%${q}%`, `%${q}%`)
+        whereParts.push(
+          '(c.guest_name LIKE ? OR c.guest_email LIKE ? OR u.name LIKE ? OR u.email LIKE ?)',
+        )
+        binds.push(`%${q}%`, `%${q}%`, `%${q}%`, `%${q}%`)
       }
       const whereClause = whereParts.join(' AND ')
 
       try {
         const totalRow = await env.DB.prepare(
-          `SELECT COUNT(*) AS total FROM chat_conversations c WHERE ${whereClause}`,
+          `SELECT COUNT(*) AS total FROM chat_conversations c
+           LEFT JOIN users u ON u.id = c.user_id
+           WHERE ${whereClause}`,
         )
           .bind(...binds)
           .first<{ total: number }>()
         const total = totalRow?.total ?? 0
 
         const { results } = await env.DB.prepare(
-          `SELECT c.id, c.visitor_id, c.user_id, c.guest_name, c.guest_email, c.status,
-                  c.last_message_at, c.last_admin_read_at, c.created_at,
+          `SELECT c.id, c.visitor_id, c.user_id,
+                  COALESCE(c.guest_name, u.name) AS guest_name,
+                  COALESCE(c.guest_email, u.email) AS guest_email,
+                  c.status, c.last_message_at, c.last_admin_read_at, c.created_at,
                   (SELECT COUNT(*) FROM chat_messages m WHERE m.conversation_id = c.id) AS message_count,
                   (SELECT COUNT(*) FROM chat_messages m
                    WHERE m.conversation_id = c.id
@@ -65,6 +71,7 @@ export function registerAdminChatRoutes(router: RouterType) {
                      AND (c.last_admin_read_at IS NULL OR julianday(m.created_at) > julianday(c.last_admin_read_at))
                   ) AS unread_count
            FROM chat_conversations c
+           LEFT JOIN users u ON u.id = c.user_id
            WHERE ${whereClause}
            ORDER BY c.last_message_at DESC
            LIMIT ? OFFSET ?`,
@@ -114,9 +121,14 @@ export function registerAdminChatRoutes(router: RouterType) {
 
       try {
         const conv = await env.DB.prepare(
-          `SELECT id, visitor_id, user_id, guest_name, guest_email, status,
-                  last_message_at, last_admin_read_at, last_customer_read_at, created_at, updated_at
-           FROM chat_conversations WHERE id = ? LIMIT 1`,
+          `SELECT c.id, c.visitor_id, c.user_id,
+                  COALESCE(c.guest_name, u.name) AS guest_name,
+                  COALESCE(c.guest_email, u.email) AS guest_email,
+                  c.status, c.last_message_at, c.last_admin_read_at, c.last_customer_read_at,
+                  c.created_at, c.updated_at
+           FROM chat_conversations c
+           LEFT JOIN users u ON u.id = c.user_id
+           WHERE c.id = ? LIMIT 1`,
         )
           .bind(id)
           .first<ChatConversationRow>()

@@ -402,7 +402,7 @@ export interface NewChatEmailData {
 }
 
 export function buildAdminNewChatEmail(data: NewChatEmailData): string {
-  const adminUrl = 'https://cnxnature.com/admin/chat'
+  const adminUrl = 'https://www.cnxnature.com/admin/chat'
   const body = `<h2 style="margin: 0 0 8px; font-size: 20px; color: #2E2B26;">New Chat Started</h2>
     <p style="margin: 0 0 20px; font-size: 15px; color: #555;">A visitor has started a new support conversation.</p>
 

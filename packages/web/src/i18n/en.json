@@ -19,6 +19,7 @@
     "startLabel": "Start chat",
     "starting": "Starting...",
     "closedNotice": "This conversation has been closed.",
+    "startNewLabel": "Start a new chat",
     "errorGeneric": "Unable to send. Try again."
   },
   "nav": {

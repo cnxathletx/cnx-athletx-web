@@ -64,6 +64,10 @@ async function handleSend(body: string) {
     await chat.postMessage(body)
   }
 }
+
+function handleStartNew() {
+  chat.resetConversation()
+}
 </script>
 
 <template>
@@ -110,14 +114,24 @@ async function handleSend(body: string) {
 
         <template v-else>
           <ChatMessageList :messages="chat.conversation?.messages ?? []" />
-          <p v-if="isClosed" class="px-4 py-2 text-xs text-foreground/70 bg-surface-alt border-t border-sand">
-            {{ t('chat.closedNotice') }}
-          </p>
           <p v-if="chat.error" class="px-4 py-2 text-xs text-accent bg-surface-alt border-t border-sand">
             {{ chat.error }}
           </p>
+          <div
+            v-if="isClosed"
+            class="border-t border-sand bg-surface-alt px-4 py-3 space-y-2"
+          >
+            <p class="text-xs text-foreground/70">{{ t('chat.closedNotice') }}</p>
+            <button
+              type="button"
+              class="w-full rounded-md bg-primary text-background font-semibold px-3 py-2 text-sm active:scale-[0.97] transition-all"
+              @click="handleStartNew"
+            >
+              {{ t('chat.startNewLabel') }}
+            </button>
+          </div>
           <ChatComposer
-            :disabled="isClosed"
+            v-else
             :sending="chat.sending"
             @send="handleSend"
           />

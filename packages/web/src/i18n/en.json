@@ -11,7 +11,7 @@
     "nameLabel": "Name",
     "namePlaceholder": "Your name",
     "emailLabel": "Email",
-    "emailPlaceholder": "you@example.com",
+    "emailPlaceholder": "you{'@'}example.com",
     "messageLabel": "Message",
     "messagePlaceholder": "Type a message...",
     "sendLabel": "Send",

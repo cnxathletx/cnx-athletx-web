@@ -11,7 +11,7 @@
     "nameLabel": "ชื่อ",
     "namePlaceholder": "ชื่อของคุณ",
     "emailLabel": "อีเมล",
-    "emailPlaceholder": "you@example.com",
+    "emailPlaceholder": "you{'@'}example.com",
     "messageLabel": "ข้อความ",
     "messagePlaceholder": "พิมพ์ข้อความ...",
     "sendLabel": "ส่ง",

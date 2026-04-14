@@ -30,7 +30,7 @@ function handleSubmit() {
 </script>
 
 <template>
-  <form class="flex-1 overflow-y-auto px-4 py-4 space-y-3" @submit.prevent="handleSubmit">
+  <form class="flex-1 min-h-0 overflow-y-auto px-4 py-4 space-y-3" @submit.prevent="handleSubmit">
     <p class="text-sm text-foreground/80">{{ t('chat.preFormHint') }}</p>
 
     <div>

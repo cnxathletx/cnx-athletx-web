@@ -75,11 +75,11 @@ function handleStartNew() {
     <div class="pointer-events-auto flex flex-col items-end gap-3">
       <div
         v-if="isOpen"
-        class="w-[min(360px,calc(100vw-2rem))] h-[min(520px,calc(100vh-6rem))] rounded-xl bg-surface shadow-2xl ring-1 ring-sand flex flex-col overflow-hidden"
+        class="w-[min(360px,calc(100vw-2rem))] h-[min(520px,calc(100dvh-6rem))] min-h-0 rounded-xl bg-surface shadow-2xl ring-1 ring-sand flex flex-col overflow-hidden"
         role="dialog"
         :aria-label="t('chat.title')"
       >
-        <div class="flex items-center justify-between px-4 py-3 bg-primary text-background">
+        <div class="flex-shrink-0 flex items-center justify-between px-4 py-3 bg-primary text-background">
           <div>
             <p class="text-sm font-bold leading-tight">{{ t('chat.title') }}</p>
             <p class="text-[11px] opacity-90">{{ t('chat.emptyHint') }}</p>
@@ -105,7 +105,7 @@ function handleStartNew() {
         </template>
 
         <template v-else-if="!hasConversation && auth.isAuthenticated">
-          <div class="flex-1 overflow-y-auto px-4 py-4 space-y-3">
+          <div class="flex-1 min-h-0 overflow-y-auto px-4 py-4 space-y-3">
             <p class="text-sm text-foreground/80">{{ t('chat.emptyHint') }}</p>
             <p v-if="chat.error" class="text-xs text-accent">{{ chat.error }}</p>
           </div>

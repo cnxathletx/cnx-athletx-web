@@ -32,7 +32,7 @@ function handleKeydown(event: KeyboardEvent) {
 
 <template>
   <form
-    class="border-t border-sand bg-surface px-3 py-2 flex items-end gap-2"
+    class="flex-shrink-0 border-t border-sand bg-surface px-3 py-2 flex items-end gap-2"
     @submit.prevent="handleSubmit"
   >
     <textarea

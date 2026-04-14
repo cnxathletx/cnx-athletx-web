@@ -34,7 +34,7 @@ function formatTime(iso: string): string {
 </script>
 
 <template>
-  <div ref="container" class="flex-1 overflow-y-auto px-4 py-3 space-y-3">
+  <div ref="container" class="flex-1 min-h-0 overflow-y-auto px-4 py-3 space-y-3">
     <div
       v-for="msg in messages"
       :key="msg.id"

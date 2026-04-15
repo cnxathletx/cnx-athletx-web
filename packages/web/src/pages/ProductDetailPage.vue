@@ -89,13 +89,28 @@ const tabs = computed(() => [
   { key: 'howToUse' as const, label: t('product.howToUse') },
 ])
 
-const nutritionFacts = computed<Record<string, string>>(() => {
+type NutritionRow = { label: string; value: string; sub?: boolean }
+
+const nutritionFacts = computed<NutritionRow[]>(() => {
   const raw = product.value?.nutrition_json
-  if (!raw) return {}
+  if (!raw) return []
   try {
-    return JSON.parse(raw) as Record<string, string>
+    const parsed = JSON.parse(raw)
+    if (Array.isArray(parsed)) {
+      return parsed
+        .filter((r) => r && typeof r === 'object' && typeof r.label === 'string' && typeof r.value === 'string')
+        .map((r) => ({ label: r.label, value: r.value, sub: r.sub === true }))
+    }
+    if (parsed && typeof parsed === 'object') {
+      return Object.entries(parsed as Record<string, string>).map(([label, value]) => ({
+        label,
+        value: String(value),
+        sub: false,
+      }))
+    }
+    return []
   } catch {
-    return {}
+    return []
   }
 })
 
@@ -103,7 +118,7 @@ const ingredientsText = computed(() => product.value?.ingredients || '')
 const howToUseText = computed(() => product.value?.how_to_use || '')
 
 const hasProductLineData = computed(() =>
-  Object.keys(nutritionFacts.value).length > 0 || ingredientsText.value || howToUseText.value
+  nutritionFacts.value.length > 0 || ingredientsText.value || howToUseText.value
 )
 
 async function loadProduct(slug: string) {
@@ -356,12 +371,12 @@ watch(
           <div v-if="activeTab === 'nutrition'" class="max-w-md">
             <div class="space-y-3">
               <div
-                v-for="(value, label) in nutritionFacts"
-                :key="label"
+                v-for="(row, i) in nutritionFacts"
+                :key="i"
                 class="flex justify-between py-2 border-b border-sand last:border-0"
               >
-                <span class="text-sm text-muted">{{ label }}</span>
-                <span class="text-sm font-semibold text-foreground">{{ value }}</span>
+                <span :class="['text-sm text-muted', row.sub && 'italic pl-6']">{{ row.label }}</span>
+                <span :class="['text-sm font-semibold text-foreground', row.sub && 'italic']">{{ row.value }}</span>
               </div>
             </div>
           </div>

@@ -42,34 +42,49 @@ const editForm = reactive<Required<UpdateProductLinePayload>>({
   how_to_use: '',
 })
 
-// Nutrition facts as editable key-value pairs
-const createNutritionRows = ref<{ key: string; value: string }[]>([{ key: '', value: '' }])
-const editNutritionRows = ref<{ key: string; value: string }[]>([{ key: '', value: '' }])
+// Nutrition facts as editable rows. `sub` flag renders the row italic and indented.
+type NutritionRow = { key: string; value: string; sub: boolean }
+const createNutritionRows = ref<NutritionRow[]>([{ key: '', value: '', sub: false }])
+const editNutritionRows = ref<NutritionRow[]>([{ key: '', value: '', sub: false }])
 
 const sortedProductLines = computed(() => [...productLines.value].sort((a, b) => a.id - b.id))
 
-function nutritionRowsToJson(rows: { key: string; value: string }[]): string {
-  const obj: Record<string, string> = {}
+function nutritionRowsToJson(rows: NutritionRow[]): string {
+  const arr: { label: string; value: string; sub?: boolean }[] = []
   for (const row of rows) {
-    const k = row.key.trim()
-    const v = row.value.trim()
-    if (k && v) obj[k] = v
+    const label = row.key.trim()
+    const value = row.value.trim()
+    if (!label || !value) continue
+    const entry: { label: string; value: string; sub?: boolean } = { label, value }
+    if (row.sub) entry.sub = true
+    arr.push(entry)
   }
-  return JSON.stringify(obj)
+  return JSON.stringify(arr)
 }
 
-function nutritionJsonToRows(json: string): { key: string; value: string }[] {
+function nutritionJsonToRows(json: string): NutritionRow[] {
   try {
-    const obj = JSON.parse(json) as Record<string, string>
-    const rows = Object.entries(obj).map(([key, value]) => ({ key, value }))
-    return rows.length > 0 ? rows : [{ key: '', value: '' }]
+    const parsed = JSON.parse(json)
+    let rows: NutritionRow[] = []
+    if (Array.isArray(parsed)) {
+      rows = parsed
+        .filter((r) => r && typeof r === 'object' && typeof r.label === 'string' && typeof r.value === 'string')
+        .map((r) => ({ key: r.label, value: r.value, sub: r.sub === true }))
+    } else if (parsed && typeof parsed === 'object') {
+      rows = Object.entries(parsed as Record<string, string>).map(([key, value]) => ({
+        key,
+        value: String(value),
+        sub: false,
+      }))
+    }
+    return rows.length > 0 ? rows : [{ key: '', value: '', sub: false }]
   } catch {
-    return [{ key: '', value: '' }]
+    return [{ key: '', value: '', sub: false }]
   }
 }
 
 function addCreateNutritionRow() {
-  createNutritionRows.value.push({ key: '', value: '' })
+  createNutritionRows.value.push({ key: '', value: '', sub: false })
 }
 
 function removeCreateNutritionRow(index: number) {
@@ -79,7 +94,7 @@ function removeCreateNutritionRow(index: number) {
 }
 
 function addEditNutritionRow() {
-  editNutritionRows.value.push({ key: '', value: '' })
+  editNutritionRows.value.push({ key: '', value: '', sub: false })
 }
 
 function removeEditNutritionRow(index: number) {
@@ -106,7 +121,7 @@ function resetCreateForm() {
   createForm.nutrition_json = '{}'
   createForm.ingredients = ''
   createForm.how_to_use = ''
-  createNutritionRows.value = [{ key: '', value: '' }]
+  createNutritionRows.value = [{ key: '', value: '', sub: false }]
 }
 
 async function submitCreate() {
@@ -176,11 +191,24 @@ async function submitEdit() {
   }
 }
 
-function parseNutritionDisplay(json: string): Record<string, string> {
+function parseNutritionDisplay(json: string): { label: string; value: string; sub: boolean }[] {
   try {
-    return JSON.parse(json) as Record<string, string>
+    const parsed = JSON.parse(json)
+    if (Array.isArray(parsed)) {
+      return parsed
+        .filter((r) => r && typeof r === 'object' && typeof r.label === 'string' && typeof r.value === 'string')
+        .map((r) => ({ label: r.label, value: r.value, sub: r.sub === true }))
+    }
+    if (parsed && typeof parsed === 'object') {
+      return Object.entries(parsed as Record<string, string>).map(([label, value]) => ({
+        label,
+        value: String(value),
+        sub: false,
+      }))
+    }
+    return []
   } catch {
-    return {}
+    return []
   }
 }
 
@@ -216,9 +244,14 @@ onMounted(async () => {
         <!-- Nutrition Facts Editor -->
         <div class="space-y-2">
           <label class="block text-sm font-medium text-foreground">Nutrition Facts</label>
+          <p class="text-xs text-muted">Tick "Sub" to render a row as an italic, indented sub-line (e.g. "of which sugars").</p>
           <div v-for="(row, i) in createNutritionRows" :key="i" class="flex items-center gap-2">
-            <input v-model="row.key" type="text" placeholder="Label (e.g. Protein)" class="flex-1 rounded-md border border-sand px-3 py-2 text-sm bg-surface-alt text-foreground placeholder:text-muted focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent" />
-            <input v-model="row.value" type="text" placeholder="Value (e.g. 25g)" class="flex-1 rounded-md border border-sand px-3 py-2 text-sm bg-surface-alt text-foreground placeholder:text-muted focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent" />
+            <input v-model="row.key" type="text" placeholder="Label (e.g. Protein)" :class="['flex-1 rounded-md border border-sand px-3 py-2 text-sm bg-surface-alt text-foreground placeholder:text-muted focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent', row.sub && 'italic pl-6']" />
+            <input v-model="row.value" type="text" placeholder="Value (e.g. 25g)" :class="['flex-1 rounded-md border border-sand px-3 py-2 text-sm bg-surface-alt text-foreground placeholder:text-muted focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent', row.sub && 'italic']" />
+            <label class="flex items-center gap-1 text-xs text-muted select-none">
+              <input v-model="row.sub" type="checkbox" class="accent-primary" />
+              Sub
+            </label>
             <button @click="removeCreateNutritionRow(i)" class="text-muted hover:text-error transition-colors p-1" :disabled="createNutritionRows.length <= 1">
               <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg>
             </button>
@@ -266,11 +299,11 @@ onMounted(async () => {
           <div class="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
             <div class="bg-surface-alt rounded-md p-3 space-y-1">
               <p class="text-muted font-medium">Nutrition Facts</p>
-              <div v-for="(value, label) in parseNutritionDisplay(pl.nutrition_json)" :key="label" class="flex justify-between">
-                <span class="text-muted">{{ label }}</span>
-                <span class="text-foreground font-medium">{{ value }}</span>
+              <div v-for="(row, i) in parseNutritionDisplay(pl.nutrition_json)" :key="i" class="flex justify-between">
+                <span :class="['text-muted', row.sub && 'italic pl-4']">{{ row.label }}</span>
+                <span :class="['text-foreground font-medium', row.sub && 'italic']">{{ row.value }}</span>
               </div>
-              <p v-if="Object.keys(parseNutritionDisplay(pl.nutrition_json)).length === 0" class="text-muted italic">Not set</p>
+              <p v-if="parseNutritionDisplay(pl.nutrition_json).length === 0" class="text-muted italic">Not set</p>
             </div>
             <div class="bg-surface-alt rounded-md p-3">
               <p class="text-muted font-medium mb-1">Ingredients</p>
@@ -295,9 +328,14 @@ onMounted(async () => {
             <!-- Nutrition Facts Editor -->
             <div class="space-y-2">
               <label class="block text-sm font-medium text-foreground">Nutrition Facts</label>
+              <p class="text-xs text-muted">Tick "Sub" to render a row as an italic, indented sub-line.</p>
               <div v-for="(row, i) in editNutritionRows" :key="i" class="flex items-center gap-2">
-                <input v-model="row.key" type="text" placeholder="Label" class="flex-1 rounded-md border border-sand px-3 py-2 text-sm bg-surface-alt text-foreground placeholder:text-muted focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent" />
-                <input v-model="row.value" type="text" placeholder="Value" class="flex-1 rounded-md border border-sand px-3 py-2 text-sm bg-surface-alt text-foreground placeholder:text-muted focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent" />
+                <input v-model="row.key" type="text" placeholder="Label" :class="['flex-1 rounded-md border border-sand px-3 py-2 text-sm bg-surface-alt text-foreground placeholder:text-muted focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent', row.sub && 'italic pl-6']" />
+                <input v-model="row.value" type="text" placeholder="Value" :class="['flex-1 rounded-md border border-sand px-3 py-2 text-sm bg-surface-alt text-foreground placeholder:text-muted focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent', row.sub && 'italic']" />
+                <label class="flex items-center gap-1 text-xs text-muted select-none">
+                  <input v-model="row.sub" type="checkbox" class="accent-primary" />
+                  Sub
+                </label>
                 <button @click="removeEditNutritionRow(i)" class="text-muted hover:text-error transition-colors p-1" :disabled="editNutritionRows.length <= 1">
                   <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg>
                 </button>

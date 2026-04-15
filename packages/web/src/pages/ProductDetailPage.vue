@@ -382,11 +382,11 @@ watch(
           </div>
 
           <div v-if="activeTab === 'ingredients'" class="max-w-2xl">
-            <p class="text-foreground leading-relaxed">{{ ingredientsText }}</p>
+            <p class="text-foreground leading-relaxed whitespace-pre-line">{{ ingredientsText }}</p>
           </div>
 
           <div v-if="activeTab === 'howToUse'" class="max-w-2xl">
-            <p class="text-foreground leading-relaxed">{{ howToUseText }}</p>
+            <p class="text-foreground leading-relaxed whitespace-pre-line">{{ howToUseText }}</p>
           </div>
         </div>
       </div>

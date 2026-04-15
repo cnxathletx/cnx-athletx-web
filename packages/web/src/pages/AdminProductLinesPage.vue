@@ -307,11 +307,11 @@ onMounted(async () => {
             </div>
             <div class="bg-surface-alt rounded-md p-3">
               <p class="text-muted font-medium mb-1">Ingredients</p>
-              <p class="text-foreground">{{ pl.ingredients || 'Not set' }}</p>
+              <p class="text-foreground whitespace-pre-line">{{ pl.ingredients || 'Not set' }}</p>
             </div>
             <div class="bg-surface-alt rounded-md p-3">
               <p class="text-muted font-medium mb-1">How to Use</p>
-              <p class="text-foreground">{{ pl.how_to_use || 'Not set' }}</p>
+              <p class="text-foreground whitespace-pre-line">{{ pl.how_to_use || 'Not set' }}</p>
             </div>
           </div>
 

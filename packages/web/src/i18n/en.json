@@ -92,7 +92,8 @@
     "title": "Shop",
     "subtitle": "Choose your plant-based protein powder",
     "failedToLoad": "Failed to load products",
-    "freeShipping": "Free Shipping over ฿1,500",
+    "freeShipping": "Free Shipping over ฿{amount}",
+    "freeDelivery": "Free Delivery",
     "qualityGuarantee": "100% Quality Guarantee",
     "securePayment": "Secure Payment"
   },

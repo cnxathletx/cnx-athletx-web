@@ -92,7 +92,8 @@
     "title": "สินค้า",
     "subtitle": "เลือกโปรตีนจากพืชของคุณ",
     "failedToLoad": "ไม่สามารถโหลดสินค้าได้",
-    "freeShipping": "จัดส่งฟรีเมื่อซื้อ ฿1,500 ขึ้นไป",
+    "freeShipping": "จัดส่งฟรีเมื่อซื้อ ฿{amount} ขึ้นไป",
+    "freeDelivery": "จัดส่งฟรี",
     "qualityGuarantee": "รับประกันคุณภาพ 100%",
     "securePayment": "ชำระเงินปลอดภัย"
   },

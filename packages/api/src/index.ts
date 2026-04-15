@@ -3,6 +3,7 @@ import type { Env } from './lib/types'
 import { getCorsHeaders, corsify } from './middleware/cors'
 import { registerHealthRoutes } from './routes/health'
 import { registerProductRoutes } from './routes/products'
+import { registerSettingsRoutes } from './routes/settings'
 import { registerAuthRoutes } from './routes/auth'
 import { registerAccountRoutes } from './routes/account'
 import { registerCheckoutRoutes } from './routes/checkout'
@@ -18,6 +19,7 @@ router.options('*', (request: Request, env: Env) => new Response(null, { status:
 // Register all routes
 registerHealthRoutes(router)
 registerProductRoutes(router)
+registerSettingsRoutes(router)
 registerAuthRoutes(router)
 registerAccountRoutes(router)
 registerCheckoutRoutes(router)

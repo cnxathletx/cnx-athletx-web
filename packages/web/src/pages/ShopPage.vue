@@ -1,11 +1,19 @@
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { useI18n } from 'vue-i18n'
 import ProductCard from '../components/ui/ProductCard.vue'
 import { fetchProducts, formatPrice, formatWeight, type ApiProduct } from '../api/products'
+import { fetchPublicSettings } from '../api/settings'
 import { useHead } from '../composables/useHead'
 
 const { t } = useI18n({ useScope: 'global' })
+
+const freeShippingThresholdSatang = ref<number>(0)
+const freeShippingLabel = computed(() => {
+  if (freeShippingThresholdSatang.value <= 0) return t('shop.freeDelivery')
+  const thb = Math.round(freeShippingThresholdSatang.value / 100)
+  return t('shop.freeShipping', { amount: thb.toLocaleString() })
+})
 
 useHead({
   title: 'Shop',
@@ -19,7 +27,12 @@ const error = ref('')
 
 onMounted(async () => {
   try {
-    products.value = await fetchProducts()
+    const [productList, settings] = await Promise.all([
+      fetchProducts(),
+      fetchPublicSettings().catch(() => null),
+    ])
+    products.value = productList
+    if (settings) freeShippingThresholdSatang.value = settings.shipping_free_threshold
   } catch (e) {
     error.value = e instanceof Error ? e.message : 'Something went wrong'
   } finally {
@@ -119,7 +132,7 @@ onMounted(async () => {
                 d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4"
               />
             </svg>
-            <span class="text-sm font-semibold text-foreground">{{ t('shop.freeShipping') }}</span>
+            <span class="text-sm font-semibold text-foreground">{{ freeShippingLabel }}</span>
           </div>
           <div class="flex flex-col items-center text-center space-y-2">
             <svg

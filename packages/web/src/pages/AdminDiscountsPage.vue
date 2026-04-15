@@ -17,6 +17,7 @@ import AdminNav from '../components/admin/AdminNav.vue'
 const loading = ref(true)
 const error = ref('')
 const codes = ref<AdminDiscountCode[]>([])
+const showArchived = ref(false)
 
 const showCreate = ref(false)
 const createLoading = ref(false)
@@ -71,11 +72,34 @@ async function loadCodes() {
   loading.value = true
   error.value = ''
   try {
-    codes.value = await fetchAdminDiscountCodes()
+    codes.value = await fetchAdminDiscountCodes({ includeArchived: showArchived.value })
   } catch (err) {
     error.value = err instanceof AdminApiErrorResponse ? err.message : 'Unable to load discount codes.'
   } finally {
     loading.value = false
+  }
+}
+
+async function toggleShowArchived() {
+  showArchived.value = !showArchived.value
+  await loadCodes()
+}
+
+async function archiveCode(code: AdminDiscountCode) {
+  try {
+    await updateAdminDiscountCode(code.id, { archived: true, active: false })
+    await loadCodes()
+  } catch {
+    error.value = 'Failed to archive discount code.'
+  }
+}
+
+async function unarchiveCode(code: AdminDiscountCode) {
+  try {
+    await updateAdminDiscountCode(code.id, { archived: false })
+    await loadCodes()
+  } catch {
+    error.value = 'Failed to unarchive discount code.'
   }
 }
 
@@ -176,7 +200,10 @@ onMounted(loadCodes)
         </div>
         <AdminNav />
       </div>
-      <div class="flex justify-end mb-4">
+      <div class="flex justify-end gap-3 mb-4">
+        <SecondaryButton size="sm" @click="toggleShowArchived">
+          {{ showArchived ? 'Hide Archived' : 'Show Archived' }}
+        </SecondaryButton>
         <PrimaryButton size="sm" @click="showCreate = !showCreate">
           {{ showCreate ? 'Cancel' : 'New Discount Code' }}
         </PrimaryButton>
@@ -257,10 +284,13 @@ onMounted(loadCodes)
             </tr>
           </thead>
           <tbody>
-            <tr v-for="code in codes" :key="code.id" class="border-b border-sand/50 last:border-0">
+            <tr v-for="code in codes" :key="code.id" class="border-b border-sand/50 last:border-0" :class="{ 'opacity-60': code.archived }">
               <!-- View Mode -->
               <template v-if="editingId !== code.id">
-                <td class="px-4 py-3 font-mono font-semibold text-foreground">{{ code.code }}</td>
+                <td class="px-4 py-3 font-mono font-semibold text-foreground">
+                  {{ code.code }}
+                  <span v-if="code.archived" class="ml-2 inline-flex items-center rounded-full bg-muted/20 px-2 py-0.5 text-[10px] uppercase tracking-wide text-muted">Archived</span>
+                </td>
                 <td class="px-4 py-3 text-muted capitalize">{{ code.type }}</td>
                 <td class="px-4 py-3 text-foreground">
                   {{ code.type === 'percent' ? `${code.value}%` : formatThb(code.value) }}
@@ -286,9 +316,29 @@ onMounted(loadCodes)
                   </button>
                 </td>
                 <td class="px-4 py-3">
-                  <button @click="startEdit(code)" class="text-primary hover:text-primary/80 text-sm font-medium">
-                    Edit
-                  </button>
+                  <div class="flex items-center gap-3">
+                    <button
+                      v-if="!code.archived"
+                      @click="startEdit(code)"
+                      class="text-primary hover:text-primary/80 text-sm font-medium"
+                    >
+                      Edit
+                    </button>
+                    <button
+                      v-if="!code.archived"
+                      @click="archiveCode(code)"
+                      class="text-muted hover:text-accent text-sm font-medium"
+                    >
+                      Archive
+                    </button>
+                    <button
+                      v-else
+                      @click="unarchiveCode(code)"
+                      class="text-primary hover:text-primary/80 text-sm font-medium"
+                    >
+                      Unarchive
+                    </button>
+                  </div>
                 </td>
               </template>
 

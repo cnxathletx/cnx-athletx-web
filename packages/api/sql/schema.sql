@@ -193,12 +193,14 @@ CREATE TABLE IF NOT EXISTS discount_codes (
     max_uses INTEGER,
     used_count INTEGER NOT NULL DEFAULT 0,
     active INTEGER NOT NULL DEFAULT 1,
+    archived INTEGER NOT NULL DEFAULT 0,
     expires_at TEXT,
     created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
     CHECK (type IN ('fixed', 'percent'))
 );
 
 CREATE INDEX IF NOT EXISTS idx_discount_codes_code ON discount_codes(code);
+CREATE INDEX IF NOT EXISTS idx_discount_codes_archived ON discount_codes(archived);
 
 -- admin_audit_log table
 CREATE TABLE IF NOT EXISTS admin_audit_log (

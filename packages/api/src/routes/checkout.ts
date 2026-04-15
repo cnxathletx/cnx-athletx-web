@@ -171,7 +171,7 @@ export function registerCheckoutRoutes(router: RouterType) {
       try {
         discountCodeRow = await env.DB.prepare(
           `SELECT id, code, type, value, min_order_thb, max_uses, used_count, active, expires_at
-           FROM discount_codes WHERE code = ? LIMIT 1`
+           FROM discount_codes WHERE code = ? AND archived = 0 LIMIT 1`
         )
           .bind(code)
           .first<DiscountCodeRow>()

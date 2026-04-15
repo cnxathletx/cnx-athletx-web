@@ -345,6 +345,7 @@ export interface AdminDiscountCodeRow {
   max_uses: number | null
   used_count: number
   active: number
+  archived: number
   expires_at: string | null
   created_at: string
 }
@@ -366,6 +367,7 @@ export interface AdminUpdateDiscountBody {
   min_order_thb?: number
   max_uses?: number | null
   active?: boolean
+  archived?: boolean
   expires_at?: string | null
 }
 

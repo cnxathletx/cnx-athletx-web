@@ -428,6 +428,7 @@ export interface AdminDiscountCode {
   max_uses: number | null
   used_count: number
   active: boolean
+  archived: boolean
   expires_at: string | null
   created_at: string
 }
@@ -449,11 +450,15 @@ export interface UpdateDiscountPayload {
   min_order_thb?: number
   max_uses?: number | null
   active?: boolean
+  archived?: boolean
   expires_at?: string | null
 }
 
-export async function fetchAdminDiscountCodes(): Promise<AdminDiscountCode[]> {
-  const res = await fetch(apiUrl('/api/admin/discount-codes'), { credentials: 'include' })
+export async function fetchAdminDiscountCodes(options: { includeArchived?: boolean } = {}): Promise<AdminDiscountCode[]> {
+  const path = options.includeArchived
+    ? '/api/admin/discount-codes?include_archived=1'
+    : '/api/admin/discount-codes'
+  const res = await fetch(apiUrl(path), { credentials: 'include' })
   if (!res.ok) await parseAdminError(res)
   const data = (await res.json()) as { discount_codes: AdminDiscountCode[] }
   return data.discount_codes

@@ -14,19 +14,28 @@ function formatRow(row: AdminDiscountCodeRow) {
     max_uses: row.max_uses,
     used_count: row.used_count,
     active: !!row.active,
+    archived: !!row.archived,
     expires_at: row.expires_at,
     created_at: row.created_at,
   }
 }
 
 export function registerAdminDiscountRoutes(router: RouterType) {
-  router.get('/api/admin/discount-codes', requireAdmin(async (_request, env) => {
+  router.get('/api/admin/discount-codes', requireAdmin(async (request, env) => {
+    const url = new URL(request.url)
+    const includeArchived = url.searchParams.get('include_archived') === '1'
+
     try {
-      const { results } = await env.DB.prepare(
-        `SELECT id, code, type, value, min_order_thb, max_uses, used_count, active, expires_at, created_at
-         FROM discount_codes
-         ORDER BY created_at DESC`
-      ).all<AdminDiscountCodeRow>()
+      const sql = includeArchived
+        ? `SELECT id, code, type, value, min_order_thb, max_uses, used_count, active, archived, expires_at, created_at
+           FROM discount_codes
+           ORDER BY archived ASC, created_at DESC`
+        : `SELECT id, code, type, value, min_order_thb, max_uses, used_count, active, archived, expires_at, created_at
+           FROM discount_codes
+           WHERE archived = 0
+           ORDER BY created_at DESC`
+
+      const { results } = await env.DB.prepare(sql).all<AdminDiscountCodeRow>()
 
       return Response.json({ discount_codes: results.map(formatRow) })
     } catch {
@@ -63,7 +72,7 @@ export function registerAdminDiscountRoutes(router: RouterType) {
         .run()
 
       const row = await env.DB.prepare(
-        `SELECT id, code, type, value, min_order_thb, max_uses, used_count, active, expires_at, created_at
+        `SELECT id, code, type, value, min_order_thb, max_uses, used_count, active, archived, expires_at, created_at
          FROM discount_codes WHERE id = ? LIMIT 1`
       )
         .bind(id)
@@ -117,6 +126,7 @@ export function registerAdminDiscountRoutes(router: RouterType) {
     if (data.min_order_thb !== undefined) { setParts.push('min_order_thb = ?'); binds.push(data.min_order_thb) }
     if ('max_uses' in data) { setParts.push('max_uses = ?'); binds.push(data.max_uses ?? null) }
     if (data.active !== undefined) { setParts.push('active = ?'); binds.push(data.active ? 1 : 0) }
+    if (data.archived !== undefined) { setParts.push('archived = ?'); binds.push(data.archived ? 1 : 0) }
     if ('expires_at' in data) { setParts.push('expires_at = ?'); binds.push(data.expires_at ?? null) }
 
     binds.push(discountId)
@@ -136,7 +146,7 @@ export function registerAdminDiscountRoutes(router: RouterType) {
         .run()
 
       const row = await env.DB.prepare(
-        `SELECT id, code, type, value, min_order_thb, max_uses, used_count, active, expires_at, created_at
+        `SELECT id, code, type, value, min_order_thb, max_uses, used_count, active, archived, expires_at, created_at
          FROM discount_codes WHERE id = ? LIMIT 1`
       )
         .bind(discountId)

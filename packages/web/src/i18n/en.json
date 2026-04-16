@@ -33,7 +33,7 @@
     "theme": "Theme"
   },
   "footer": {
-    "tagline": "Clean athletic everyday health. Plant-based protein powder from Chiang Mai's active community.",
+    "tagline": "Powered by Nature. Built for Performance.",
     "quickLinks": "Quick Links",
     "shop": "Shop",
     "trackOrder": "Track Order",
@@ -81,8 +81,11 @@
     "productImage": "Product Image",
     "ourStory": "Our Story",
     "brandStoryTitle": "Born in Chiang Mai's Active Community",
-    "brandStoryP1": "CNX AthletX started with a simple idea: clean, plant-based nutrition for people who move. Founded by athletes and wellness enthusiasts in the heart of Chiang Mai, we wanted a protein powder that matched our values — no fillers, no artificial sweeteners, just real ingredients.",
-    "brandStoryP2": "Every scoop is designed for the runners, climbers, yogis, and gym-goers who make this city one of Southeast Asia's most active communities.",
+    "brandStoryP1": "We are a sports nutrition brand built on one simple idea — real ingredients, real results.",
+    "brandStoryP2": "Our products are 100% natural, with no artificial flavours made using ingredients sourced from Northern Thailand farmers.",
+    "brandStoryP3": "We believe nutrition should be clean, honest, and effective — supporting not only your performance, but also the communities behind every ingredient.",
+    "brandStoryMissionLabel": "Our mission",
+    "brandStoryMission": "To provide clean, high-quality nutrition that fuels your body — naturally.",
     "communityTitle": "Join the Community",
     "communityImage": "Community Image",
     "ctaTitle": "Ready to fuel your next session?",

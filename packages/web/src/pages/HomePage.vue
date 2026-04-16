@@ -308,6 +308,15 @@ onBeforeUnmount(() => {
             <div class="space-y-4 text-muted leading-relaxed">
               <p>{{ t('home.brandStoryP1') }}</p>
               <p>{{ t('home.brandStoryP2') }}</p>
+              <p>{{ t('home.brandStoryP3') }}</p>
+            </div>
+            <div class="border-l-2 border-primary pl-4 space-y-1">
+              <p class="text-xs font-medium uppercase tracking-[0.05em] text-primary">
+                {{ t('home.brandStoryMissionLabel') }}
+              </p>
+              <p class="text-foreground leading-relaxed italic">
+                {{ t('home.brandStoryMission') }}
+              </p>
             </div>
             <RouterLink to="/about">
               <GhostButton>{{ t('home.learnMore') }}</GhostButton>

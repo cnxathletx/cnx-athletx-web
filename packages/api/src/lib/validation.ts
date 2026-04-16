@@ -638,6 +638,8 @@ export function validateCreateProductLineBody(body: unknown): { errors: Validati
   const nutritionJson = typeof b.nutrition_json === 'string' ? b.nutrition_json.trim() : '{}'
   const ingredients = typeof b.ingredients === 'string' ? b.ingredients.trim() : ''
   const howToUse = typeof b.how_to_use === 'string' ? b.how_to_use.trim() : ''
+  const whoIsFor = typeof b.who_is_for === 'string' ? b.who_is_for.trim() : ''
+  const regulatoryInfo = typeof b.regulatory_info === 'string' ? b.regulatory_info.trim() : ''
 
   if (name.length < 2 || name.length > 120) {
     errors.push({ field: 'name', message: 'name must be between 2 and 120 characters' })
@@ -656,6 +658,12 @@ export function validateCreateProductLineBody(body: unknown): { errors: Validati
   if (howToUse.length > 5000) {
     errors.push({ field: 'how_to_use', message: 'how_to_use must be 5000 characters or fewer' })
   }
+  if (whoIsFor.length > 5000) {
+    errors.push({ field: 'who_is_for', message: 'who_is_for must be 5000 characters or fewer' })
+  }
+  if (regulatoryInfo.length > 5000) {
+    errors.push({ field: 'regulatory_info', message: 'regulatory_info must be 5000 characters or fewer' })
+  }
 
   if (errors.length > 0) {
     return { errors, data: null }
@@ -663,7 +671,7 @@ export function validateCreateProductLineBody(body: unknown): { errors: Validati
 
   return {
     errors: [],
-    data: { name, slug, nutrition_json: nutritionJson, ingredients, how_to_use: howToUse },
+    data: { name, slug, nutrition_json: nutritionJson, ingredients, how_to_use: howToUse, who_is_for: whoIsFor, regulatory_info: regulatoryInfo },
   }
 }
 
@@ -675,7 +683,7 @@ export function validateUpdateProductLineBody(body: unknown): { errors: Validati
   }
 
   const b = body as Record<string, unknown>
-  const allowed = ['name', 'slug', 'nutrition_json', 'ingredients', 'how_to_use']
+  const allowed = ['name', 'slug', 'nutrition_json', 'ingredients', 'how_to_use', 'who_is_for', 'regulatory_info']
   const provided = allowed.filter((key) => key in b)
 
   if (provided.length === 0) {
@@ -745,6 +753,32 @@ export function validateUpdateProductLineBody(body: unknown): { errors: Validati
         errors.push({ field: 'how_to_use', message: 'how_to_use must be 5000 characters or fewer' })
       } else {
         data.how_to_use = howToUse
+      }
+    }
+  }
+
+  if ('who_is_for' in b) {
+    if (typeof b.who_is_for !== 'string') {
+      errors.push({ field: 'who_is_for', message: 'who_is_for must be a string' })
+    } else {
+      const whoIsFor = b.who_is_for.trim()
+      if (whoIsFor.length > 5000) {
+        errors.push({ field: 'who_is_for', message: 'who_is_for must be 5000 characters or fewer' })
+      } else {
+        data.who_is_for = whoIsFor
+      }
+    }
+  }
+
+  if ('regulatory_info' in b) {
+    if (typeof b.regulatory_info !== 'string') {
+      errors.push({ field: 'regulatory_info', message: 'regulatory_info must be a string' })
+    } else {
+      const regulatoryInfo = b.regulatory_info.trim()
+      if (regulatoryInfo.length > 5000) {
+        errors.push({ field: 'regulatory_info', message: 'regulatory_info must be 5000 characters or fewer' })
+      } else {
+        data.regulatory_info = regulatoryInfo
       }
     }
   }

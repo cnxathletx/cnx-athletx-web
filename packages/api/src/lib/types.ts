@@ -314,6 +314,8 @@ export interface ProductLineRow {
   nutrition_json: string
   ingredients: string
   how_to_use: string
+  who_is_for: string
+  regulatory_info: string
   created_at: string
   updated_at: string
 }
@@ -324,6 +326,8 @@ export interface AdminCreateProductLineBody {
   nutrition_json: string
   ingredients: string
   how_to_use: string
+  who_is_for: string
+  regulatory_info: string
 }
 
 export interface AdminUpdateProductLineBody {
@@ -332,6 +336,8 @@ export interface AdminUpdateProductLineBody {
   nutrition_json?: string
   ingredients?: string
   how_to_use?: string
+  who_is_for?: string
+  regulatory_info?: string
 }
 
 // --- Admin Discount Code types ---

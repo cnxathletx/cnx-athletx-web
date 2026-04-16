@@ -8,7 +8,7 @@ export function registerAdminProductLineRoutes(router: RouterType) {
   router.get('/api/admin/product-lines', requireAdmin(async (_request, env) => {
     try {
       const { results } = await env.DB.prepare(
-        `SELECT id, name, slug, nutrition_json, ingredients, how_to_use, created_at, updated_at
+        `SELECT id, name, slug, nutrition_json, ingredients, how_to_use, who_is_for, regulatory_info, created_at, updated_at
          FROM product_lines
          ORDER BY id ASC`
       ).all<ProductLineRow>()
@@ -32,10 +32,10 @@ export function registerAdminProductLineRoutes(router: RouterType) {
 
     try {
       const result = await env.DB.prepare(
-        `INSERT INTO product_lines (name, slug, nutrition_json, ingredients, how_to_use, created_at, updated_at)
-         VALUES (?, ?, ?, ?, ?, ?, ?)`
+        `INSERT INTO product_lines (name, slug, nutrition_json, ingredients, how_to_use, who_is_for, regulatory_info, created_at, updated_at)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`
       )
-        .bind(data.name, data.slug, data.nutrition_json, data.ingredients, data.how_to_use, now, now)
+        .bind(data.name, data.slug, data.nutrition_json, data.ingredients, data.how_to_use, data.who_is_for, data.regulatory_info, now, now)
         .run()
 
       const id = Number(result.meta.last_row_id)
@@ -48,7 +48,7 @@ export function registerAdminProductLineRoutes(router: RouterType) {
         .run()
 
       const productLine = await env.DB.prepare(
-        `SELECT id, name, slug, nutrition_json, ingredients, how_to_use, created_at, updated_at
+        `SELECT id, name, slug, nutrition_json, ingredients, how_to_use, who_is_for, regulatory_info, created_at, updated_at
          FROM product_lines WHERE id = ? LIMIT 1`
       )
         .bind(id)
@@ -99,6 +99,8 @@ export function registerAdminProductLineRoutes(router: RouterType) {
     if (data.nutrition_json !== undefined) { setParts.push('nutrition_json = ?'); binds.push(data.nutrition_json) }
     if (data.ingredients !== undefined) { setParts.push('ingredients = ?'); binds.push(data.ingredients) }
     if (data.how_to_use !== undefined) { setParts.push('how_to_use = ?'); binds.push(data.how_to_use) }
+    if (data.who_is_for !== undefined) { setParts.push('who_is_for = ?'); binds.push(data.who_is_for) }
+    if (data.regulatory_info !== undefined) { setParts.push('regulatory_info = ?'); binds.push(data.regulatory_info) }
 
     const now = nowIso()
     setParts.push('updated_at = ?')
@@ -118,7 +120,7 @@ export function registerAdminProductLineRoutes(router: RouterType) {
         .run()
 
       const productLine = await env.DB.prepare(
-        `SELECT id, name, slug, nutrition_json, ingredients, how_to_use, created_at, updated_at
+        `SELECT id, name, slug, nutrition_json, ingredients, how_to_use, who_is_for, regulatory_info, created_at, updated_at
          FROM product_lines WHERE id = ? LIMIT 1`
       )
         .bind(productLineId)

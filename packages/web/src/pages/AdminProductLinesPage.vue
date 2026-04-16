@@ -32,6 +32,8 @@ const createForm = reactive<CreateProductLinePayload>({
   nutrition_json: '{}',
   ingredients: '',
   how_to_use: '',
+  who_is_for: '',
+  regulatory_info: '',
 })
 
 const editForm = reactive<Required<UpdateProductLinePayload>>({
@@ -40,12 +42,19 @@ const editForm = reactive<Required<UpdateProductLinePayload>>({
   nutrition_json: '{}',
   ingredients: '',
   how_to_use: '',
+  who_is_for: '',
+  regulatory_info: '',
 })
 
 // Nutrition facts as editable rows. `sub` flag renders the row italic and indented.
 type NutritionRow = { key: string; value: string; sub: boolean }
 const createNutritionRows = ref<NutritionRow[]>([{ key: '', value: '', sub: false }])
 const editNutritionRows = ref<NutritionRow[]>([{ key: '', value: '', sub: false }])
+
+// Ingredients as editable rows. `sub` flag marks a sub-ingredient (italic, indented).
+type IngredientRow = { label: string; sub: boolean }
+const createIngredientRows = ref<IngredientRow[]>([{ label: '', sub: false }])
+const editIngredientRows = ref<IngredientRow[]>([{ label: '', sub: false }])
 
 const sortedProductLines = computed(() => [...productLines.value].sort((a, b) => a.id - b.id))
 
@@ -80,6 +89,55 @@ function nutritionJsonToRows(json: string): NutritionRow[] {
     return rows.length > 0 ? rows : [{ key: '', value: '', sub: false }]
   } catch {
     return [{ key: '', value: '', sub: false }]
+  }
+}
+
+function ingredientRowsToString(rows: IngredientRow[]): string {
+  const arr: { label: string; sub?: boolean }[] = []
+  for (const row of rows) {
+    const label = row.label.trim()
+    if (!label) continue
+    const entry: { label: string; sub?: boolean } = { label }
+    if (row.sub) entry.sub = true
+    arr.push(entry)
+  }
+  return JSON.stringify(arr)
+}
+
+function ingredientStringToRows(raw: string): IngredientRow[] {
+  if (!raw) return [{ label: '', sub: false }]
+  try {
+    const parsed = JSON.parse(raw)
+    if (Array.isArray(parsed)) {
+      const rows = parsed
+        .filter((r) => r && typeof r === 'object' && typeof r.label === 'string')
+        .map((r) => ({ label: r.label, sub: r.sub === true }))
+      return rows.length > 0 ? rows : [{ label: '', sub: false }]
+    }
+  } catch {
+    // legacy plain-text format: split on commas
+  }
+  const parts = raw.split(/,\s*/).map((s) => s.trim()).filter(Boolean)
+  return parts.length > 0 ? parts.map((label) => ({ label, sub: false })) : [{ label: '', sub: false }]
+}
+
+function addCreateIngredientRow() {
+  createIngredientRows.value.push({ label: '', sub: false })
+}
+
+function removeCreateIngredientRow(index: number) {
+  if (createIngredientRows.value.length > 1) {
+    createIngredientRows.value.splice(index, 1)
+  }
+}
+
+function addEditIngredientRow() {
+  editIngredientRows.value.push({ label: '', sub: false })
+}
+
+function removeEditIngredientRow(index: number) {
+  if (editIngredientRows.value.length > 1) {
+    editIngredientRows.value.splice(index, 1)
   }
 }
 
@@ -121,7 +179,10 @@ function resetCreateForm() {
   createForm.nutrition_json = '{}'
   createForm.ingredients = ''
   createForm.how_to_use = ''
+  createForm.who_is_for = ''
+  createForm.regulatory_info = ''
   createNutritionRows.value = [{ key: '', value: '', sub: false }]
+  createIngredientRows.value = [{ label: '', sub: false }]
 }
 
 async function submitCreate() {
@@ -134,8 +195,10 @@ async function submitCreate() {
       name: createForm.name.trim(),
       slug: createForm.slug.trim().toLowerCase(),
       nutrition_json: nutritionRowsToJson(createNutritionRows.value),
-      ingredients: createForm.ingredients.trim(),
+      ingredients: ingredientRowsToString(createIngredientRows.value),
       how_to_use: createForm.how_to_use.trim(),
+      who_is_for: createForm.who_is_for.trim(),
+      regulatory_info: createForm.regulatory_info.trim(),
     })
     productLines.value.push(pl)
     createSuccess.value = 'Product line created.'
@@ -156,7 +219,10 @@ function startEdit(pl: AdminProductLine) {
   editForm.nutrition_json = pl.nutrition_json
   editForm.ingredients = pl.ingredients
   editForm.how_to_use = pl.how_to_use
+  editForm.who_is_for = pl.who_is_for
+  editForm.regulatory_info = pl.regulatory_info
   editNutritionRows.value = nutritionJsonToRows(pl.nutrition_json)
+  editIngredientRows.value = ingredientStringToRows(pl.ingredients)
 }
 
 function cancelEdit() {
@@ -177,8 +243,10 @@ async function submitEdit() {
       name: editForm.name.trim(),
       slug: editForm.slug.trim().toLowerCase(),
       nutrition_json: nutritionRowsToJson(editNutritionRows.value),
-      ingredients: editForm.ingredients.trim(),
+      ingredients: ingredientRowsToString(editIngredientRows.value),
       how_to_use: editForm.how_to_use.trim(),
+      who_is_for: editForm.who_is_for.trim(),
+      regulatory_info: editForm.regulatory_info.trim(),
     }
 
     const updated = await updateAdminProductLine(editingId.value, payload)
@@ -189,6 +257,25 @@ async function submitEdit() {
   } finally {
     editLoading.value = false
   }
+}
+
+function parseIngredientsDisplay(raw: string): { label: string; sub: boolean }[] {
+  if (!raw) return []
+  try {
+    const parsed = JSON.parse(raw)
+    if (Array.isArray(parsed)) {
+      return parsed
+        .filter((r) => r && typeof r === 'object' && typeof r.label === 'string')
+        .map((r) => ({ label: r.label, sub: r.sub === true }))
+    }
+  } catch {
+    // legacy plain-text: split on commas
+  }
+  return raw
+    .split(/,\s*/)
+    .map((s) => s.trim())
+    .filter(Boolean)
+    .map((label) => ({ label, sub: false }))
 }
 
 function parseNutritionDisplay(json: string): { label: string; value: string; sub: boolean }[] {
@@ -259,17 +346,41 @@ onMounted(async () => {
           <button @click="addCreateNutritionRow" class="text-sm text-primary hover:text-primary-dark transition-colors">+ Add row</button>
         </div>
 
-        <textarea
-          v-model="createForm.ingredients"
-          rows="3"
-          placeholder="Ingredients (e.g. Pea protein isolate, brown rice protein...)"
-          class="w-full rounded-md border border-sand px-4 py-3 text-sm bg-surface-alt text-foreground placeholder:text-muted focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
-        />
+        <!-- Ingredients Editor -->
+        <div class="space-y-2">
+          <label class="block text-sm font-medium text-foreground">Ingredients</label>
+          <p class="text-xs text-muted">Tick "Sub" to mark a sub-ingredient (italic, indented).</p>
+          <div v-for="(row, i) in createIngredientRows" :key="i" class="flex items-center gap-2">
+            <input v-model="row.label" type="text" placeholder="Ingredient (e.g. Pea protein isolate)" :class="['flex-1 rounded-md border border-sand px-3 py-2 text-sm bg-surface-alt text-foreground placeholder:text-muted focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent', row.sub && 'italic pl-6']" />
+            <label class="flex items-center gap-1 text-xs text-muted select-none">
+              <input v-model="row.sub" type="checkbox" class="accent-primary" />
+              Sub
+            </label>
+            <button @click="removeCreateIngredientRow(i)" class="text-muted hover:text-error transition-colors p-1" :disabled="createIngredientRows.length <= 1">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg>
+            </button>
+          </div>
+          <button @click="addCreateIngredientRow" class="text-sm text-primary hover:text-primary-dark transition-colors">+ Add ingredient</button>
+        </div>
 
         <textarea
           v-model="createForm.how_to_use"
           rows="3"
           placeholder="How to Use (e.g. Mix one scoop with 250ml water...)"
+          class="w-full rounded-md border border-sand px-4 py-3 text-sm bg-surface-alt text-foreground placeholder:text-muted focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
+        />
+
+        <textarea
+          v-model="createForm.who_is_for"
+          rows="3"
+          placeholder="Who is this For? (e.g. Athletes, vegans, people avoiding dairy...)"
+          class="w-full rounded-md border border-sand px-4 py-3 text-sm bg-surface-alt text-foreground placeholder:text-muted focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
+        />
+
+        <textarea
+          v-model="createForm.regulatory_info"
+          rows="3"
+          placeholder="Regulatory & Safety Information (e.g. allergen warnings, storage, medical advisories...)"
           class="w-full rounded-md border border-sand px-4 py-3 text-sm bg-surface-alt text-foreground placeholder:text-muted focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
         />
 
@@ -295,8 +406,8 @@ onMounted(async () => {
             </div>
           </div>
 
-          <!-- Display nutrition, ingredients, how to use -->
-          <div class="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
+          <!-- Display nutrition, ingredients, how to use, who is for, regulatory info -->
+          <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4 text-sm">
             <div class="bg-surface-alt rounded-md p-3 space-y-1">
               <p class="text-muted font-medium">Nutrition Facts</p>
               <div v-for="(row, i) in parseNutritionDisplay(pl.nutrition_json)" :key="i" class="flex justify-between">
@@ -305,13 +416,22 @@ onMounted(async () => {
               </div>
               <p v-if="parseNutritionDisplay(pl.nutrition_json).length === 0" class="text-muted italic">Not set</p>
             </div>
-            <div class="bg-surface-alt rounded-md p-3">
-              <p class="text-muted font-medium mb-1">Ingredients</p>
-              <p class="text-foreground whitespace-pre-line">{{ pl.ingredients || 'Not set' }}</p>
+            <div class="bg-surface-alt rounded-md p-3 space-y-1">
+              <p class="text-muted font-medium">Ingredients</p>
+              <p v-for="(row, i) in parseIngredientsDisplay(pl.ingredients)" :key="i" :class="['text-foreground', row.sub && 'italic pl-4']">{{ row.label }}</p>
+              <p v-if="parseIngredientsDisplay(pl.ingredients).length === 0" class="text-muted italic">Not set</p>
             </div>
             <div class="bg-surface-alt rounded-md p-3">
               <p class="text-muted font-medium mb-1">How to Use</p>
               <p class="text-foreground whitespace-pre-line">{{ pl.how_to_use || 'Not set' }}</p>
+            </div>
+            <div class="bg-surface-alt rounded-md p-3">
+              <p class="text-muted font-medium mb-1">Who is this For?</p>
+              <p class="text-foreground whitespace-pre-line">{{ pl.who_is_for || 'Not set' }}</p>
+            </div>
+            <div class="bg-surface-alt rounded-md p-3">
+              <p class="text-muted font-medium mb-1">Regulatory &amp; Safety</p>
+              <p class="text-foreground whitespace-pre-line">{{ pl.regulatory_info || 'Not set' }}</p>
             </div>
           </div>
 
@@ -343,15 +463,41 @@ onMounted(async () => {
               <button @click="addEditNutritionRow" class="text-sm text-primary hover:text-primary-dark transition-colors">+ Add row</button>
             </div>
 
-            <textarea
-              v-model="editForm.ingredients"
-              rows="3"
-              class="w-full rounded-md border border-sand px-4 py-3 text-sm bg-surface-alt text-foreground focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
-            />
+            <!-- Ingredients Editor -->
+            <div class="space-y-2">
+              <label class="block text-sm font-medium text-foreground">Ingredients</label>
+              <p class="text-xs text-muted">Tick "Sub" to mark a sub-ingredient (italic, indented).</p>
+              <div v-for="(row, i) in editIngredientRows" :key="i" class="flex items-center gap-2">
+                <input v-model="row.label" type="text" placeholder="Ingredient" :class="['flex-1 rounded-md border border-sand px-3 py-2 text-sm bg-surface-alt text-foreground placeholder:text-muted focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent', row.sub && 'italic pl-6']" />
+                <label class="flex items-center gap-1 text-xs text-muted select-none">
+                  <input v-model="row.sub" type="checkbox" class="accent-primary" />
+                  Sub
+                </label>
+                <button @click="removeEditIngredientRow(i)" class="text-muted hover:text-error transition-colors p-1" :disabled="editIngredientRows.length <= 1">
+                  <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg>
+                </button>
+              </div>
+              <button @click="addEditIngredientRow" class="text-sm text-primary hover:text-primary-dark transition-colors">+ Add ingredient</button>
+            </div>
 
             <textarea
               v-model="editForm.how_to_use"
               rows="3"
+              placeholder="How to Use"
+              class="w-full rounded-md border border-sand px-4 py-3 text-sm bg-surface-alt text-foreground focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
+            />
+
+            <textarea
+              v-model="editForm.who_is_for"
+              rows="3"
+              placeholder="Who is this For?"
+              class="w-full rounded-md border border-sand px-4 py-3 text-sm bg-surface-alt text-foreground focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
+            />
+
+            <textarea
+              v-model="editForm.regulatory_info"
+              rows="3"
+              placeholder="Regulatory & Safety Information"
               class="w-full rounded-md border border-sand px-4 py-3 text-sm bg-surface-alt text-foreground focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
             />
 

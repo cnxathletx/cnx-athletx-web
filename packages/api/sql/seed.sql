@@ -1,13 +1,15 @@
 -- CNX AthletX Seed Data
 
 -- Product Lines
-INSERT INTO product_lines (name, slug, nutrition_json, ingredients, how_to_use) VALUES
+INSERT INTO product_lines (name, slug, nutrition_json, ingredients, how_to_use, who_is_for, regulatory_info) VALUES
 (
     'Plant Protein',
     'plant-protein',
     '{"Serving Size":"30g (1 scoop)","Calories":"120","Protein":"25g","Carbohydrates":"3g","Fat":"1.5g","Fiber":"2g","Sodium":"150mg"}',
     'Pea protein isolate, brown rice protein concentrate, natural vanilla flavoring, coconut MCT powder, sea salt, stevia leaf extract.',
-    'Mix one scoop (30g) with 250-300ml of cold water, plant milk, or your favorite smoothie. Shake or blend well. Best consumed within 30 minutes after training. Can also be added to oatmeal, pancakes, or baked goods.'
+    'Mix one scoop (30g) with 250-300ml of cold water, plant milk, or your favorite smoothie. Shake or blend well. Best consumed within 30 minutes after training. Can also be added to oatmeal, pancakes, or baked goods.',
+    'Athletes, runners, cyclists, and fitness enthusiasts seeking clean plant-based recovery. Vegetarians and vegans who want a complete amino acid profile. Anyone avoiding dairy, soy, or artificial sweeteners.',
+    'Manufactured in Thailand in a facility that handles peas, rice, and coconut. Not intended for children under 12, pregnant or breastfeeding women without medical advice. Store in a cool, dry place away from direct sunlight. Consult a physician before use if you have a medical condition or are taking medication. This product is not intended to diagnose, treat, cure, or prevent any disease. FDA Thailand registration pending.'
 );
 
 -- Products

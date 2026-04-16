@@ -119,6 +119,8 @@ export interface AdminProductLine {
   nutrition_json: string
   ingredients: string
   how_to_use: string
+  who_is_for: string
+  regulatory_info: string
   created_at: string
   updated_at: string
 }
@@ -129,6 +131,8 @@ export interface CreateProductLinePayload {
   nutrition_json: string
   ingredients: string
   how_to_use: string
+  who_is_for: string
+  regulatory_info: string
 }
 
 export interface UpdateProductLinePayload {
@@ -137,6 +141,8 @@ export interface UpdateProductLinePayload {
   nutrition_json?: string
   ingredients?: string
   how_to_use?: string
+  who_is_for?: string
+  regulatory_info?: string
 }
 
 interface AdminApiError {

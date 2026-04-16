@@ -81,12 +81,14 @@ useJsonLd(() => {
   }
 })
 
-const activeTab = ref<'nutrition' | 'ingredients' | 'howToUse'>('nutrition')
+const activeTab = ref<'nutrition' | 'ingredients' | 'howToUse' | 'whoIsFor' | 'regulatoryInfo'>('nutrition')
 
 const tabs = computed(() => [
   { key: 'nutrition' as const, label: t('product.nutritionFacts') },
   { key: 'ingredients' as const, label: t('product.ingredients') },
   { key: 'howToUse' as const, label: t('product.howToUse') },
+  { key: 'whoIsFor' as const, label: t('product.whoIsFor') },
+  { key: 'regulatoryInfo' as const, label: t('product.regulatoryInfo') },
 ])
 
 type NutritionRow = { label: string; value: string; sub?: boolean }
@@ -115,10 +117,31 @@ const nutritionFacts = computed<NutritionRow[]>(() => {
 })
 
 const ingredientsText = computed(() => product.value?.ingredients || '')
+const ingredientRows = computed<{ label: string; sub: boolean }[]>(() => {
+  const raw = product.value?.ingredients
+  if (!raw) return []
+  try {
+    const parsed = JSON.parse(raw)
+    if (Array.isArray(parsed)) {
+      return parsed
+        .filter((r) => r && typeof r === 'object' && typeof r.label === 'string')
+        .map((r) => ({ label: r.label, sub: r.sub === true }))
+    }
+  } catch {
+    // legacy plain-text format
+  }
+  return []
+})
 const howToUseText = computed(() => product.value?.how_to_use || '')
+const whoIsForText = computed(() => product.value?.who_is_for || '')
+const regulatoryInfoText = computed(() => product.value?.regulatory_info || '')
 
 const hasProductLineData = computed(() =>
-  nutritionFacts.value.length > 0 || ingredientsText.value || howToUseText.value
+  nutritionFacts.value.length > 0 ||
+  ingredientsText.value ||
+  howToUseText.value ||
+  whoIsForText.value ||
+  regulatoryInfoText.value
 )
 
 async function loadProduct(slug: string) {
@@ -382,11 +405,28 @@ watch(
           </div>
 
           <div v-if="activeTab === 'ingredients'" class="max-w-2xl">
-            <p class="text-foreground leading-relaxed whitespace-pre-line">{{ ingredientsText }}</p>
+            <ul v-if="ingredientRows.length > 0" class="space-y-1.5">
+              <li
+                v-for="(row, i) in ingredientRows"
+                :key="i"
+                :class="['text-foreground leading-relaxed', row.sub && 'italic pl-6 text-sm text-muted']"
+              >
+                {{ row.label }}
+              </li>
+            </ul>
+            <p v-else class="text-foreground leading-relaxed whitespace-pre-line">{{ ingredientsText }}</p>
           </div>
 
           <div v-if="activeTab === 'howToUse'" class="max-w-2xl">
             <p class="text-foreground leading-relaxed whitespace-pre-line">{{ howToUseText }}</p>
+          </div>
+
+          <div v-if="activeTab === 'whoIsFor'" class="max-w-2xl">
+            <p class="text-foreground leading-relaxed whitespace-pre-line">{{ whoIsForText }}</p>
+          </div>
+
+          <div v-if="activeTab === 'regulatoryInfo'" class="max-w-2xl">
+            <p class="text-foreground leading-relaxed whitespace-pre-line">{{ regulatoryInfoText }}</p>
           </div>
         </div>
       </div>

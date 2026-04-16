@@ -7,7 +7,7 @@ export function registerProductRoutes(router: RouterType) {
       const { results } = await env.DB.prepare(
         `SELECT p.id, p.slug, p.name, p.description, p.price_thb, p.weight_g, p.image_url,
                 (i.stock_count - i.reserved_count) AS available_stock,
-                pl.nutrition_json, pl.ingredients, pl.how_to_use, pl.name AS product_line_name
+                pl.nutrition_json, pl.ingredients, pl.how_to_use, pl.who_is_for, pl.regulatory_info, pl.name AS product_line_name
          FROM products p
          JOIN inventory i ON i.product_id = p.id
          LEFT JOIN product_lines pl ON pl.id = p.product_line_id
@@ -33,7 +33,7 @@ export function registerProductRoutes(router: RouterType) {
       const product = await env.DB.prepare(
         `SELECT p.id, p.slug, p.name, p.description, p.price_thb, p.weight_g, p.image_url,
                 (i.stock_count - i.reserved_count) AS available_stock,
-                pl.nutrition_json, pl.ingredients, pl.how_to_use, pl.name AS product_line_name
+                pl.nutrition_json, pl.ingredients, pl.how_to_use, pl.who_is_for, pl.regulatory_info, pl.name AS product_line_name
          FROM products p
          JOIN inventory i ON i.product_id = p.id
          LEFT JOIN product_lines pl ON pl.id = p.product_line_id

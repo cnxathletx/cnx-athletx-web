@@ -12,6 +12,8 @@ export interface ApiProduct {
   nutrition_json: string | null
   ingredients: string | null
   how_to_use: string | null
+  who_is_for: string | null
+  regulatory_info: string | null
   product_line_name: string | null
 }
 

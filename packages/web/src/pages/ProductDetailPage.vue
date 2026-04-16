@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, watch, computed } from 'vue'
+import { ref, watch, computed, onUnmounted } from 'vue'
 import { useRoute, RouterLink } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import PrimaryButton from '../components/ui/PrimaryButton.vue'
@@ -29,6 +29,43 @@ const error = ref('')
 const quantity = ref(1)
 const productImageError = ref(false)
 const activeImageIndex = ref(0)
+const lightboxOpen = ref(false)
+
+function openLightbox() {
+  if (!activeImageUrl.value || productImageError.value) return
+  lightboxOpen.value = true
+  document.body.style.overflow = 'hidden'
+}
+
+function closeLightbox() {
+  lightboxOpen.value = false
+  document.body.style.overflow = ''
+}
+
+function lightboxPrev() {
+  if (gallery.value.length < 2) return
+  activeImageIndex.value = (activeImageIndex.value - 1 + gallery.value.length) % gallery.value.length
+}
+
+function lightboxNext() {
+  if (gallery.value.length < 2) return
+  activeImageIndex.value = (activeImageIndex.value + 1) % gallery.value.length
+}
+
+function onKeydown(e: KeyboardEvent) {
+  if (!lightboxOpen.value) return
+  if (e.key === 'Escape') closeLightbox()
+  else if (e.key === 'ArrowLeft') lightboxPrev()
+  else if (e.key === 'ArrowRight') lightboxNext()
+}
+
+if (typeof window !== 'undefined') {
+  window.addEventListener('keydown', onKeydown)
+  onUnmounted(() => {
+    window.removeEventListener('keydown', onKeydown)
+    document.body.style.overflow = ''
+  })
+}
 
 const gallery = computed<string[]>(() => {
   const p = product.value
@@ -164,6 +201,7 @@ async function loadProduct(slug: string) {
   activeTab.value = 'nutrition'
   productImageError.value = false
   activeImageIndex.value = 0
+  closeLightbox()
 
   try {
     product.value = await fetchProductBySlug(slug)
@@ -271,7 +309,8 @@ watch(
                 v-if="activeImageUrl && !productImageError"
                 :src="activeImageUrl"
                 :alt="product.name"
-                class="w-full h-full object-cover"
+                class="w-full h-full object-cover cursor-zoom-in"
+                @click="openLightbox"
                 @error="productImageError = true"
               />
               <div
@@ -478,5 +517,57 @@ watch(
         </div>
       </div>
     </section>
+
+    <!-- Lightbox -->
+    <div
+      v-if="lightboxOpen"
+      class="fixed inset-0 z-50 bg-black/90 flex items-center justify-center p-4 sm:p-8"
+      role="dialog"
+      aria-modal="true"
+      aria-label="Product image viewer"
+      @click.self="closeLightbox"
+    >
+      <button
+        type="button"
+        class="absolute top-4 right-4 w-10 h-10 rounded-full bg-white/10 hover:bg-white/20 text-white flex items-center justify-center transition-colors"
+        aria-label="Close image viewer"
+        @click="closeLightbox"
+      >
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+        </svg>
+      </button>
+
+      <button
+        v-if="gallery.length > 1"
+        type="button"
+        class="absolute left-4 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-white/10 hover:bg-white/20 text-white flex items-center justify-center transition-colors"
+        aria-label="Previous image"
+        @click="lightboxPrev"
+      >
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
+        </svg>
+      </button>
+
+      <img
+        :src="activeImageUrl"
+        :alt="product.name"
+        class="max-w-full max-h-full object-contain select-none"
+        @click.stop
+      />
+
+      <button
+        v-if="gallery.length > 1"
+        type="button"
+        class="absolute right-4 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-white/10 hover:bg-white/20 text-white flex items-center justify-center transition-colors"
+        aria-label="Next image"
+        @click="lightboxNext"
+      >
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
+        </svg>
+      </button>
+    </div>
   </div>
 </template>

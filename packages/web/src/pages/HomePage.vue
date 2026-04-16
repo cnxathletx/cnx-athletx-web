@@ -20,6 +20,33 @@ const storyImages = Object.entries(storyImageModules)
 const storyIndex = ref(0)
 let storyTimer: ReturnType<typeof setInterval> | null = null
 
+const communityImageModules = import.meta.glob(
+  '../assets/photos/join-the-community/*.{jpeg,jpg,png,webp}',
+  { eager: true, import: 'default', query: '?url' },
+) as Record<string, string>
+const communityImages = Object.entries(communityImageModules)
+  .sort(([a], [b]) => a.localeCompare(b, undefined, { numeric: true }))
+  .map(([, url]) => url)
+const communitySlots = ref<number[]>(
+  Array.from({ length: 3 }, (_, i) => Math.min(i, Math.max(0, communityImages.length - 1))),
+)
+const communityTimeouts: ReturnType<typeof setTimeout>[] = []
+const communityTimers: ReturnType<typeof setInterval>[] = []
+
+function rotateCommunitySlot(slot: number) {
+  if (communityImages.length <= 3) return
+  const taken = new Set(communitySlots.value)
+  const pool: number[] = []
+  for (let i = 0; i < communityImages.length; i++) {
+    if (!taken.has(i)) pool.push(i)
+  }
+  if (pool.length === 0) return
+  const next = pool[Math.floor(Math.random() * pool.length)]
+  const updated = [...communitySlots.value]
+  updated[slot] = next
+  communitySlots.value = updated
+}
+
 const { t } = useI18n({ useScope: 'global' })
 
 useHead({
@@ -65,10 +92,24 @@ onMounted(async () => {
       storyIndex.value = (storyIndex.value + 1) % storyImages.length
     }, 4000)
   }
+
+  if (communityImages.length > 3) {
+    for (let slot = 0; slot < 3; slot++) {
+      const startDelay = slot * 1600
+      const timeout = setTimeout(() => {
+        rotateCommunitySlot(slot)
+        const timer = setInterval(() => rotateCommunitySlot(slot), 5000)
+        communityTimers.push(timer)
+      }, startDelay)
+      communityTimeouts.push(timeout)
+    }
+  }
 })
 
 onBeforeUnmount(() => {
   if (storyTimer) clearInterval(storyTimer)
+  communityTimeouts.forEach(clearTimeout)
+  communityTimers.forEach(clearInterval)
 })
 </script>
 
@@ -313,37 +354,20 @@ onBeforeUnmount(() => {
         </h2>
         <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
           <div
-            v-for="i in 3"
+            v-for="(slotIdx, i) in communitySlots"
             :key="i"
-            class="aspect-[4/3] rounded-lg overflow-hidden bg-surface ring-1 ring-[var(--card-ring)]"
+            class="relative aspect-[4/3] rounded-lg overflow-hidden bg-surface ring-1 ring-[var(--card-ring)]"
           >
-            <div
-              class="w-full h-full bg-gradient-to-br flex items-center justify-center"
-              :class="[
-                i === 1
-                  ? 'from-primary/10 via-sage/5 to-transparent'
-                  : i === 2
-                    ? 'from-sage/10 via-primary/5 to-transparent'
-                    : 'from-accent/5 via-sage/10 to-transparent',
-              ]"
-            >
-              <div class="text-center space-y-2">
-                <svg
-                  class="w-12 h-12 mx-auto text-muted/25"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
-                    stroke-width="1"
-                    d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"
-                  />
-                </svg>
-                <p class="text-xs text-muted/40">{{ t('home.communityImage') }} {{ i }}</p>
-              </div>
-            </div>
+            <transition name="story-fade" mode="default">
+              <img
+                :key="communityImages[slotIdx]"
+                :src="communityImages[slotIdx]"
+                :alt="t('home.communityTitle')"
+                class="absolute inset-0 w-full h-full object-cover"
+                decoding="async"
+                loading="lazy"
+              />
+            </transition>
           </div>
         </div>
       </div>

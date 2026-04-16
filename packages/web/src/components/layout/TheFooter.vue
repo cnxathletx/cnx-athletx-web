@@ -12,7 +12,7 @@ const { t } = useI18n({ useScope: 'global' })
     <div class="mx-auto max-w-[1280px] px-4 sm:px-6 lg:px-8 py-16 sm:py-20">
       <div class="grid grid-cols-1 md:grid-cols-3 gap-12">
         <!-- Brand Info -->
-        <div class="space-y-4">
+        <div class="space-y-4 text-center">
           <BrandLockup class="block mx-auto w-28 h-auto text-footer-fg" />
           <p class="text-sm leading-relaxed">
             {{ t('footer.tagline') }}

@@ -88,7 +88,7 @@ export function emailLayout(title: string, body: string): string {
 <body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; line-height: 1.6; color: #2E2B26; margin: 0; padding: 0; background: #F2EDE4;">
   <div style="max-width: 600px; margin: 0 auto; background: #ffffff;">
     <div style="background: #2E2B26; padding: 24px; text-align: center;">
-      <img src="https://www.cnxnature.com/email-mark.png" alt="CNX AthletX" width="48" height="48" style="display: block; margin: 0 auto 8px; width: 48px; height: 48px; border: 0;">
+      <img src="https://www.cnxnature.com/email-mark.png?v=2" alt="CNX AthletX" width="48" height="48" style="display: block; margin: 0 auto 8px; width: 48px; height: 48px; border: 0;">
       <h1 style="margin: 0; color: #E5DDD0; font-size: 22px; font-weight: 700; letter-spacing: 0.5px;">CNX AthletX</h1>
     </div>
     <div style="padding: 32px 24px;">

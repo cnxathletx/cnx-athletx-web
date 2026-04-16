@@ -146,6 +146,21 @@ const router = createRouter({
   ],
 })
 
+router.onError((error, to) => {
+  const message = error instanceof Error ? error.message : String(error)
+  if (/Failed to fetch dynamically imported module|Importing a module script failed/i.test(message)) {
+    const key = 'cnx-chunk-reload'
+    if (!sessionStorage.getItem(key)) {
+      sessionStorage.setItem(key, '1')
+      window.location.assign(to.fullPath)
+    }
+  }
+})
+
+router.afterEach(() => {
+  sessionStorage.removeItem('cnx-chunk-reload')
+})
+
 router.beforeEach(async (to) => {
   const auth = useAuthStore()
   if (!auth.initialized) {

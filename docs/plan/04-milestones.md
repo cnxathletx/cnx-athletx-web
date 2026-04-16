@@ -1,6 +1,6 @@
 # CNX AthletX — Milestones & Acceptance Criteria
 
-Last updated: 2026-02-27
+Last updated: 2026-04-16
 
 ## Phase 0: Repo Scaffolding + Cloudflare + CI
 
@@ -22,7 +22,7 @@ Last updated: 2026-02-27
 - [x] `npm run dev:web` starts Vue dev server at localhost:5171
 - [x] `npm run dev:api` starts Workers dev server via `wrangler dev`
 - [x] Pushing to `main` triggers CI that deploys both packages
-- [ ] Cloudflare Access blocks unauthenticated requests to `/admin/*`
+- [x] Cloudflare Access blocks unauthenticated requests to `/admin/*`
 - [x] D1 database is accessible from Workers dev environment
 - [x] Tailwind config includes all brand color tokens and typography utilities
 - [x] Dark/light theme system works: `:root` (dark default) and `:root.light` CSS variable switching
@@ -205,7 +205,7 @@ Last updated: 2026-02-27
 - Fulfillment APIs are implemented with transition validation and audit logs.
 - Inventory adjustment API/UI is implemented.
 - Product CRUD APIs/UI are implemented (`GET/POST/PATCH /api/admin/products`).
-- Remaining external dependency: Cloudflare Access enforcement must still be completed in Zero Trust policy setup.
+- Cloudflare Access enforcement is configured and protects `/admin/*` and `/api/admin/*` via Zero Trust policy.
 
 **Tasks:**
 1. Build Admin Orders List page:
@@ -239,7 +239,7 @@ Last updated: 2026-02-27
    - `PATCH /api/admin/products/:id`
 
 **Acceptance Criteria:**
-- [ ] Admin pages only accessible through Cloudflare Access
+- [x] Admin pages only accessible through Cloudflare Access
 - [x] Orders list shows correct status pills and filters work
 - [x] Mark Paid: order status → `paid`, payment record created, inventory adjusted, audit logged
 - [x] Pack: order status → `packed`, audit logged

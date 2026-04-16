@@ -6,7 +6,6 @@ This repository is an npm workspace monorepo.
 - `packages/web`: Vue 3 + Vite + Tailwind v4 frontend (`src/` for app code, `dist/` build output).
 - `packages/api`: Cloudflare Worker API in TypeScript (`src/index.ts`, `wrangler.toml` for env/bindings).
 - `docs/plan`: implementation plans by phase.
-- `docs/progress.md`: current delivery status.
 - `assets/`: reference design/product assets.
 
 Treat `packages/web/dist` and `.wrangler/` as generated artifacts; do not edit them directly.
@@ -70,5 +69,6 @@ This project follows **TDD (Test-Driven Development)**. Every feature and bug fi
 
 ## Documentation discipline
 - Update this @project-guidelines.md file as the project evolves.
-- Update @docs/progress.md as the project evolves.
-- Update @docs/plan/<phase>.md files as the project evolves.
+- Update @docs/plan/02-backend-architecture.md when change are made to backend architecture.
+- Update @docs/plan/03-frontend-design.md when change are made to frontend design.
+- Make sure to keep @docs/plan/01-executive-summary.md up to date with the current state of the project.

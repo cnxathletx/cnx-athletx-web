@@ -117,11 +117,14 @@
 1. Admin → visits https://cnxnature.com/admin/orders
 
 2. Cloudflare Access middleware:
-   - Checks Cf-Access-Authenticated-User-Email header
-   - If missing/invalid → 403 Forbidden
+   - Provides a signed Cloudflare Access JWT via the `CF_Authorization` cookie
+   - If missing/invalid/unauthorized → 403 Forbidden
    - If valid → forwards to Workers
 
-3. Workers → reads header, validates admin email domain (@cnxnature.com)
+3. Workers → verifies the JWT and authorizes the admin email
+   - Verifies JWT audience (`CF_ACCESS_AUD`) and extracts email claim
+   - Allows only emails in `ADMIN_EMAILS`
+   - Local dev fallback (no CF Access): when `ENVIRONMENT` is unset, `X-Admin-Email` can be used
 
 4. Workers → GET /api/admin/orders?status=pending_payment&page=1&limit=20
    - SELECT orders with filters
@@ -163,10 +166,10 @@
   - Authentication: One-time PIN via email or Google Workspace SSO
 
 - **Implementation in Workers:**
-  - Middleware checks `CF_Access_Authenticated_User_Email` header
-  - If admin route && header missing → 403
-  - Extract admin email for audit logging
-  - No session management needed (Access handles it)
+  - Middleware verifies Cloudflare Access JWT in `CF_Authorization` cookie
+  - If admin route && email claim is missing/unauthorized → 403
+  - Extract admin email from the verified JWT for audit logging
+  - Local dev fallback: when `ENVIRONMENT` is unset, `X-Admin-Email` header is accepted
 
 ---
 
@@ -261,9 +264,11 @@ CREATE TABLE orders (
     postal_code TEXT NOT NULL,
     subtotal_thb INTEGER NOT NULL, -- satang
     shipping_thb INTEGER NOT NULL, -- satang
+    discount_thb INTEGER NOT NULL DEFAULT 0, -- satang
     total_thb INTEGER NOT NULL, -- satang
     status TEXT NOT NULL DEFAULT 'pending_payment',
     idempotency_key TEXT NOT NULL UNIQUE,
+    discount_code TEXT,
     created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE SET NULL,
@@ -680,41 +685,28 @@ If status = `shipped`:
 
 #### POST /api/orders/:id/payment-proof
 
-**Purpose:** Customer submits payment proof (transaction reference or uploaded image URL).
+**Purpose:** Customer submits payment proof (transaction reference).
 
 **Auth:** Public
 
 **Method:** `POST /api/orders/:id/payment-proof`
 
-**Request Body (reference):**
+**Request Body:**
 ```json
 {
-  "proof_type": "reference",
   "proof_value": "TXN20260211083045"
 }
 ```
-
-**Request Body (image URL):**
-```json
-{
-  "proof_type": "image_url",
-  "proof_value": "https://pub-abc123.r2.dev/payment-proofs/01HN...jpg"
-}
-```
-
-**Response (200 OK):**
+ 
+**Response (201 Created):**
 ```json
 {
   "success": true,
-  "message": "Payment proof submitted successfully. We will verify within 24 hours."
 }
 ```
 
 **Validation:**
-- `proof_type` must be `reference` or `image_url`
-- `proof_value`:
-  - If `reference`: 5-100 chars, alphanumeric + basic punctuation
-  - If `image_url`: valid HTTPS URL, domain must be r2.dev or cnxnature.com
+- `proof_value`: string between 5 and 100 characters
 - Order must exist and status must be `pending_payment`
 
 **Errors:**
@@ -722,11 +714,11 @@ If status = `shipped`:
 - `404 Not Found` — order not found
 - `409 Conflict` — order status not `pending_payment`:
   ```json
-  {"error": "Order status does not allow payment proof submission", "current_status": "paid"}
+  {"error": "Payment proof can only be submitted for orders awaiting payment", "current_status": "paid"}
   ```
 - `500 Internal Server Error`
 
-**Note:** Image upload to R2 happens client-side via pre-signed URL (separate endpoint, not detailed here — v1.5 feature). This endpoint only records the final URL.
+**Note:** The endpoint currently records only `proof_type = 'reference'`.
 
 ---
 
@@ -750,9 +742,10 @@ Admin can update these values via `PUT /api/admin/settings`.
 ### Admin Endpoints (Cloudflare Access Protected)
 
 All admin endpoints require:
-- `Cf-Access-Authenticated-User-Email` header present
-- Email domain validation: `@cnxnature.com` or whitelisted admin emails
-- Returns `403 Forbidden` if missing
+- Cloudflare Access JWT validated from `CF_Authorization` cookie (audience `CF_ACCESS_AUD`)
+- Extracted email must be present in `ADMIN_EMAILS`
+- Local dev fallback: when `ENVIRONMENT` is unset, `X-Admin-Email` header is accepted
+- Returns `403 Forbidden` if missing/invalid (error: `Admin authentication required`)
 
 ---
 
@@ -766,7 +759,7 @@ All admin endpoints require:
 
 **Query Parameters:**
 - `status` (optional): filter by order status enum
-- `search` (optional): search by order ID or customer name (partial match, case-insensitive)
+- `q` (optional): search by order ID or customer name (partial match, case-insensitive)
 - `page` (optional, default `1`): page number
 - `limit` (optional, default `20`, max `100`): orders per page
 
@@ -777,18 +770,16 @@ All admin endpoints require:
     {
       "id": "01HN2P3Q4R5S6T7V8W9X0Y1Z2A",
       "customer_name": "Somchai Rattana",
-      "customer_email": "somchai@example.com",
       "total_thb": 259700,
       "status": "pending_payment",
-      "payment_proofs_count": 1,
+      "items_count": 2,
       "created_at": "2026-02-11T08:30:00Z"
     }
   ],
   "pagination": {
     "page": 1,
     "limit": 20,
-    "total_orders": 45,
-    "total_pages": 3
+    "total": 45
   }
 }
 ```
@@ -799,7 +790,7 @@ All admin endpoints require:
 - `limit` 1-100
 
 **Errors:**
-- `403 Forbidden` — missing or invalid Cloudflare Access header
+- `403 Forbidden` — missing/invalid Cloudflare Access credentials
 - `400 Bad Request` — invalid query params
 - `500 Internal Server Error`
 
@@ -821,25 +812,25 @@ All admin endpoints require:
     "customer": {
       "name": "Somchai Rattana",
       "email": "somchai@example.com",
-      "phone": "+66812345678",
-      "address": {
-        "line1": "123 Nimmanhaemin Road",
-        "line2": "Soi 5",
-        "district": "Suthep",
-        "province": "Chiang Mai",
-        "postal_code": "50200"
-      }
+      "phone": "+66812345678"
+    },
+    "shipping_address": {
+      "line1": "123 Nimmanhaemin Road",
+      "line2": "Soi 5",
+      "district": "Suthep",
+      "province": "Chiang Mai",
+      "postal_code": "50200"
     },
     "items": [
       {
         "product_name": "CNX Plant Protein 500g",
         "quantity": 2,
-        "unit_price_thb": 89900,
         "line_total_thb": 179800
       }
     ],
     "subtotal_thb": 349700,
     "shipping_thb": 10000,
+    "discount_thb": 0,
     "total_thb": 359700,
     "status": "pending_payment",
     "payment_proofs": [
@@ -850,19 +841,19 @@ All admin endpoints require:
         "submitted_at": "2026-02-11T08:45:00Z"
       }
     ],
-    "payment": null,
     "shipment": null,
     "created_at": "2026-02-11T08:30:00Z",
-    "updated_at": "2026-02-11T08:45:00Z"
-  },
-  "audit_log": [
-    {
-      "admin_email": "admin@cnxnature.com",
-      "action": "mark_paid",
-      "details": "Verified PromptPay payment",
-      "created_at": "2026-02-11T09:00:00Z"
-    }
-  ]
+    "updated_at": "2026-02-11T08:45:00Z",
+    "audit_logs": [
+      {
+        "id": 1,
+        "admin_email": "admin@cnxnature.com",
+        "action": "mark_paid",
+        "details_json": "{\"from\":\"pending_payment\",\"to\":\"paid\"}",
+        "created_at": "2026-02-11T09:00:00Z"
+      }
+    ]
+  }
 }
 ```
 
@@ -881,38 +872,28 @@ All admin endpoints require:
 
 **Method:** `POST /api/admin/orders/:id/mark-paid`
 
-**Request Body:**
+**Request Body:** (ignored)
 ```json
-{
-  "payment_method": "promptpay",
-  "payment_reference": "TXN20260211083045",
-  "notes": "Verified in Kasikorn app"
-}
+{}
 ```
 
 **Response (200 OK):**
 ```json
 {
-  "success": true,
-  "order": {
-    "id": "01HN2P3Q4R5S6T7V8W9X0Y1Z2A",
-    "status": "paid",
-    "updated_at": "2026-02-11T09:00:00Z"
-  }
+  "success": true
 }
 ```
 
 **Validation:**
 - Order must exist
 - Current status must be `pending_payment`
-- `payment_method` must be `promptpay` or `bank_transfer`
 
 **Errors:**
 - `403 Forbidden`
 - `404 Not Found`
 - `409 Conflict` — invalid status transition:
   ```json
-  {"error": "Cannot mark paid", "current_status": "shipped", "allowed_from": ["pending_payment"]}
+  {"error": "Invalid status transition", "current_status": "shipped"}
   ```
 - `500 Internal Server Error`
 
@@ -924,14 +905,14 @@ const items = await env.DB.prepare('SELECT product_id, quantity FROM order_items
 await env.DB.batch([
   env.DB.prepare('UPDATE orders SET status = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?').bind('paid', orderId),
 
-  env.DB.prepare('INSERT INTO payments (order_id, method, reference, amount_thb, verified_at, verified_by) VALUES (?, ?, ?, ?, CURRENT_TIMESTAMP, ?)').bind(orderId, 'promptpay', 'TXN...', 259700, adminEmail),
+  env.DB.prepare('INSERT INTO payments (order_id, method, reference, amount_thb, verified_at, verified_by, created_at) VALUES (?, \'bank_transfer\', NULL, ?, ?, ?, ?)').bind(orderId, order.total_thb, now, adminEmail, now),
 
   // Deduct from reserved and stock counts (one statement per order item)
   ...items.results.map(item =>
-    env.DB.prepare('UPDATE inventory SET reserved_count = reserved_count - ?, stock_count = stock_count - ? WHERE product_id = ?').bind(item.quantity, item.quantity, item.product_id)
+    env.DB.prepare('UPDATE inventory SET reserved_count = MAX(reserved_count - ?, 0), stock_count = MAX(stock_count - ?, 0) WHERE product_id = ?').bind(item.quantity, item.quantity, item.product_id)
   ),
 
-  env.DB.prepare('INSERT INTO admin_audit_log (admin_email, action, order_id, details_json) VALUES (?, ?, ?, ?)').bind(adminEmail, 'mark_paid', orderId, JSON.stringify({ notes })),
+  env.DB.prepare('INSERT INTO admin_audit_log (admin_email, action, order_id, details_json) VALUES (?, ?, ?, ?)').bind(adminEmail, 'mark_paid', orderId, JSON.stringify({ from: 'pending_payment', to: 'paid' })),
 ]);
 ```
 
@@ -950,22 +931,15 @@ await env.DB.batch([
 
 **Method:** `POST /api/admin/orders/:id/pack`
 
-**Request Body:**
+**Request Body:** (ignored)
 ```json
-{
-  "notes": "Packed by Somchai, box #123"
-}
+{}
 ```
 
 **Response (200 OK):**
 ```json
 {
-  "success": true,
-  "order": {
-    "id": "01HN2P3Q4R5S6T7V8W9X0Y1Z2A",
-    "status": "packed",
-    "updated_at": "2026-02-11T10:00:00Z"
-  }
+  "success": true
 }
 ```
 
@@ -982,7 +956,7 @@ await env.DB.batch([
 ```typescript
 await env.DB.batch([
   env.DB.prepare('UPDATE orders SET status = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?').bind('packed', orderId),
-  env.DB.prepare('INSERT INTO admin_audit_log (admin_email, action, order_id, details_json) VALUES (?, ?, ?, ?)').bind(adminEmail, 'pack', orderId, JSON.stringify({ notes })),
+  env.DB.prepare('INSERT INTO admin_audit_log (admin_email, action, order_id, details_json) VALUES (?, ?, ?, ?)').bind(adminEmail, 'pack', orderId, JSON.stringify({ from: 'paid', to: 'packed' })),
 ]);
 ```
 
@@ -1007,16 +981,7 @@ await env.DB.batch([
 **Response (200 OK):**
 ```json
 {
-  "success": true,
-  "order": {
-    "id": "01HN2P3Q4R5S6T7V8W9X0Y1Z2A",
-    "status": "shipped",
-    "shipment": {
-      "carrier": "Thailand Post",
-      "tracking_number": "RN123456789TH",
-      "shipped_at": "2026-02-11T14:00:00Z"
-    }
-  }
+  "success": true
 }
 ```
 
@@ -1054,22 +1019,15 @@ await env.DB.batch([
 
 **Method:** `POST /api/admin/orders/:id/cancel`
 
-**Request Body:**
+**Request Body:** (ignored)
 ```json
-{
-  "reason": "Customer requested cancellation"
-}
+{}
 ```
 
 **Response (200 OK):**
 ```json
 {
-  "success": true,
-  "order": {
-    "id": "01HN2P3Q4R5S6T7V8W9X0Y1Z2A",
-    "status": "cancelled",
-    "updated_at": "2026-02-11T15:00:00Z"
-  }
+  "success": true
 }
 ```
 
@@ -1093,7 +1051,7 @@ const items = await env.DB.prepare('SELECT product_id, quantity FROM order_items
 const inventoryUpdates = items.results.map(item => {
   if (order.status === 'pending_payment') {
     // Restore reserved stock only
-    return env.DB.prepare('UPDATE inventory SET reserved_count = reserved_count - ? WHERE product_id = ?')
+    return env.DB.prepare('UPDATE inventory SET reserved_count = MAX(reserved_count - ?, 0), updated_at = CURRENT_TIMESTAMP WHERE product_id = ?')
       .bind(item.quantity, item.product_id);
   } else {
     // paid or packed: restore committed stock (was already deducted from stock_count)
@@ -1105,7 +1063,7 @@ const inventoryUpdates = items.results.map(item => {
 await env.DB.batch([
   env.DB.prepare('UPDATE orders SET status = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?').bind('cancelled', orderId),
   ...inventoryUpdates,
-  env.DB.prepare('INSERT INTO admin_audit_log (admin_email, action, order_id, details_json) VALUES (?, ?, ?, ?)').bind(adminEmail, 'cancel', orderId, JSON.stringify({ reason })),
+  env.DB.prepare('INSERT INTO admin_audit_log (admin_email, action, order_id, details_json) VALUES (?, ?, ?, ?)').bind(adminEmail, 'cancel', orderId, JSON.stringify({ from: order.status, to: 'cancelled' })),
 ]);
 ```
 
@@ -1235,7 +1193,7 @@ CANCELLATION PATH (from any pre-shipped state):
 
 ```
 1. Admin opens dashboard → GET /api/admin/orders?status=pending_payment
-2. Sees order #01HN... with total ฿2,597.00, payment_proofs_count = 1
+2. Sees order #01HN... with total ฿2,597.00, items_count = 2
 3. Clicks order → GET /api/admin/orders/01HN...
 4. Views payment proof:
    - proof_type: "reference"
@@ -1251,15 +1209,11 @@ CANCELLATION PATH (from any pre-shipped state):
 
 8. Admin clicks "Mark Paid" button in UI
 9. UI → POST /api/admin/orders/01HN.../mark-paid
-   Body: {
-     "payment_method": "promptpay",
-     "payment_reference": "TXN20260211083045",
-     "notes": "Verified ฿2,597.00 in Kasikorn app, ref matches"
-   }
+   Body: {} (ignored by backend)
 
 10. Workers:
     a. Updates order status to 'paid'
-    b. Inserts payment record (verified_by = admin@cnxnature.com)
+    b. Inserts payment record (method = `bank_transfer`, reference = null, verified_by from Access admin email)
     c. Deducts inventory (reserved → committed)
     d. Logs audit trail
     e. Sends "Payment Confirmed" email to customer
@@ -1292,7 +1246,7 @@ STEP 1: PACKING (physical)
 STEP 2: MARK PACKED (system)
 ├─ Admin clicks "Mark Packed" in dashboard
 ├─ POST /api/admin/orders/01HN.../pack
-├─ Body: {"notes": "Packed by Somchai, box #123"}
+├─ Body: {} (ignored by backend)
 └─ Order status → 'packed'
 
 STEP 3: SHIPPING (physical)
@@ -1367,7 +1321,7 @@ SCENARIO D: Cannot cancel shipped orders
 **Every admin action is logged to `admin_audit_log` table.**
 
 **Captured fields:**
-- `admin_email` — from `Cf-Access-Authenticated-User-Email` header
+- `admin_email` — from verified Cloudflare Access email claim in `CF_Authorization` cookie (or `X-Admin-Email` in local dev)
 - `action` — enum: `mark_paid`, `pack`, `ship`, `cancel`, `inventory_adjust`
 - `order_id` — related order (null for inventory adjustments)
 - `details_json` — JSON blob with context (notes, payment ref, tracking number, etc.)
@@ -1381,7 +1335,7 @@ SCENARIO D: Cannot cancel shipped orders
     "admin_email": "admin@cnxnature.com",
     "action": "mark_paid",
     "order_id": "01HN2P3Q4R5S6T7V8W9X0Y1Z2A",
-    "details_json": "{\"payment_method\":\"promptpay\",\"reference\":\"TXN20260211083045\",\"notes\":\"Verified in Kasikorn app\"}",
+    "details_json": "{\"from\":\"pending_payment\",\"to\":\"paid\"}",
     "created_at": "2026-02-11T09:00:00Z"
   },
   {
@@ -1389,7 +1343,7 @@ SCENARIO D: Cannot cancel shipped orders
     "admin_email": "fulfillment@cnxnature.com",
     "action": "pack",
     "order_id": "01HN2P3Q4R5S6T7V8W9X0Y1Z2A",
-    "details_json": "{\"notes\":\"Packed by Somchai, box #123\"}",
+    "details_json": "{\"from\":\"paid\",\"to\":\"packed\"}",
     "created_at": "2026-02-11T10:00:00Z"
   },
   {
@@ -1405,8 +1359,7 @@ SCENARIO D: Cannot cancel shipped orders
 
 **Audit log UI (admin dashboard):**
 - Per-order audit trail: shown on order detail page
-- Global audit log: `/admin/audit` page with filters (admin_email, action, date range)
-- Export to CSV for compliance/review
+- Per-order audit trail is available in the admin order detail view
 
 ---
 
@@ -1836,11 +1789,8 @@ export class ResendEmailService implements EmailService {
 ```
 
 **Manual Resend (Admin Dashboard):**
-- Admin views order detail page
-- Sees email_logs table showing `order_created: failed`
-- Clicks "Resend Email" button
-- UI calls `POST /api/admin/orders/:id/resend-email` with `{event: 'order_created'}`
-- Workers re-sends email, updates log
+- Not implemented yet (there is no `/api/admin/orders/:id/resend-email` endpoint in the current backend)
+- Failed email deliveries are recorded in `email_logs` for admin review
 
 **Monitoring:**
 - Admin dashboard shows email failure count per day
@@ -1995,14 +1945,13 @@ describe('Order Lifecycle Integration', () => {
     // 2. Submit payment proof
     await mf.dispatchFetch(`/api/orders/${order_id}/payment-proof`, {
       method: 'POST',
-      body: JSON.stringify({ proof_type: 'reference', proof_value: 'TXN123' }),
+      body: JSON.stringify({ proof_value: 'TXN123' }),
     });
 
     // 3. Admin marks paid
     await mf.dispatchFetch(`/api/admin/orders/${order_id}/mark-paid`, {
       method: 'POST',
-      headers: { 'Cf-Access-Authenticated-User-Email': 'admin@cnxnature.com' },
-      body: JSON.stringify({ payment_method: 'promptpay', payment_reference: 'TXN123' }),
+      headers: { 'X-Admin-Email': 'jdelaire@gmail.com' },
     });
 
     // Verify inventory deducted
@@ -2013,14 +1962,13 @@ describe('Order Lifecycle Integration', () => {
     // 4. Pack
     await mf.dispatchFetch(`/api/admin/orders/${order_id}/pack`, {
       method: 'POST',
-      headers: { 'Cf-Access-Authenticated-User-Email': 'admin@cnxnature.com' },
-      body: JSON.stringify({ notes: 'Test pack' }),
+      headers: { 'X-Admin-Email': 'jdelaire@gmail.com' },
     });
 
     // 5. Ship
     await mf.dispatchFetch(`/api/admin/orders/${order_id}/ship`, {
       method: 'POST',
-      headers: { 'Cf-Access-Authenticated-User-Email': 'admin@cnxnature.com' },
+      headers: { 'X-Admin-Email': 'jdelaire@gmail.com' },
       body: JSON.stringify({ carrier: 'Thailand Post', tracking_number: 'RN123' }),
     });
 
@@ -2059,8 +2007,8 @@ describe('Order Lifecycle Integration', () => {
    - Resend API throws error → order still created, email_logs shows failure
 
 6. **Admin Auth:**
-   - Missing `Cf-Access-Authenticated-User-Email` → 403
-   - Valid header → admin action succeeds, audit log created
+   - Missing/invalid `CF_Authorization` cookie (or missing `X-Admin-Email` in local dev) → 403
+   - Authorized admin email → admin action succeeds, audit log created
 
 ---
 

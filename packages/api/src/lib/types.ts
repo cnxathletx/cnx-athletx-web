@@ -332,6 +332,7 @@ export interface ProductLineRow {
   how_to_use: string
   who_is_for: string
   regulatory_info: string
+  translations_json: string
   created_at: string
   updated_at: string
 }
@@ -344,6 +345,7 @@ export interface AdminCreateProductLineBody {
   how_to_use: string
   who_is_for: string
   regulatory_info: string
+  translations_json: string
 }
 
 export interface AdminUpdateProductLineBody {
@@ -354,6 +356,7 @@ export interface AdminUpdateProductLineBody {
   how_to_use?: string
   who_is_for?: string
   regulatory_info?: string
+  translations_json?: string
 }
 
 // --- Admin Discount Code types ---

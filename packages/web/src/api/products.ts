@@ -1,5 +1,16 @@
 import { apiUrl } from './client'
 import { formatMoney } from '../utils/money'
+import i18n from '../i18n'
+
+function currentLocale(): string {
+  try {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const val = (i18n.global.locale as any).value ?? i18n.global.locale
+    return typeof val === 'string' ? val : 'en'
+  } catch {
+    return 'en'
+  }
+}
 
 export interface ApiProductScreenshot {
   id: number
@@ -26,14 +37,14 @@ export interface ApiProduct {
 }
 
 export async function fetchProducts(): Promise<ApiProduct[]> {
-  const res = await fetch(apiUrl('/api/products'))
+  const res = await fetch(apiUrl(`/api/products?locale=${encodeURIComponent(currentLocale())}`))
   if (!res.ok) throw new Error('Failed to fetch products')
   const data = (await res.json()) as { products: ApiProduct[] }
   return data.products
 }
 
 export async function fetchProductBySlug(slug: string): Promise<ApiProduct> {
-  const res = await fetch(apiUrl(`/api/products/${encodeURIComponent(slug)}`))
+  const res = await fetch(apiUrl(`/api/products/${encodeURIComponent(slug)}?locale=${encodeURIComponent(currentLocale())}`))
   if (res.status === 404) throw new Error('Product not found')
   if (!res.ok) throw new Error('Failed to fetch product')
   const data = (await res.json()) as { product: ApiProduct }

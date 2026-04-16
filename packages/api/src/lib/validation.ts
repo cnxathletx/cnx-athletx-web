@@ -671,6 +671,50 @@ export function validateUpdateDiscountBody(body: unknown): { errors: ValidationE
   return { errors: [], data }
 }
 
+export const SUPPORTED_PRODUCT_LINE_LOCALES = ['en', 'th'] as const
+const TRANSLATABLE_FIELDS = ['name', 'nutrition_json', 'ingredients', 'how_to_use', 'who_is_for', 'regulatory_info'] as const
+const MAX_TRANSLATIONS_JSON_LENGTH = 50000
+
+function validateTranslationsJson(raw: string): ValidationError | null {
+  if (raw.length > MAX_TRANSLATIONS_JSON_LENGTH) {
+    return { field: 'translations_json', message: `translations_json must be ${MAX_TRANSLATIONS_JSON_LENGTH} characters or fewer` }
+  }
+  let parsed: unknown
+  try {
+    parsed = JSON.parse(raw)
+  } catch {
+    return { field: 'translations_json', message: 'translations_json must be valid JSON' }
+  }
+  if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) {
+    return { field: 'translations_json', message: 'translations_json must be an object keyed by locale' }
+  }
+  for (const [locale, entry] of Object.entries(parsed as Record<string, unknown>)) {
+    if (!(SUPPORTED_PRODUCT_LINE_LOCALES as readonly string[]).includes(locale)) {
+      return { field: 'translations_json', message: `unsupported locale "${locale}"` }
+    }
+    if (!entry || typeof entry !== 'object' || Array.isArray(entry)) {
+      return { field: 'translations_json', message: `translations_json.${locale} must be an object` }
+    }
+    for (const [key, val] of Object.entries(entry as Record<string, unknown>)) {
+      if (!(TRANSLATABLE_FIELDS as readonly string[]).includes(key)) {
+        return { field: 'translations_json', message: `unsupported translation field "${key}" in ${locale}` }
+      }
+      if (typeof val !== 'string') {
+        return { field: 'translations_json', message: `translations_json.${locale}.${key} must be a string` }
+      }
+      if (val.length > 5000) {
+        return { field: 'translations_json', message: `translations_json.${locale}.${key} must be 5000 characters or fewer` }
+      }
+      if (key === 'nutrition_json' && val.trim() !== '') {
+        try { JSON.parse(val) } catch {
+          return { field: 'translations_json', message: `translations_json.${locale}.nutrition_json must be valid JSON` }
+        }
+      }
+    }
+  }
+  return null
+}
+
 export function validateCreateProductLineBody(body: unknown): { errors: ValidationError[]; data: AdminCreateProductLineBody | null } {
   const errors: ValidationError[] = []
 
@@ -686,6 +730,7 @@ export function validateCreateProductLineBody(body: unknown): { errors: Validati
   const howToUse = typeof b.how_to_use === 'string' ? b.how_to_use.trim() : ''
   const whoIsFor = typeof b.who_is_for === 'string' ? b.who_is_for.trim() : ''
   const regulatoryInfo = typeof b.regulatory_info === 'string' ? b.regulatory_info.trim() : ''
+  const translationsJson = typeof b.translations_json === 'string' ? b.translations_json.trim() : '{}'
 
   if (name.length < 2 || name.length > 120) {
     errors.push({ field: 'name', message: 'name must be between 2 and 120 characters' })
@@ -710,6 +755,8 @@ export function validateCreateProductLineBody(body: unknown): { errors: Validati
   if (regulatoryInfo.length > 5000) {
     errors.push({ field: 'regulatory_info', message: 'regulatory_info must be 5000 characters or fewer' })
   }
+  const tErr = validateTranslationsJson(translationsJson)
+  if (tErr) errors.push(tErr)
 
   if (errors.length > 0) {
     return { errors, data: null }
@@ -717,7 +764,7 @@ export function validateCreateProductLineBody(body: unknown): { errors: Validati
 
   return {
     errors: [],
-    data: { name, slug, nutrition_json: nutritionJson, ingredients, how_to_use: howToUse, who_is_for: whoIsFor, regulatory_info: regulatoryInfo },
+    data: { name, slug, nutrition_json: nutritionJson, ingredients, how_to_use: howToUse, who_is_for: whoIsFor, regulatory_info: regulatoryInfo, translations_json: translationsJson },
   }
 }
 
@@ -729,7 +776,7 @@ export function validateUpdateProductLineBody(body: unknown): { errors: Validati
   }
 
   const b = body as Record<string, unknown>
-  const allowed = ['name', 'slug', 'nutrition_json', 'ingredients', 'how_to_use', 'who_is_for', 'regulatory_info']
+  const allowed = ['name', 'slug', 'nutrition_json', 'ingredients', 'how_to_use', 'who_is_for', 'regulatory_info', 'translations_json']
   const provided = allowed.filter((key) => key in b)
 
   if (provided.length === 0) {
@@ -826,6 +873,17 @@ export function validateUpdateProductLineBody(body: unknown): { errors: Validati
       } else {
         data.regulatory_info = regulatoryInfo
       }
+    }
+  }
+
+  if ('translations_json' in b) {
+    if (typeof b.translations_json !== 'string') {
+      errors.push({ field: 'translations_json', message: 'translations_json must be a string' })
+    } else {
+      const translationsJson = b.translations_json.trim()
+      const tErr = validateTranslationsJson(translationsJson)
+      if (tErr) errors.push(tErr)
+      else data.translations_json = translationsJson
     }
   }
 

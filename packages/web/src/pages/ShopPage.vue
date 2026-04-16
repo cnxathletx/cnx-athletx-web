@@ -1,12 +1,12 @@
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import ProductCard from '../components/ui/ProductCard.vue'
 import { fetchProducts, formatPrice, formatWeight, type ApiProduct } from '../api/products'
 import { fetchPublicSettings } from '../api/settings'
 import { useHead } from '../composables/useHead'
 
-const { t } = useI18n({ useScope: 'global' })
+const { t, locale } = useI18n({ useScope: 'global' })
 
 const freeShippingThresholdSatang = ref<number>(0)
 const freeShippingLabel = computed(() => {
@@ -25,7 +25,9 @@ const products = ref<ApiProduct[]>([])
 const loading = ref(true)
 const error = ref('')
 
-onMounted(async () => {
+async function loadProducts() {
+  loading.value = true
+  error.value = ''
   try {
     const [productList, settings] = await Promise.all([
       fetchProducts(),
@@ -38,7 +40,10 @@ onMounted(async () => {
   } finally {
     loading.value = false
   }
-})
+}
+
+onMounted(loadProducts)
+watch(locale, loadProducts)
 </script>
 
 <template>

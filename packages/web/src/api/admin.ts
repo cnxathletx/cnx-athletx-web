@@ -128,6 +128,7 @@ export interface AdminProductLine {
   how_to_use: string
   who_is_for: string
   regulatory_info: string
+  translations_json: string
   created_at: string
   updated_at: string
 }
@@ -140,6 +141,7 @@ export interface CreateProductLinePayload {
   how_to_use: string
   who_is_for: string
   regulatory_info: string
+  translations_json: string
 }
 
 export interface UpdateProductLinePayload {
@@ -150,6 +152,7 @@ export interface UpdateProductLinePayload {
   how_to_use?: string
   who_is_for?: string
   regulatory_info?: string
+  translations_json?: string
 }
 
 interface AdminApiError {

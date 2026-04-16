@@ -9,6 +9,10 @@ registerMessageCompiler(compile)
 registerMessageResolver(resolveValue)
 registerLocaleFallbacker(fallbackWithLocaleChain)
 
+export const SUPPORTED_LOCALES = ['en', 'th'] as const
+export type SupportedLocale = (typeof SUPPORTED_LOCALES)[number]
+export const LOCALE_LABELS: Record<SupportedLocale, string> = { en: 'English', th: 'ไทย' }
+
 const STORAGE_KEY = 'cnx-locale'
 
 function getSavedLocale(): string {

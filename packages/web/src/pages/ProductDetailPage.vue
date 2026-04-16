@@ -16,7 +16,7 @@ import { useCartStore } from '../stores/cart'
 import { useHead } from '../composables/useHead'
 import { useJsonLd } from '../composables/useJsonLd'
 
-const { t } = useI18n({ useScope: 'global' })
+const { t, locale } = useI18n({ useScope: 'global' })
 
 const cart = useCartStore()
 
@@ -232,6 +232,11 @@ watch(
   },
   { immediate: true }
 )
+
+watch(locale, () => {
+  const slug = route.params.slug as string
+  if (slug) loadProduct(slug)
+})
 </script>
 
 <template>

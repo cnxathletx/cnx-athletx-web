@@ -4,6 +4,7 @@ import { fetchAdminOrders, type AdminOrderListItem, AdminApiErrorResponse } from
 import PrimaryButton from '../components/ui/PrimaryButton.vue'
 import SecondaryButton from '../components/ui/SecondaryButton.vue'
 import AdminNav from '../components/admin/AdminNav.vue'
+import { formatMoney } from '../utils/money'
 
 const loading = ref(true)
 const error = ref('')
@@ -174,7 +175,7 @@ onMounted(async () => {
                   {{ statusLabels[row.status] || row.status }}
                 </span>
               </td>
-              <td class="px-4 py-3 text-right font-semibold text-foreground">฿{{ row.total_thb.toLocaleString() }}</td>
+              <td class="px-4 py-3 text-right font-semibold text-foreground">{{ formatMoney(row.total_thb) }}</td>
               <td class="px-4 py-3 text-muted">{{ formatDate(row.created_at) }}</td>
             </tr>
           </tbody>

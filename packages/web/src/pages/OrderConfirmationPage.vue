@@ -8,6 +8,7 @@ import PrimaryButton from '../components/ui/PrimaryButton.vue'
 import SecondaryButton from '../components/ui/SecondaryButton.vue'
 import CheckoutStepper from '../components/ui/CheckoutStepper.vue'
 import { useAuthStore } from '../stores/auth'
+import { formatMoney } from '../utils/money'
 
 const { t } = useI18n({ useScope: 'global' })
 
@@ -122,7 +123,7 @@ async function sendAccountLink() {
                 <p class="text-xs text-muted">{{ t('orderConfirmation.qty', { qty: item.quantity }) }}</p>
               </div>
               <p class="text-sm font-semibold text-foreground">
-                ฿{{ item.line_total_thb.toLocaleString() }}
+                {{ formatMoney(item.line_total_thb) }}
               </p>
             </div>
           </div>
@@ -131,15 +132,15 @@ async function sendAccountLink() {
           <div class="border-t border-sand pt-4 space-y-2 text-sm">
             <div class="flex justify-between">
               <span class="text-muted">{{ t('orderConfirmation.subtotal') }}</span>
-              <span class="font-semibold text-foreground">฿{{ order.subtotal_thb.toLocaleString() }}</span>
+              <span class="font-semibold text-foreground">{{ formatMoney(order.subtotal_thb) }}</span>
             </div>
             <div class="flex justify-between">
               <span class="text-muted">{{ t('orderConfirmation.shipping') }}</span>
-              <span class="font-semibold text-foreground">฿{{ order.shipping_thb.toLocaleString() }}</span>
+              <span class="font-semibold text-foreground">{{ formatMoney(order.shipping_thb) }}</span>
             </div>
             <div v-if="order.discount_thb > 0" class="flex justify-between">
               <span class="text-muted">{{ t('orderConfirmation.discount') }}</span>
-              <span class="font-semibold text-primary">-฿{{ order.discount_thb.toLocaleString() }}</span>
+              <span class="font-semibold text-primary">-{{ formatMoney(order.discount_thb) }}</span>
             </div>
           </div>
 
@@ -147,7 +148,7 @@ async function sendAccountLink() {
             <div class="flex justify-between">
               <span class="text-lg font-bold text-foreground">{{ t('orderConfirmation.total') }}</span>
               <span class="text-lg font-bold text-foreground">
-                ฿{{ order.total_thb.toLocaleString() }}
+                {{ formatMoney(order.total_thb) }}
               </span>
             </div>
           </div>

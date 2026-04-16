@@ -7,6 +7,7 @@ import PrimaryButton from '../components/ui/PrimaryButton.vue'
 import SecondaryButton from '../components/ui/SecondaryButton.vue'
 import CheckoutStepper from '../components/ui/CheckoutStepper.vue'
 import PromptPayQR from '../components/ui/PromptPayQR.vue'
+import { formatMoney, satangToThb } from '../utils/money'
 
 const { t } = useI18n({ useScope: 'global' })
 
@@ -62,14 +63,14 @@ onMounted(async () => {
 })
 
 const amountDisplay = computed(() => {
-  if (checkoutResult.value) return `฿${checkoutResult.value.total_thb.toLocaleString()}`
-  if (order.value) return `฿${order.value.total_thb.toLocaleString()}`
+  if (checkoutResult.value) return formatMoney(checkoutResult.value.total_thb)
+  if (order.value) return formatMoney(order.value.total_thb)
   return ''
 })
 
 const amountThb = computed(() => {
-  if (checkoutResult.value) return checkoutResult.value.total_thb / 100
-  if (order.value) return order.value.total_thb / 100
+  if (checkoutResult.value) return satangToThb(checkoutResult.value.total_thb)
+  if (order.value) return satangToThb(order.value.total_thb)
   return undefined
 })
 
@@ -353,7 +354,7 @@ async function handleSubmitProof() {
                     <p class="text-xs text-muted">{{ t('payment.qty', { qty: item.quantity }) }}</p>
                   </div>
                   <p class="text-sm font-semibold text-foreground">
-                    ฿{{ item.line_total_thb.toLocaleString() }}
+                    {{ formatMoney(item.line_total_thb) }}
                   </p>
                 </div>
               </div>
@@ -361,15 +362,15 @@ async function handleSubmitProof() {
               <div class="border-t border-sand pt-4 space-y-2 text-sm">
                 <div class="flex justify-between">
                   <span class="text-muted">{{ t('payment.subtotal') }}</span>
-                  <span class="font-semibold text-foreground">฿{{ order.subtotal_thb.toLocaleString() }}</span>
+                  <span class="font-semibold text-foreground">{{ formatMoney(order.subtotal_thb) }}</span>
                 </div>
                 <div class="flex justify-between">
                   <span class="text-muted">{{ t('payment.shipping') }}</span>
-                  <span class="font-semibold text-foreground">฿{{ order.shipping_thb.toLocaleString() }}</span>
+                  <span class="font-semibold text-foreground">{{ formatMoney(order.shipping_thb) }}</span>
                 </div>
                 <div v-if="order.discount_thb > 0" class="flex justify-between">
                   <span class="text-muted">{{ t('payment.discount') }}</span>
-                  <span class="font-semibold text-primary">-฿{{ order.discount_thb.toLocaleString() }}</span>
+                  <span class="font-semibold text-primary">-{{ formatMoney(order.discount_thb) }}</span>
                 </div>
               </div>
 

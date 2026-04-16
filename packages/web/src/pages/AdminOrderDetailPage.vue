@@ -13,6 +13,7 @@ import {
 import PrimaryButton from '../components/ui/PrimaryButton.vue'
 import SecondaryButton from '../components/ui/SecondaryButton.vue'
 import AdminNav from '../components/admin/AdminNav.vue'
+import { formatMoney } from '../utils/money'
 
 const route = useRoute()
 const orderId = route.params.id as string
@@ -132,9 +133,6 @@ function formatDate(value: string): string {
   })
 }
 
-function formatMoney(value: number): string {
-  return `฿${(value / 100).toLocaleString()}`
-}
 
 function prettyAuditDetails(raw: string | null): string {
   if (!raw) return '-'

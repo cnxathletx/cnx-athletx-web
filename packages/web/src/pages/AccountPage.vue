@@ -16,6 +16,7 @@ import { useAuthStore } from '../stores/auth'
 import { useHead } from '../composables/useHead'
 import { useThaiAddress } from '../composables/useThaiAddress'
 import { useI18n } from 'vue-i18n'
+import { formatMoney } from '../utils/money'
 
 const { t } = useI18n({ useScope: 'global' })
 
@@ -388,7 +389,7 @@ onMounted(async () => {
                   <span :class="['px-3 py-1 rounded-full text-xs font-semibold', statusClasses[order.status] || 'bg-muted/15 text-muted']">
                     {{ statusLabels[order.status] || order.status }}
                   </span>
-                  <span class="text-sm font-semibold text-foreground">฿{{ order.total_thb.toLocaleString() }}</span>
+                  <span class="text-sm font-semibold text-foreground">{{ formatMoney(order.total_thb) }}</span>
                 </div>
               </div>
               <p class="text-xs text-muted mt-2">{{ t('account.itemsCount', { count: order.items_count }) }}</p>

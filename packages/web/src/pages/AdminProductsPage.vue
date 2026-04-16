@@ -18,6 +18,7 @@ import {
 import PrimaryButton from '../components/ui/PrimaryButton.vue'
 import SecondaryButton from '../components/ui/SecondaryButton.vue'
 import AdminNav from '../components/admin/AdminNav.vue'
+import { formatMoney } from '../utils/money'
 
 const IMAGE_UPLOAD_MAX_BYTES = 1_500_000
 const ALLOWED_IMAGE_TYPES = new Set(['image/jpeg', 'image/png', 'image/webp', 'image/gif'])
@@ -291,9 +292,6 @@ async function toggleArchive(product: AdminProduct) {
   }
 }
 
-function formatMoney(value: number): string {
-  return `฿${(value / 100).toLocaleString()}`
-}
 
 function applyScreenshots(productId: number, screenshots: AdminProductScreenshot[]) {
   products.value = products.value.map((p) => (p.id === productId ? { ...p, screenshots } : p))

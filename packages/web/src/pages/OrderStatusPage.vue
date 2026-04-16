@@ -5,6 +5,7 @@ import { useI18n } from 'vue-i18n'
 import { fetchOrder, type ApiOrder } from '../api/checkout'
 import SecondaryButton from '../components/ui/SecondaryButton.vue'
 import { useHead } from '../composables/useHead'
+import { formatMoney } from '../utils/money'
 
 const { t } = useI18n({ useScope: 'global' })
 
@@ -248,7 +249,7 @@ const paymentProofDate = computed(() => {
                 <p class="text-xs text-muted">{{ t('orderStatus.qty', { qty: item.quantity }) }}</p>
               </div>
               <p class="text-sm font-semibold text-foreground">
-                ฿{{ item.line_total_thb.toLocaleString() }}
+                {{ formatMoney(item.line_total_thb) }}
               </p>
             </div>
           </div>
@@ -256,15 +257,15 @@ const paymentProofDate = computed(() => {
           <div class="border-t border-sand pt-4 space-y-2 text-sm">
             <div class="flex justify-between">
               <span class="text-muted">{{ t('orderStatus.subtotal') }}</span>
-              <span class="font-semibold text-foreground">฿{{ order.subtotal_thb.toLocaleString() }}</span>
+              <span class="font-semibold text-foreground">{{ formatMoney(order.subtotal_thb) }}</span>
             </div>
             <div class="flex justify-between">
               <span class="text-muted">{{ t('orderStatus.shipping') }}</span>
-              <span class="font-semibold text-foreground">฿{{ order.shipping_thb.toLocaleString() }}</span>
+              <span class="font-semibold text-foreground">{{ formatMoney(order.shipping_thb) }}</span>
             </div>
             <div v-if="order.discount_thb > 0" class="flex justify-between">
               <span class="text-muted">{{ t('orderStatus.discount') }}</span>
-              <span class="font-semibold text-primary">-฿{{ order.discount_thb.toLocaleString() }}</span>
+              <span class="font-semibold text-primary">-{{ formatMoney(order.discount_thb) }}</span>
             </div>
           </div>
 
@@ -272,7 +273,7 @@ const paymentProofDate = computed(() => {
             <div class="flex justify-between">
               <span class="text-lg font-bold text-foreground">{{ t('orderStatus.total') }}</span>
               <span class="text-lg font-bold text-foreground">
-                ฿{{ order.total_thb.toLocaleString() }}
+                {{ formatMoney(order.total_thb) }}
               </span>
             </div>
           </div>

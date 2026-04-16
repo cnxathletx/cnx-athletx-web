@@ -1,4 +1,5 @@
 import { apiUrl } from './client'
+import { formatMoney } from '../utils/money'
 
 export interface ApiProductScreenshot {
   id: number
@@ -39,10 +40,7 @@ export async function fetchProductBySlug(slug: string): Promise<ApiProduct> {
   return data.product
 }
 
-export function formatPrice(satang: number): string {
-  const thb = satang / 100
-  return `฿${thb.toLocaleString()}`
-}
+export const formatPrice = formatMoney
 
 export function formatWeight(grams: number): string {
   return grams >= 1000 ? `${grams / 1000}kg` : `${grams}g`

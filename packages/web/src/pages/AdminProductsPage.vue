@@ -15,13 +15,82 @@ import {
   type UpdateAdminProductPayload,
   AdminApiErrorResponse,
 } from '../api/admin'
+import { SUPPORTED_LOCALES, LOCALE_LABELS, type SupportedLocale } from '../i18n'
 import PrimaryButton from '../components/ui/PrimaryButton.vue'
 import SecondaryButton from '../components/ui/SecondaryButton.vue'
 import AdminNav from '../components/admin/AdminNav.vue'
 import { formatMoney } from '../utils/money'
 
+const PRIMARY_LOCALE: SupportedLocale = 'en'
+
 const IMAGE_UPLOAD_MAX_BYTES = 1_500_000
 const ALLOWED_IMAGE_TYPES = new Set(['image/jpeg', 'image/png', 'image/webp', 'image/gif'])
+
+interface LocaleBuffer {
+  name: string
+  description: string
+}
+
+function emptyLocaleBuffer(): LocaleBuffer {
+  return { name: '', description: '' }
+}
+
+function emptyLocaleMap(): Record<SupportedLocale, LocaleBuffer> {
+  const map = {} as Record<SupportedLocale, LocaleBuffer>
+  for (const l of SUPPORTED_LOCALES) map[l] = emptyLocaleBuffer()
+  return map
+}
+
+function packTranslationsJson(buffers: Record<SupportedLocale, LocaleBuffer>): string {
+  const out: Record<string, Record<string, string>> = {}
+  for (const locale of SUPPORTED_LOCALES) {
+    const entry: Record<string, string> = {}
+    const name = buffers[locale].name.trim()
+    const description = buffers[locale].description.trim()
+    if (name) entry.name = name
+    if (description) entry.description = description
+    if (Object.keys(entry).length > 0) out[locale] = entry
+  }
+  return JSON.stringify(out)
+}
+
+function loadBuffersFromProduct(product: AdminProduct): Record<SupportedLocale, LocaleBuffer> {
+  const buffers = emptyLocaleMap()
+  let parsed: Record<string, Partial<{ name: string; description: string }>> = {}
+  try {
+    const raw = product.translations_json ? JSON.parse(product.translations_json) : {}
+    if (raw && typeof raw === 'object' && !Array.isArray(raw)) parsed = raw
+  } catch {
+    // ignore
+  }
+  for (const locale of SUPPORTED_LOCALES) {
+    const entry = parsed[locale] || {}
+    const base = locale === PRIMARY_LOCALE
+    buffers[locale] = {
+      name: typeof entry.name === 'string' ? entry.name : (base ? product.name : ''),
+      description: typeof entry.description === 'string' ? entry.description : (base ? product.description : ''),
+    }
+  }
+  return buffers
+}
+
+function parseTranslations(raw: string): Record<string, Record<string, string>> {
+  try {
+    const parsed = JSON.parse(raw || '{}')
+    if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) return parsed as Record<string, Record<string, string>>
+  } catch {
+    // ignore
+  }
+  return {}
+}
+
+function displayField(product: AdminProduct, locale: SupportedLocale, field: 'name' | 'description'): string {
+  const translations = parseTranslations(product.translations_json)
+  const t = translations[locale]?.[field]
+  if (typeof t === 'string' && t.trim() !== '') return t
+  if (locale === PRIMARY_LOCALE) return product[field]
+  return ''
+}
 
 const loading = ref(true)
 const error = ref('')
@@ -45,10 +114,18 @@ const screenshotUploading = ref(false)
 const screenshotError = ref('')
 const screenshotBusyId = ref<number | null>(null)
 
-const createForm = reactive<CreateAdminProductPayload>({
+interface CreateFormShape {
+  slug: string
+  price_thb: number
+  weight_g: number
+  image_url: string
+  active: boolean
+  stock_count: number
+  product_line_id: number | null
+}
+
+const createForm = reactive<CreateFormShape>({
   slug: '',
-  name: '',
-  description: '',
   price_thb: 899,
   weight_g: 500,
   image_url: '',
@@ -57,10 +134,21 @@ const createForm = reactive<CreateAdminProductPayload>({
   product_line_id: null,
 })
 
-const editForm = reactive<Required<UpdateAdminProductPayload>>({
+const createActiveLocale = ref<SupportedLocale>(PRIMARY_LOCALE)
+const createBuffers = reactive<Record<SupportedLocale, LocaleBuffer>>(emptyLocaleMap())
+const createBuffer = computed(() => createBuffers[createActiveLocale.value])
+
+interface EditFormShape {
+  slug: string
+  price_thb: number
+  weight_g: number
+  image_url: string
+  active: boolean
+  product_line_id: number | null
+}
+
+const editForm = reactive<EditFormShape>({
   slug: '',
-  name: '',
-  description: '',
   price_thb: 0,
   weight_g: 0,
   image_url: '',
@@ -68,14 +156,27 @@ const editForm = reactive<Required<UpdateAdminProductPayload>>({
   product_line_id: null,
 })
 
+const editActiveLocale = ref<SupportedLocale>(PRIMARY_LOCALE)
+const editBuffers = reactive<Record<SupportedLocale, LocaleBuffer>>(emptyLocaleMap())
+const editBuffer = computed(() => editBuffers[editActiveLocale.value])
+
 const activeProducts = computed(() => products.value.filter((p) => !p.archived).sort((a, b) => a.id - b.id))
 const archivedProducts = computed(() => products.value.filter((p) => p.archived).sort((a, b) => a.id - b.id))
 const showArchived = ref(false)
 const createImagePreview = computed(() => createForm.image_url.trim())
 const editImagePreview = computed(() => editForm.image_url.trim())
-const showCreatePreview = computed(() => createForm.name.trim() || createImagePreview.value)
+const showCreatePreview = computed(() => createBuffer.value.name.trim() || createImagePreview.value)
 const createPreviewWeight = computed(() => createForm.weight_g ? `${createForm.weight_g >= 1000 ? `${createForm.weight_g / 1000}kg` : `${createForm.weight_g}g`}` : '')
 const createPreviewPrice = computed(() => createForm.price_thb ? `฿${Number(createForm.price_thb).toLocaleString()}` : '฿0')
+
+// Per-product display-locale selector
+const displayLocales = reactive<Record<number, SupportedLocale>>({})
+function getDisplayLocale(id: number): SupportedLocale {
+  return displayLocales[id] ?? PRIMARY_LOCALE
+}
+function setDisplayLocale(id: number, locale: SupportedLocale) {
+  displayLocales[id] = locale
+}
 
 function getProductLineName(id: number | null): string {
   if (id === null) return 'None'
@@ -103,8 +204,6 @@ async function loadProducts() {
 
 function resetCreateForm() {
   createForm.slug = ''
-  createForm.name = ''
-  createForm.description = ''
   createForm.price_thb = 899
   createForm.weight_g = 500
   createForm.image_url = ''
@@ -112,6 +211,8 @@ function resetCreateForm() {
   createForm.stock_count = 0
   createForm.product_line_id = null
   createImageError.value = ''
+  createActiveLocale.value = PRIMARY_LOCALE
+  for (const l of SUPPORTED_LOCALES) createBuffers[l] = emptyLocaleBuffer()
 }
 
 function validateImageFile(file: File): string | null {
@@ -200,15 +301,20 @@ async function submitCreate() {
   createLoading.value = true
 
   try {
-    const product = await createAdminProduct({
-      ...createForm,
+    const primary = createBuffers[PRIMARY_LOCALE]
+    const payload: CreateAdminProductPayload = {
       slug: createForm.slug.trim().toLowerCase(),
-      name: createForm.name.trim(),
-      description: createForm.description.trim(),
-      image_url: createForm.image_url.trim(),
+      name: primary.name.trim(),
+      description: primary.description.trim(),
       price_thb: Math.round(createForm.price_thb * 100),
+      weight_g: createForm.weight_g,
+      image_url: createForm.image_url.trim(),
+      active: createForm.active,
+      stock_count: createForm.stock_count,
       product_line_id: createForm.product_line_id,
-    })
+      translations_json: packTranslationsJson(createBuffers),
+    }
+    const product = await createAdminProduct(payload)
     products.value.push(product)
     createSuccess.value = 'Product created.'
     resetCreateForm()
@@ -230,13 +336,15 @@ function startEdit(product: AdminProduct) {
   editImageError.value = ''
 
   editForm.slug = product.slug
-  editForm.name = product.name
-  editForm.description = product.description
   editForm.price_thb = product.price_thb / 100
   editForm.weight_g = product.weight_g
   editForm.image_url = product.image_url
   editForm.active = product.active
   editForm.product_line_id = product.product_line_id
+  editActiveLocale.value = PRIMARY_LOCALE
+
+  const loaded = loadBuffersFromProduct(product)
+  for (const l of SUPPORTED_LOCALES) editBuffers[l] = loaded[l]
 }
 
 function cancelEdit() {
@@ -254,15 +362,17 @@ async function submitEdit() {
   editLoading.value = true
 
   try {
+    const primary = editBuffers[PRIMARY_LOCALE]
     const payload: UpdateAdminProductPayload = {
       slug: editForm.slug.trim().toLowerCase(),
-      name: editForm.name.trim(),
-      description: editForm.description.trim(),
+      name: primary.name.trim(),
+      description: primary.description.trim(),
       price_thb: Math.round(Number(editForm.price_thb) * 100),
       weight_g: Number(editForm.weight_g),
       image_url: editForm.image_url.trim(),
       active: editForm.active,
       product_line_id: editForm.product_line_id,
+      translations_json: packTranslationsJson(editBuffers),
     }
 
     const updated = await updateAdminProduct(editingId.value, payload)
@@ -368,7 +478,7 @@ onMounted(async () => {
         <div>
           <RouterLink to="/admin" class="text-sm text-muted hover:text-primary transition-colors mb-1 inline-block">&larr; Dashboard</RouterLink>
           <h1 class="text-3xl sm:text-4xl font-bold text-foreground">Admin Products</h1>
-          <p class="text-sm text-muted mt-1">Create, edit, and archive product catalog entries.</p>
+          <p class="text-sm text-muted mt-1">Create, edit, and archive product catalog entries. Enter name and description in each supported language.</p>
         </div>
         <AdminNav />
       </div>
@@ -381,11 +491,10 @@ onMounted(async () => {
 
         <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
           <input v-model="createForm.slug" type="text" placeholder="Slug (plant-protein-500g)" class="rounded-md border border-sand px-4 py-3 text-sm bg-surface-alt text-foreground placeholder:text-muted focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent" />
-          <input v-model="createForm.name" type="text" placeholder="Name" class="rounded-md border border-sand px-4 py-3 text-sm bg-surface-alt text-foreground placeholder:text-muted focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent" />
           <input v-model.number="createForm.price_thb" type="number" min="1" step="1" placeholder="Price (THB)" class="rounded-md border border-sand px-4 py-3 text-sm bg-surface-alt text-foreground placeholder:text-muted focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent" />
           <input v-model.number="createForm.weight_g" type="number" min="1" step="1" placeholder="Weight (g)" class="rounded-md border border-sand px-4 py-3 text-sm bg-surface-alt text-foreground placeholder:text-muted focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent" />
           <input v-model.number="createForm.stock_count" type="number" min="0" step="1" placeholder="Initial stock" class="rounded-md border border-sand px-4 py-3 text-sm bg-surface-alt text-foreground placeholder:text-muted focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent" />
-          <input v-model="createForm.image_url" type="text" placeholder="Image URL, /path, or data:image" class="rounded-md border border-sand px-4 py-3 text-sm bg-surface-alt text-foreground placeholder:text-muted focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent" />
+          <input v-model="createForm.image_url" type="text" placeholder="Image URL, /path, or data:image" class="sm:col-span-2 rounded-md border border-sand px-4 py-3 text-sm bg-surface-alt text-foreground placeholder:text-muted focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent" />
         </div>
 
         <div class="space-y-1">
@@ -414,10 +523,31 @@ onMounted(async () => {
           <p v-if="createImageError" class="text-xs text-error">{{ createImageError }}</p>
         </div>
 
+        <!-- Locale tabs for translated fields -->
+        <div class="flex gap-1 border-b border-sand/60">
+          <button
+            v-for="locale in SUPPORTED_LOCALES"
+            :key="locale"
+            type="button"
+            @click="createActiveLocale = locale"
+            :class="[
+              'px-4 py-2 text-sm font-medium transition-colors border-b-2 -mb-px',
+              createActiveLocale === locale
+                ? 'border-primary text-primary'
+                : 'border-transparent text-muted hover:text-foreground'
+            ]"
+          >
+            {{ LOCALE_LABELS[locale] }}
+            <span v-if="locale === PRIMARY_LOCALE" class="ml-1 text-[10px] uppercase opacity-70">primary</span>
+          </button>
+        </div>
+
+        <input v-model="createBuffer.name" type="text" :placeholder="`Name (${LOCALE_LABELS[createActiveLocale]})`" class="w-full rounded-md border border-sand px-4 py-3 text-sm bg-surface-alt text-foreground placeholder:text-muted focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent" />
+
         <textarea
-          v-model="createForm.description"
+          v-model="createBuffer.description"
           rows="4"
-          placeholder="Description"
+          :placeholder="`Description (${LOCALE_LABELS[createActiveLocale]})`"
           class="w-full rounded-md border border-sand px-4 py-3 text-sm bg-surface-alt text-foreground placeholder:text-muted focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
         />
 
@@ -430,7 +560,7 @@ onMounted(async () => {
 
         <!-- Live Preview -->
         <div v-if="showCreatePreview" class="space-y-2">
-          <p class="text-sm font-medium text-muted">Shop Preview</p>
+          <p class="text-sm font-medium text-muted">Shop Preview ({{ LOCALE_LABELS[createActiveLocale] }})</p>
           <div class="max-w-xs">
             <div class="bg-surface rounded-lg shadow-sm ring-1 ring-[var(--card-ring)] overflow-hidden">
               <div class="aspect-[4/3] overflow-hidden bg-sand relative">
@@ -451,7 +581,7 @@ onMounted(async () => {
               </div>
               <div class="p-6 space-y-4">
                 <div class="space-y-2">
-                  <h3 class="text-xl font-semibold text-foreground">{{ createForm.name.trim() || 'Product Name' }}</h3>
+                  <h3 class="text-xl font-semibold text-foreground">{{ createBuffer.name.trim() || 'Product Name' }}</h3>
                   <span v-if="createPreviewWeight" class="inline-block rounded-full bg-surface-alt px-3 py-1 text-xs font-medium text-muted ring-1 ring-[var(--card-ring)]">{{ createPreviewWeight }}</span>
                 </div>
                 <p class="text-2xl font-bold text-foreground">{{ createPreviewPrice }}</p>
@@ -484,19 +614,37 @@ onMounted(async () => {
                 class="w-12 h-12 rounded-md object-cover ring-1 ring-[var(--card-ring)]"
               />
               <div>
-                <h3 class="text-lg font-semibold text-foreground">{{ product.name }}</h3>
+                <h3 class="text-lg font-semibold text-foreground">{{ displayField(product, getDisplayLocale(product.id), 'name') || product.name }}</h3>
                 <p class="text-xs font-mono text-muted">ID {{ product.id }} · {{ product.slug }}</p>
               </div>
             </div>
-            <div class="text-right">
-              <p class="text-sm font-semibold" :class="product.active ? 'text-primary' : 'text-muted'">
-                {{ product.active ? 'Active' : 'Inactive' }}
-              </p>
-              <p class="text-xs text-muted">{{ formatMoney(product.price_thb) }} · {{ product.weight_g }}g · {{ getProductLineName(product.product_line_id) }}</p>
+            <div class="flex items-start gap-3">
+              <div class="flex gap-1">
+                <button
+                  v-for="locale in SUPPORTED_LOCALES"
+                  :key="locale"
+                  type="button"
+                  @click="setDisplayLocale(product.id, locale)"
+                  :class="[
+                    'px-2 py-1 text-xs rounded transition-colors',
+                    getDisplayLocale(product.id) === locale
+                      ? 'bg-primary text-white'
+                      : 'bg-surface-alt text-muted hover:text-foreground'
+                  ]"
+                >
+                  {{ locale.toUpperCase() }}
+                </button>
+              </div>
+              <div class="text-right">
+                <p class="text-sm font-semibold" :class="product.active ? 'text-primary' : 'text-muted'">
+                  {{ product.active ? 'Active' : 'Inactive' }}
+                </p>
+                <p class="text-xs text-muted">{{ formatMoney(product.price_thb) }} · {{ product.weight_g }}g · {{ getProductLineName(product.product_line_id) }}</p>
+              </div>
             </div>
           </div>
 
-          <p class="text-sm text-muted">{{ product.description }}</p>
+          <p class="text-sm text-muted whitespace-pre-line">{{ displayField(product, getDisplayLocale(product.id), 'description') || product.description }}</p>
 
           <div class="grid grid-cols-3 gap-3 text-sm">
             <div class="bg-surface-alt rounded-md p-3">
@@ -519,10 +667,9 @@ onMounted(async () => {
 
             <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <input v-model="editForm.slug" type="text" class="rounded-md border border-sand px-4 py-3 text-sm bg-surface-alt text-foreground focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent" />
-              <input v-model="editForm.name" type="text" class="rounded-md border border-sand px-4 py-3 text-sm bg-surface-alt text-foreground focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent" />
               <input v-model.number="editForm.price_thb" type="number" min="1" step="1" class="rounded-md border border-sand px-4 py-3 text-sm bg-surface-alt text-foreground focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent" />
               <input v-model.number="editForm.weight_g" type="number" min="1" step="1" class="rounded-md border border-sand px-4 py-3 text-sm bg-surface-alt text-foreground focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent" />
-              <input v-model="editForm.image_url" type="text" class="sm:col-span-2 rounded-md border border-sand px-4 py-3 text-sm bg-surface-alt text-foreground focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent" />
+              <input v-model="editForm.image_url" type="text" class="rounded-md border border-sand px-4 py-3 text-sm bg-surface-alt text-foreground focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent" />
             </div>
 
             <div class="space-y-1">
@@ -555,9 +702,31 @@ onMounted(async () => {
               <img :src="editImagePreview" alt="Edit product preview" class="w-32 h-32 object-cover rounded-md ring-1 ring-[var(--card-ring)]" />
             </div>
 
+            <!-- Locale tabs for translated fields -->
+            <div class="flex gap-1 border-b border-sand/60">
+              <button
+                v-for="locale in SUPPORTED_LOCALES"
+                :key="locale"
+                type="button"
+                @click="editActiveLocale = locale"
+                :class="[
+                  'px-4 py-2 text-sm font-medium transition-colors border-b-2 -mb-px',
+                  editActiveLocale === locale
+                    ? 'border-primary text-primary'
+                    : 'border-transparent text-muted hover:text-foreground'
+                ]"
+              >
+                {{ LOCALE_LABELS[locale] }}
+                <span v-if="locale === PRIMARY_LOCALE" class="ml-1 text-[10px] uppercase opacity-70">primary</span>
+              </button>
+            </div>
+
+            <input v-model="editBuffer.name" type="text" :placeholder="`Name (${LOCALE_LABELS[editActiveLocale]})`" class="w-full rounded-md border border-sand px-4 py-3 text-sm bg-surface-alt text-foreground focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent" />
+
             <textarea
-              v-model="editForm.description"
+              v-model="editBuffer.description"
               rows="4"
+              :placeholder="`Description (${LOCALE_LABELS[editActiveLocale]})`"
               class="w-full rounded-md border border-sand px-4 py-3 text-sm bg-surface-alt text-foreground focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
             />
 

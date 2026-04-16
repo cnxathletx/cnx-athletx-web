@@ -304,6 +304,7 @@ export function validateCreateProductBody(body: unknown): { errors: ValidationEr
   const active = typeof b.active === 'boolean' ? b.active : true
   const stockCount = typeof b.stock_count === 'number' ? b.stock_count : 0
   const productLineId = b.product_line_id === null || b.product_line_id === undefined ? null : (typeof b.product_line_id === 'number' ? b.product_line_id : Number.NaN)
+  const translationsJson = typeof b.translations_json === 'string' ? b.translations_json.trim() : '{}'
 
   if (!isValidProductSlug(slug)) {
     errors.push({ field: 'slug', message: 'slug must be 3-100 chars and contain only a-z, 0-9, or hyphen' })
@@ -334,6 +335,8 @@ export function validateCreateProductBody(body: unknown): { errors: ValidationEr
   if (productLineId !== null && (!Number.isInteger(productLineId) || productLineId < 1)) {
     errors.push({ field: 'product_line_id', message: 'product_line_id must be a positive integer or null' })
   }
+  const tErr = validateProductTranslationsJson(translationsJson)
+  if (tErr) errors.push(tErr)
 
   if (errors.length > 0) {
     return { errors, data: null }
@@ -351,6 +354,7 @@ export function validateCreateProductBody(body: unknown): { errors: ValidationEr
       active,
       stock_count: stockCount,
       product_line_id: productLineId,
+      translations_json: translationsJson,
     },
   }
 }
@@ -363,7 +367,7 @@ export function validateUpdateProductBody(body: unknown): { errors: ValidationEr
   }
 
   const b = body as Record<string, unknown>
-  const allowed = ['slug', 'name', 'description', 'price_thb', 'weight_g', 'image_url', 'active', 'archived', 'product_line_id']
+  const allowed = ['slug', 'name', 'description', 'price_thb', 'weight_g', 'image_url', 'active', 'archived', 'product_line_id', 'translations_json']
   const provided = allowed.filter((key) => key in b)
 
   if (provided.length === 0) {
@@ -466,6 +470,17 @@ export function validateUpdateProductBody(body: unknown): { errors: ValidationEr
       errors.push({ field: 'product_line_id', message: 'product_line_id must be a positive integer or null' })
     } else {
       data.product_line_id = b.product_line_id as number | null
+    }
+  }
+
+  if ('translations_json' in b) {
+    if (typeof b.translations_json !== 'string') {
+      errors.push({ field: 'translations_json', message: 'translations_json must be a string' })
+    } else {
+      const translationsJson = b.translations_json.trim()
+      const tErr = validateProductTranslationsJson(translationsJson)
+      if (tErr) errors.push(tErr)
+      else data.translations_json = translationsJson
     }
   }
 
@@ -672,10 +687,17 @@ export function validateUpdateDiscountBody(body: unknown): { errors: ValidationE
 }
 
 export const SUPPORTED_PRODUCT_LINE_LOCALES = ['en', 'th'] as const
-const TRANSLATABLE_FIELDS = ['name', 'nutrition_json', 'ingredients', 'how_to_use', 'who_is_for', 'regulatory_info'] as const
+export const SUPPORTED_PRODUCT_LOCALES = ['en', 'th'] as const
+const PRODUCT_LINE_TRANSLATABLE_FIELDS = ['name', 'nutrition_json', 'ingredients', 'how_to_use', 'who_is_for', 'regulatory_info'] as const
+const PRODUCT_TRANSLATABLE_FIELDS = ['name', 'description'] as const
 const MAX_TRANSLATIONS_JSON_LENGTH = 50000
 
-function validateTranslationsJson(raw: string): ValidationError | null {
+function validateTranslationsJsonShape(
+  raw: string,
+  supportedLocales: readonly string[],
+  translatableFields: readonly string[],
+  jsonNestedField?: string,
+): ValidationError | null {
   if (raw.length > MAX_TRANSLATIONS_JSON_LENGTH) {
     return { field: 'translations_json', message: `translations_json must be ${MAX_TRANSLATIONS_JSON_LENGTH} characters or fewer` }
   }
@@ -689,14 +711,14 @@ function validateTranslationsJson(raw: string): ValidationError | null {
     return { field: 'translations_json', message: 'translations_json must be an object keyed by locale' }
   }
   for (const [locale, entry] of Object.entries(parsed as Record<string, unknown>)) {
-    if (!(SUPPORTED_PRODUCT_LINE_LOCALES as readonly string[]).includes(locale)) {
+    if (!supportedLocales.includes(locale)) {
       return { field: 'translations_json', message: `unsupported locale "${locale}"` }
     }
     if (!entry || typeof entry !== 'object' || Array.isArray(entry)) {
       return { field: 'translations_json', message: `translations_json.${locale} must be an object` }
     }
     for (const [key, val] of Object.entries(entry as Record<string, unknown>)) {
-      if (!(TRANSLATABLE_FIELDS as readonly string[]).includes(key)) {
+      if (!translatableFields.includes(key)) {
         return { field: 'translations_json', message: `unsupported translation field "${key}" in ${locale}` }
       }
       if (typeof val !== 'string') {
@@ -705,14 +727,22 @@ function validateTranslationsJson(raw: string): ValidationError | null {
       if (val.length > 5000) {
         return { field: 'translations_json', message: `translations_json.${locale}.${key} must be 5000 characters or fewer` }
       }
-      if (key === 'nutrition_json' && val.trim() !== '') {
+      if (jsonNestedField && key === jsonNestedField && val.trim() !== '') {
         try { JSON.parse(val) } catch {
-          return { field: 'translations_json', message: `translations_json.${locale}.nutrition_json must be valid JSON` }
+          return { field: 'translations_json', message: `translations_json.${locale}.${jsonNestedField} must be valid JSON` }
         }
       }
     }
   }
   return null
+}
+
+function validateProductLineTranslationsJson(raw: string): ValidationError | null {
+  return validateTranslationsJsonShape(raw, SUPPORTED_PRODUCT_LINE_LOCALES, PRODUCT_LINE_TRANSLATABLE_FIELDS, 'nutrition_json')
+}
+
+function validateProductTranslationsJson(raw: string): ValidationError | null {
+  return validateTranslationsJsonShape(raw, SUPPORTED_PRODUCT_LOCALES, PRODUCT_TRANSLATABLE_FIELDS)
 }
 
 export function validateCreateProductLineBody(body: unknown): { errors: ValidationError[]; data: AdminCreateProductLineBody | null } {
@@ -755,7 +785,7 @@ export function validateCreateProductLineBody(body: unknown): { errors: Validati
   if (regulatoryInfo.length > 5000) {
     errors.push({ field: 'regulatory_info', message: 'regulatory_info must be 5000 characters or fewer' })
   }
-  const tErr = validateTranslationsJson(translationsJson)
+  const tErr = validateProductLineTranslationsJson(translationsJson)
   if (tErr) errors.push(tErr)
 
   if (errors.length > 0) {
@@ -881,7 +911,7 @@ export function validateUpdateProductLineBody(body: unknown): { errors: Validati
       errors.push({ field: 'translations_json', message: 'translations_json must be a string' })
     } else {
       const translationsJson = b.translations_json.trim()
-      const tErr = validateTranslationsJson(translationsJson)
+      const tErr = validateProductLineTranslationsJson(translationsJson)
       if (tErr) errors.push(tErr)
       else data.translations_json = translationsJson
     }

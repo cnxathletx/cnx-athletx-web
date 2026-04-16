@@ -34,6 +34,7 @@ async function serializeAdminProduct(env: Env, row: AdminProductRow) {
     image_url: row.image_url,
     active: !!row.active,
     archived: !!row.archived,
+    translations_json: row.translations_json,
     created_at: row.created_at,
     updated_at: row.updated_at,
     stock_count: row.stock_count,
@@ -47,7 +48,7 @@ export function registerAdminProductRoutes(router: RouterType) {
   router.get('/api/admin/products', requireAdmin(async (_request, env) => {
     try {
       const { results } = await env.DB.prepare(
-        `SELECT p.id, p.product_line_id, p.slug, p.name, p.description, p.price_thb, p.weight_g, p.image_url, p.active, p.archived, p.created_at, p.updated_at,
+        `SELECT p.id, p.product_line_id, p.slug, p.name, p.description, p.price_thb, p.weight_g, p.image_url, p.active, p.archived, p.translations_json, p.created_at, p.updated_at,
                 i.stock_count, i.reserved_count, (i.stock_count - i.reserved_count) AS available_count
          FROM products p
          JOIN inventory i ON i.product_id = p.id
@@ -74,10 +75,10 @@ export function registerAdminProductRoutes(router: RouterType) {
 
     try {
       const insertProduct = await env.DB.prepare(
-        `INSERT INTO products (product_line_id, slug, name, description, price_thb, weight_g, image_url, active, created_at, updated_at)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+        `INSERT INTO products (product_line_id, slug, name, description, price_thb, weight_g, image_url, active, translations_json, created_at, updated_at)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
       )
-        .bind(data.product_line_id, data.slug, data.name, data.description, data.price_thb, data.weight_g, data.image_url, data.active ? 1 : 0, now, now)
+        .bind(data.product_line_id, data.slug, data.name, data.description, data.price_thb, data.weight_g, data.image_url, data.active ? 1 : 0, data.translations_json, now, now)
         .run()
 
       const productId = Number(insertProduct.meta.last_row_id)
@@ -109,7 +110,7 @@ export function registerAdminProductRoutes(router: RouterType) {
       ])
 
       const row = await env.DB.prepare(
-        `SELECT p.id, p.product_line_id, p.slug, p.name, p.description, p.price_thb, p.weight_g, p.image_url, p.active, p.archived, p.created_at, p.updated_at,
+        `SELECT p.id, p.product_line_id, p.slug, p.name, p.description, p.price_thb, p.weight_g, p.image_url, p.active, p.archived, p.translations_json, p.created_at, p.updated_at,
                 i.stock_count, i.reserved_count, (i.stock_count - i.reserved_count) AS available_count
          FROM products p
          JOIN inventory i ON i.product_id = p.id
@@ -171,6 +172,7 @@ export function registerAdminProductRoutes(router: RouterType) {
     if (data.active !== undefined) { setParts.push('active = ?'); binds.push(data.active ? 1 : 0) }
     if (data.archived !== undefined) { setParts.push('archived = ?'); binds.push(data.archived ? 1 : 0) }
     if (data.product_line_id !== undefined) { setParts.push('product_line_id = ?'); binds.push(data.product_line_id) }
+    if (data.translations_json !== undefined) { setParts.push('translations_json = ?'); binds.push(data.translations_json) }
 
     const now = nowIso()
     setParts.push('updated_at = ?')
@@ -190,7 +192,7 @@ export function registerAdminProductRoutes(router: RouterType) {
         .run()
 
       const row = await env.DB.prepare(
-        `SELECT p.id, p.product_line_id, p.slug, p.name, p.description, p.price_thb, p.weight_g, p.image_url, p.active, p.archived, p.created_at, p.updated_at,
+        `SELECT p.id, p.product_line_id, p.slug, p.name, p.description, p.price_thb, p.weight_g, p.image_url, p.active, p.archived, p.translations_json, p.created_at, p.updated_at,
                 i.stock_count, i.reserved_count, (i.stock_count - i.reserved_count) AS available_count
          FROM products p
          JOIN inventory i ON i.product_id = p.id

@@ -85,6 +85,7 @@ export interface AdminProduct {
   image_url: string
   active: boolean
   archived: boolean
+  translations_json: string
   created_at: string
   updated_at: string
   stock_count: number
@@ -103,6 +104,7 @@ export interface CreateAdminProductPayload {
   active: boolean
   stock_count: number
   product_line_id: number | null
+  translations_json: string
 }
 
 export interface UpdateAdminProductPayload {
@@ -115,6 +117,7 @@ export interface UpdateAdminProductPayload {
   active?: boolean
   archived?: boolean
   product_line_id?: number | null
+  translations_json?: string
 }
 
 // --- Admin Product Lines ---

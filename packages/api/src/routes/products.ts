@@ -16,7 +16,8 @@ interface PublicProductRow {
   who_is_for: string | null
   regulatory_info: string | null
   product_line_name: string | null
-  translations_json: string | null
+  product_translations_json: string | null
+  product_line_translations_json: string | null
 }
 
 const SUPPORTED_LOCALES = ['en', 'th'] as const
@@ -29,37 +30,54 @@ function resolveLocale(request: Request): Locale {
   return 'en'
 }
 
-type TranslatableRow = Pick<PublicProductRow, 'nutrition_json' | 'ingredients' | 'how_to_use' | 'who_is_for' | 'regulatory_info' | 'product_line_name' | 'translations_json'>
+function pickLocaleEntry(raw: string | null, locale: Locale): Record<string, string> | null {
+  if (!raw) return null
+  try {
+    const parsed = JSON.parse(raw) as Record<string, Record<string, string>>
+    const entry = parsed?.[locale]
+    if (entry && typeof entry === 'object') return entry
+  } catch {
+    // ignore
+  }
+  return null
+}
 
-function applyTranslations<T extends TranslatableRow>(row: T, locale: Locale): Omit<T, 'translations_json'> {
-  const { translations_json, ...rest } = row
-  let translated: Record<string, string> | null = null
-  if (translations_json) {
-    try {
-      const parsed = JSON.parse(translations_json) as Record<string, Record<string, string>>
-      const entry = parsed[locale]
-      if (entry && typeof entry === 'object') translated = entry
-    } catch {
-      // ignore, keep fallback
-    }
+function applyTranslations(row: PublicProductRow, locale: Locale) {
+  const productEntry = pickLocaleEntry(row.product_translations_json, locale)
+  const productLineEntry = pickLocaleEntry(row.product_line_translations_json, locale)
+
+  const pickProduct = (key: 'name' | 'description', base: string): string => {
+    const t = productEntry?.[key]
+    return typeof t === 'string' && t.trim() !== '' ? t : base
   }
-  const pick = (key: 'nutrition_json' | 'ingredients' | 'how_to_use' | 'who_is_for' | 'regulatory_info'): string | null => {
-    const t = translated?.[key]
-    if (typeof t === 'string' && t.trim() !== '') return t
-    return rest[key]
+
+  const pickProductLine = (
+    key: 'nutrition_json' | 'ingredients' | 'how_to_use' | 'who_is_for' | 'regulatory_info',
+    base: string | null,
+  ): string | null => {
+    const t = productLineEntry?.[key]
+    return typeof t === 'string' && t.trim() !== '' ? t : base
   }
+
   const productLineName: string | null = (() => {
-    const t = translated?.['name']
-    if (typeof t === 'string' && t.trim() !== '') return t
-    return rest.product_line_name
+    const t = productLineEntry?.['name']
+    return typeof t === 'string' && t.trim() !== '' ? t : row.product_line_name
   })()
+
   return {
-    ...rest,
-    nutrition_json: pick('nutrition_json'),
-    ingredients: pick('ingredients'),
-    how_to_use: pick('how_to_use'),
-    who_is_for: pick('who_is_for'),
-    regulatory_info: pick('regulatory_info'),
+    id: row.id,
+    slug: row.slug,
+    name: pickProduct('name', row.name),
+    description: pickProduct('description', row.description),
+    price_thb: row.price_thb,
+    weight_g: row.weight_g,
+    image_url: row.image_url,
+    available_stock: row.available_stock,
+    nutrition_json: pickProductLine('nutrition_json', row.nutrition_json),
+    ingredients: pickProductLine('ingredients', row.ingredients),
+    how_to_use: pickProductLine('how_to_use', row.how_to_use),
+    who_is_for: pickProductLine('who_is_for', row.who_is_for),
+    regulatory_info: pickProductLine('regulatory_info', row.regulatory_info),
     product_line_name: productLineName,
   }
 }
@@ -92,7 +110,10 @@ export function registerProductRoutes(router: RouterType) {
       const { results } = await env.DB.prepare(
         `SELECT p.id, p.slug, p.name, p.description, p.price_thb, p.weight_g, p.image_url,
                 (i.stock_count - i.reserved_count) AS available_stock,
-                pl.nutrition_json, pl.ingredients, pl.how_to_use, pl.who_is_for, pl.regulatory_info, pl.name AS product_line_name, pl.translations_json
+                pl.nutrition_json, pl.ingredients, pl.how_to_use, pl.who_is_for, pl.regulatory_info,
+                pl.name AS product_line_name,
+                p.translations_json AS product_translations_json,
+                pl.translations_json AS product_line_translations_json
          FROM products p
          JOIN inventory i ON i.product_id = p.id
          LEFT JOIN product_lines pl ON pl.id = p.product_line_id
@@ -123,7 +144,10 @@ export function registerProductRoutes(router: RouterType) {
       const product = await env.DB.prepare(
         `SELECT p.id, p.slug, p.name, p.description, p.price_thb, p.weight_g, p.image_url,
                 (i.stock_count - i.reserved_count) AS available_stock,
-                pl.nutrition_json, pl.ingredients, pl.how_to_use, pl.who_is_for, pl.regulatory_info, pl.name AS product_line_name, pl.translations_json
+                pl.nutrition_json, pl.ingredients, pl.how_to_use, pl.who_is_for, pl.regulatory_info,
+                pl.name AS product_line_name,
+                p.translations_json AS product_translations_json,
+                pl.translations_json AS product_line_translations_json
          FROM products p
          JOIN inventory i ON i.product_id = p.id
          LEFT JOIN product_lines pl ON pl.id = p.product_line_id

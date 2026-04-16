@@ -30,6 +30,7 @@ CREATE TABLE IF NOT EXISTS products (
     image_url TEXT NOT NULL,
     active INTEGER NOT NULL DEFAULT 1,
     archived INTEGER NOT NULL DEFAULT 0,
+    translations_json TEXT NOT NULL DEFAULT '{}',
     created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (product_line_id) REFERENCES product_lines(id) ON DELETE SET NULL

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, onBeforeUnmount } from 'vue'
 import { RouterLink } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import PrimaryButton from '../components/ui/PrimaryButton.vue'
@@ -8,6 +8,17 @@ import GhostButton from '../components/ui/GhostButton.vue'
 import { fetchProducts, formatPrice, formatWeight, type ApiProduct } from '../api/products'
 import { useHead } from '../composables/useHead'
 import { useJsonLd } from '../composables/useJsonLd'
+
+const storyImageModules = import.meta.glob('../assets/photos/our-story/*.{jpeg,jpg,png,webp}', {
+  eager: true,
+  import: 'default',
+  query: '?url',
+}) as Record<string, string>
+const storyImages = Object.entries(storyImageModules)
+  .sort(([a], [b]) => a.localeCompare(b, undefined, { numeric: true }))
+  .map(([, url]) => url)
+const storyIndex = ref(0)
+let storyTimer: ReturnType<typeof setInterval> | null = null
 
 const { t } = useI18n({ useScope: 'global' })
 
@@ -48,6 +59,16 @@ onMounted(async () => {
   } finally {
     productsLoaded.value = true
   }
+
+  if (storyImages.length > 1) {
+    storyTimer = setInterval(() => {
+      storyIndex.value = (storyIndex.value + 1) % storyImages.length
+    }, 4000)
+  }
+})
+
+onBeforeUnmount(() => {
+  if (storyTimer) clearInterval(storyTimer)
 })
 </script>
 
@@ -253,26 +274,31 @@ onMounted(async () => {
           </div>
 
           <!-- Image Column -->
-          <div class="aspect-[4/3] rounded-lg overflow-hidden bg-surface">
+          <div
+            class="relative aspect-[4/3] rounded-lg overflow-hidden bg-surface ring-1 ring-[var(--card-ring)]"
+          >
+            <transition name="story-fade" mode="default">
+              <img
+                :key="storyImages[storyIndex]"
+                :src="storyImages[storyIndex]"
+                :alt="t('home.brandStoryTitle')"
+                class="absolute inset-0 w-full h-full object-cover"
+                decoding="async"
+              />
+            </transition>
             <div
-              class="w-full h-full bg-gradient-to-tr from-primary/10 via-sage/15 to-primary/5 flex items-center justify-center"
+              v-if="storyImages.length > 1"
+              class="absolute bottom-3 left-1/2 -translate-x-1/2 flex gap-1.5"
             >
-              <div class="text-center space-y-3">
-                <svg
-                  class="w-20 h-20 mx-auto text-muted/30"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
-                    stroke-width="1"
-                    d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"
-                  />
-                </svg>
-                <p class="text-sm text-muted/50">{{ t('home.communityImage') }}</p>
-              </div>
+              <button
+                v-for="(_, i) in storyImages"
+                :key="i"
+                type="button"
+                class="h-1.5 rounded-full transition-all"
+                :class="i === storyIndex ? 'w-6 bg-white' : 'w-1.5 bg-white/50 hover:bg-white/75'"
+                :aria-label="`Show image ${i + 1}`"
+                @click="storyIndex = i"
+              />
             </div>
           </div>
         </div>
@@ -336,3 +362,14 @@ onMounted(async () => {
     </section>
   </div>
 </template>
+
+<style scoped>
+.story-fade-enter-active,
+.story-fade-leave-active {
+  transition: opacity 800ms ease-in-out;
+}
+.story-fade-enter-from,
+.story-fade-leave-to {
+  opacity: 0;
+}
+</style>

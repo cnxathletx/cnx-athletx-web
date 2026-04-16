@@ -28,6 +28,19 @@ const loading = ref(true)
 const error = ref('')
 const quantity = ref(1)
 const productImageError = ref(false)
+const activeImageIndex = ref(0)
+
+const gallery = computed<string[]>(() => {
+  const p = product.value
+  if (!p) return []
+  const urls: string[] = []
+  if (p.image_url) urls.push(p.image_url)
+  for (const s of p.screenshots ?? []) {
+    if (s.url && !urls.includes(s.url)) urls.push(s.url)
+  }
+  return urls
+})
+const activeImageUrl = computed(() => gallery.value[activeImageIndex.value] || product.value?.image_url || '')
 
 const productTitle = computed(() => product.value?.name || 'Product')
 const productDescription = computed(() =>
@@ -150,6 +163,7 @@ async function loadProduct(slug: string) {
   quantity.value = 1
   activeTab.value = 'nutrition'
   productImageError.value = false
+  activeImageIndex.value = 0
 
   try {
     product.value = await fetchProductBySlug(slug)
@@ -251,36 +265,50 @@ watch(
       <div class="mx-auto max-w-[1280px] px-4 sm:px-6 lg:px-8 py-8 sm:py-16">
         <div class="grid grid-cols-1 lg:grid-cols-2 gap-12">
           <!-- Image Column -->
-          <div
-            class="aspect-square rounded-lg overflow-hidden bg-surface ring-1 ring-[var(--card-ring)]"
-          >
-            <img
-              v-if="product.image_url && !productImageError"
-              :src="product.image_url"
-              :alt="product.name"
-              class="w-full h-full object-cover"
-              @error="productImageError = true"
-            />
-            <div
-              v-else
-              class="w-full h-full bg-gradient-to-br from-primary/15 via-sage/10 to-accent/5 flex items-center justify-center"
-            >
-              <div class="text-center space-y-3">
-                <svg
-                  class="w-32 h-32 mx-auto text-muted/25"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
-                    stroke-width="1"
-                    d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"
-                  />
-                </svg>
-                <p class="text-sm text-muted/40">{{ t('product.productImage') }}</p>
+          <div class="space-y-3">
+            <div class="aspect-square rounded-lg overflow-hidden bg-surface ring-1 ring-[var(--card-ring)]">
+              <img
+                v-if="activeImageUrl && !productImageError"
+                :src="activeImageUrl"
+                :alt="product.name"
+                class="w-full h-full object-cover"
+                @error="productImageError = true"
+              />
+              <div
+                v-else
+                class="w-full h-full bg-gradient-to-br from-primary/15 via-sage/10 to-accent/5 flex items-center justify-center"
+              >
+                <div class="text-center space-y-3">
+                  <svg
+                    class="w-32 h-32 mx-auto text-muted/25"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                      stroke-width="1"
+                      d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"
+                    />
+                  </svg>
+                  <p class="text-sm text-muted/40">{{ t('product.productImage') }}</p>
+                </div>
               </div>
+            </div>
+
+            <div v-if="gallery.length > 1" class="grid grid-cols-5 gap-2">
+              <button
+                v-for="(url, i) in gallery"
+                :key="url + i"
+                type="button"
+                class="aspect-square rounded-md overflow-hidden ring-1 transition-all"
+                :class="i === activeImageIndex ? 'ring-2 ring-primary' : 'ring-[var(--card-ring)] hover:ring-primary/60'"
+                :aria-label="`Show image ${i + 1}`"
+                @click="activeImageIndex = i; productImageError = false"
+              >
+                <img :src="url" :alt="`${product.name} image ${i + 1}`" class="w-full h-full object-cover" />
+              </button>
             </div>
           </div>
 

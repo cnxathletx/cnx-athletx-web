@@ -39,6 +39,18 @@ CREATE INDEX IF NOT EXISTS idx_products_active ON products(active);
 CREATE INDEX IF NOT EXISTS idx_products_archived ON products(archived);
 CREATE INDEX IF NOT EXISTS idx_products_product_line_id ON products(product_line_id);
 
+-- product_images table (multiple screenshots per product with display order)
+CREATE TABLE IF NOT EXISTS product_images (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    product_id INTEGER NOT NULL,
+    url TEXT NOT NULL,
+    sort_order INTEGER NOT NULL DEFAULT 0,
+    created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (product_id) REFERENCES products(id) ON DELETE CASCADE
+);
+
+CREATE INDEX IF NOT EXISTS idx_product_images_product_id ON product_images(product_id, sort_order);
+
 -- inventory table (separate for atomic stock operations)
 CREATE TABLE IF NOT EXISTS inventory (
     product_id INTEGER PRIMARY KEY,

@@ -281,6 +281,22 @@ export interface AdminProductRow {
   available_count: number
 }
 
+export interface ProductImageRow {
+  id: number
+  product_id: number
+  url: string
+  sort_order: number
+  created_at: string
+}
+
+export interface AdminAddProductImageBody {
+  url: string
+}
+
+export interface AdminReorderProductImagesBody {
+  image_ids: number[]
+}
+
 export interface AdminCreateProductBody {
   slug: string
   name: string

@@ -10,6 +10,8 @@ import type {
   AdminInventoryUpdateBody,
   AdminCreateProductBody,
   AdminUpdateProductBody,
+  AdminAddProductImageBody,
+  AdminReorderProductImagesBody,
   AdminCreateDiscountBody,
   AdminUpdateDiscountBody,
   AdminCreateProductLineBody,
@@ -472,6 +474,50 @@ export function validateUpdateProductBody(body: unknown): { errors: ValidationEr
   }
 
   return { errors: [], data }
+}
+
+export function validateAddProductImageBody(body: unknown): { errors: ValidationError[]; data: AdminAddProductImageBody | null } {
+  if (!body || typeof body !== 'object') {
+    return { errors: [{ field: 'body', message: 'Request body must be a JSON object' }], data: null }
+  }
+
+  const b = body as Record<string, unknown>
+  const url = typeof b.url === 'string' ? b.url.trim() : ''
+
+  if (url.length < 2 || url.length > 2000000) {
+    return { errors: [{ field: 'url', message: 'url must be between 2 and 2000000 characters' }], data: null }
+  }
+  if (!isValidProductImageUrl(url)) {
+    return {
+      errors: [{ field: 'url', message: 'url must be an absolute URL, root-relative path, or data image URL' }],
+      data: null,
+    }
+  }
+
+  return { errors: [], data: { url } }
+}
+
+export function validateReorderProductImagesBody(body: unknown): { errors: ValidationError[]; data: AdminReorderProductImagesBody | null } {
+  if (!body || typeof body !== 'object') {
+    return { errors: [{ field: 'body', message: 'Request body must be a JSON object' }], data: null }
+  }
+
+  const b = body as Record<string, unknown>
+  if (!Array.isArray(b.image_ids)) {
+    return { errors: [{ field: 'image_ids', message: 'image_ids must be an array of integers' }], data: null }
+  }
+  const ids: number[] = []
+  for (const raw of b.image_ids) {
+    if (typeof raw !== 'number' || !Number.isInteger(raw) || raw < 1) {
+      return { errors: [{ field: 'image_ids', message: 'image_ids must contain positive integers' }], data: null }
+    }
+    ids.push(raw)
+  }
+  if (new Set(ids).size !== ids.length) {
+    return { errors: [{ field: 'image_ids', message: 'image_ids must be unique' }], data: null }
+  }
+
+  return { errors: [], data: { image_ids: ids } }
 }
 
 export function validateCreateDiscountBody(body: unknown): { errors: ValidationError[]; data: AdminCreateDiscountBody | null } {

@@ -1,12 +1,16 @@
 <script setup lang="ts">
 import { computed, onMounted, reactive, ref } from 'vue'
 import {
+  addAdminProductImage,
   createAdminProduct,
+  deleteAdminProductImage,
   fetchAdminProducts,
   fetchAdminProductLines,
+  reorderAdminProductImages,
   updateAdminProduct,
   type AdminProduct,
   type AdminProductLine,
+  type AdminProductScreenshot,
   type CreateAdminProductPayload,
   type UpdateAdminProductPayload,
   AdminApiErrorResponse,
@@ -35,6 +39,10 @@ const editSuccess = ref('')
 const editImageUploading = ref(false)
 const editImageError = ref('')
 const editingId = ref<number | null>(null)
+
+const screenshotUploading = ref(false)
+const screenshotError = ref('')
+const screenshotBusyId = ref<number | null>(null)
 
 const createForm = reactive<CreateAdminProductPayload>({
   slug: '',
@@ -287,6 +295,69 @@ function formatMoney(value: number): string {
   return `฿${(value / 100).toLocaleString()}`
 }
 
+function applyScreenshots(productId: number, screenshots: AdminProductScreenshot[]) {
+  products.value = products.value.map((p) => (p.id === productId ? { ...p, screenshots } : p))
+}
+
+async function onScreenshotsSelected(event: Event, productId: number) {
+  const input = event.target as HTMLInputElement
+  const files = Array.from(input.files || [])
+  input.value = ''
+  if (files.length === 0) return
+
+  screenshotError.value = ''
+  screenshotUploading.value = true
+  try {
+    let screenshots: AdminProductScreenshot[] | null = null
+    for (const file of files) {
+      const fileError = validateImageFile(file)
+      if (fileError) {
+        screenshotError.value = fileError
+        break
+      }
+      const dataUrl = await readFileAsDataUrl(file)
+      screenshots = await addAdminProductImage(productId, dataUrl)
+    }
+    if (screenshots) applyScreenshots(productId, screenshots)
+  } catch (err) {
+    screenshotError.value = err instanceof AdminApiErrorResponse ? err.message : 'Failed to upload screenshot.'
+  } finally {
+    screenshotUploading.value = false
+  }
+}
+
+async function removeScreenshot(productId: number, imageId: number) {
+  screenshotError.value = ''
+  screenshotBusyId.value = imageId
+  try {
+    const screenshots = await deleteAdminProductImage(productId, imageId)
+    applyScreenshots(productId, screenshots)
+  } catch (err) {
+    screenshotError.value = err instanceof AdminApiErrorResponse ? err.message : 'Failed to delete screenshot.'
+  } finally {
+    screenshotBusyId.value = null
+  }
+}
+
+async function moveScreenshot(product: AdminProduct, index: number, direction: -1 | 1) {
+  const target = index + direction
+  if (target < 0 || target >= product.screenshots.length) return
+  const ids = product.screenshots.map((s) => s.id)
+  const [moved] = ids.splice(index, 1)
+  ids.splice(target, 0, moved)
+
+  screenshotError.value = ''
+  screenshotBusyId.value = product.screenshots[index].id
+  try {
+    const screenshots = await reorderAdminProductImages(product.id, ids)
+    applyScreenshots(product.id, screenshots)
+  } catch (err) {
+    screenshotError.value = err instanceof AdminApiErrorResponse ? err.message : 'Failed to reorder screenshots.'
+  } finally {
+    screenshotBusyId.value = null
+  }
+}
+
 onMounted(async () => {
   await loadProducts()
 })
@@ -497,6 +568,66 @@ onMounted(async () => {
                 <input v-model="editForm.active" type="checkbox" class="h-4 w-4 rounded border-sand bg-surface-alt text-primary focus:ring-primary" />
                 Active product
               </label>
+            </div>
+
+            <div class="space-y-3 border-t border-sand/60 pt-4">
+              <div class="flex items-center justify-between">
+                <label class="block text-sm font-medium text-foreground">Screenshots ({{ product.screenshots.length }})</label>
+                <p v-if="screenshotUploading" class="text-xs text-primary">Uploading...</p>
+              </div>
+              <p class="text-xs text-muted">Add extra product images shown on the product detail page. Drag order with the arrow buttons. First image displays first.</p>
+
+              <input
+                type="file"
+                accept="image/png,image/jpeg,image/webp,image/gif"
+                multiple
+                class="block w-full text-sm text-muted file:mr-3 file:rounded-md file:border-0 file:bg-primary file:px-4 file:py-2 file:text-sm file:font-semibold file:text-background hover:file:bg-primary-dark"
+                :disabled="screenshotUploading"
+                @change="onScreenshotsSelected($event, product.id)"
+              />
+              <p v-if="screenshotError" class="text-xs text-error">{{ screenshotError }}</p>
+
+              <ul v-if="product.screenshots.length > 0" class="space-y-2">
+                <li
+                  v-for="(shot, index) in product.screenshots"
+                  :key="shot.id"
+                  class="flex items-center gap-3 rounded-md border border-sand bg-surface-alt p-2"
+                >
+                  <img :src="shot.url" alt="Screenshot" class="w-16 h-16 rounded object-cover ring-1 ring-[var(--card-ring)]" />
+                  <div class="flex-1 text-xs text-muted">
+                    <p class="font-mono">#{{ index + 1 }}</p>
+                  </div>
+                  <div class="flex gap-1">
+                    <button
+                      type="button"
+                      class="px-2 py-1 text-xs rounded border border-sand bg-surface text-foreground hover:bg-surface-alt disabled:opacity-50"
+                      :disabled="index === 0 || screenshotBusyId === shot.id"
+                      aria-label="Move up"
+                      @click="moveScreenshot(product, index, -1)"
+                    >
+                      &uarr;
+                    </button>
+                    <button
+                      type="button"
+                      class="px-2 py-1 text-xs rounded border border-sand bg-surface text-foreground hover:bg-surface-alt disabled:opacity-50"
+                      :disabled="index === product.screenshots.length - 1 || screenshotBusyId === shot.id"
+                      aria-label="Move down"
+                      @click="moveScreenshot(product, index, 1)"
+                    >
+                      &darr;
+                    </button>
+                    <button
+                      type="button"
+                      class="px-2 py-1 text-xs rounded border border-error/40 text-error hover:bg-error/10 disabled:opacity-50"
+                      :disabled="screenshotBusyId === shot.id"
+                      @click="removeScreenshot(product.id, shot.id)"
+                    >
+                      Delete
+                    </button>
+                  </div>
+                </li>
+              </ul>
+              <p v-else class="text-xs text-muted italic">No screenshots yet.</p>
             </div>
 
             <div class="flex gap-2">

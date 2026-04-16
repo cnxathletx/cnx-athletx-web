@@ -68,6 +68,12 @@ export interface AdminInventoryItem {
   available_count: number
 }
 
+export interface AdminProductScreenshot {
+  id: number
+  url: string
+  sort_order: number
+}
+
 export interface AdminProduct {
   id: number
   product_line_id: number | null
@@ -84,6 +90,7 @@ export interface AdminProduct {
   stock_count: number
   reserved_count: number
   available_count: number
+  screenshots: AdminProductScreenshot[]
 }
 
 export interface CreateAdminProductPayload {
@@ -421,6 +428,40 @@ export async function updateAdminProduct(productId: number, payload: UpdateAdmin
   if (!res.ok) await parseAdminError(res)
   const data = (await res.json()) as { success: true; product: AdminProduct }
   return data.product
+}
+
+export async function addAdminProductImage(productId: number, url: string): Promise<AdminProductScreenshot[]> {
+  const res = await fetch(apiUrl(`/api/admin/products/${productId}/images`), {
+    method: 'POST',
+    credentials: 'include',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ url }),
+  })
+  if (!res.ok) await parseAdminError(res)
+  const data = (await res.json()) as { success: true; screenshots: AdminProductScreenshot[] }
+  return data.screenshots
+}
+
+export async function deleteAdminProductImage(productId: number, imageId: number): Promise<AdminProductScreenshot[]> {
+  const res = await fetch(apiUrl(`/api/admin/products/${productId}/images/${imageId}`), {
+    method: 'DELETE',
+    credentials: 'include',
+  })
+  if (!res.ok) await parseAdminError(res)
+  const data = (await res.json()) as { success: true; screenshots: AdminProductScreenshot[] }
+  return data.screenshots
+}
+
+export async function reorderAdminProductImages(productId: number, imageIds: number[]): Promise<AdminProductScreenshot[]> {
+  const res = await fetch(apiUrl(`/api/admin/products/${productId}/images/reorder`), {
+    method: 'PATCH',
+    credentials: 'include',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ image_ids: imageIds }),
+  })
+  if (!res.ok) await parseAdminError(res)
+  const data = (await res.json()) as { success: true; screenshots: AdminProductScreenshot[] }
+  return data.screenshots
 }
 
 // --- Admin Discount Codes ---

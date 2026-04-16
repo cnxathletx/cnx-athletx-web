@@ -1,5 +1,11 @@
 import { apiUrl } from './client'
 
+export interface ApiProductScreenshot {
+  id: number
+  url: string
+  sort_order: number
+}
+
 export interface ApiProduct {
   id: number
   slug: string
@@ -15,6 +21,7 @@ export interface ApiProduct {
   who_is_for: string | null
   regulatory_info: string | null
   product_line_name: string | null
+  screenshots: ApiProductScreenshot[]
 }
 
 export async function fetchProducts(): Promise<ApiProduct[]> {

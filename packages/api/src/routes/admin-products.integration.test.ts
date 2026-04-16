@@ -14,6 +14,7 @@ describe('GET /api/admin/products', () => {
       products: Array<{
         id: number; slug: string; name: string; active: boolean
         stock_count: number; reserved_count: number; available_count: number
+        screenshots: Array<{ id: number; url: string; sort_order: number }>
       }>
     }
     expect(data.products).toHaveLength(2)
@@ -21,6 +22,8 @@ describe('GET /api/admin/products', () => {
     expect(data.products[0].active).toBe(true)
     expect(data.products[0].stock_count).toBe(100)
     expect(data.products[0].available_count).toBe(100)
+    expect(Array.isArray(data.products[0].screenshots)).toBe(true)
+    expect(data.products[0].screenshots).toHaveLength(0)
   })
 })
 
@@ -131,6 +134,114 @@ describe('PATCH /api/admin/products/:id', () => {
       body: { name: 'nope' },
     })
     expect(res.status).toBe(404)
+  })
+})
+
+describe('Product screenshots', () => {
+  const sampleUrl = '/images/screenshots/a.jpg'
+  const otherUrl = '/images/screenshots/b.jpg'
+
+  it('adds screenshots with incrementing sort_order and returns them on product fetch', async () => {
+    const addA = await workerFetch('/api/admin/products/1/images', {
+      admin: true,
+      body: { url: sampleUrl },
+    })
+    expect(addA.status).toBe(201)
+
+    const addB = await workerFetch('/api/admin/products/1/images', {
+      admin: true,
+      body: { url: otherUrl },
+    })
+    expect(addB.status).toBe(201)
+
+    const listRes = await workerFetch('/api/admin/products', { admin: true })
+    const list = await listRes.json() as {
+      products: Array<{ id: number; screenshots: Array<{ id: number; url: string; sort_order: number }> }>
+    }
+    const target = list.products.find((p) => p.id === 1)!
+    expect(target.screenshots).toHaveLength(2)
+    expect(target.screenshots[0].url).toBe(sampleUrl)
+    expect(target.screenshots[0].sort_order).toBe(0)
+    expect(target.screenshots[1].url).toBe(otherUrl)
+    expect(target.screenshots[1].sort_order).toBe(1)
+  })
+
+  it('rejects invalid url', async () => {
+    const res = await workerFetch('/api/admin/products/1/images', {
+      admin: true,
+      body: { url: 'not a url' },
+    })
+    expect(res.status).toBe(400)
+  })
+
+  it('returns 404 for non-existent product', async () => {
+    const res = await workerFetch('/api/admin/products/999/images', {
+      admin: true,
+      body: { url: sampleUrl },
+    })
+    expect(res.status).toBe(404)
+  })
+
+  it('reorders screenshots', async () => {
+    const addA = await workerFetch('/api/admin/products/1/images', { admin: true, body: { url: sampleUrl } })
+    const addB = await workerFetch('/api/admin/products/1/images', { admin: true, body: { url: otherUrl } })
+    const a = (await addA.json() as { screenshots: Array<{ id: number }> }).screenshots[0]
+    const b = (await addB.json() as { screenshots: Array<{ id: number }> }).screenshots[1]
+
+    const reorderRes = await workerFetch('/api/admin/products/1/images/reorder', {
+      method: 'PATCH',
+      admin: true,
+      body: { image_ids: [b.id, a.id] },
+    })
+    expect(reorderRes.status).toBe(200)
+
+    const data = await reorderRes.json() as { screenshots: Array<{ id: number; sort_order: number }> }
+    expect(data.screenshots[0].id).toBe(b.id)
+    expect(data.screenshots[0].sort_order).toBe(0)
+    expect(data.screenshots[1].id).toBe(a.id)
+    expect(data.screenshots[1].sort_order).toBe(1)
+  })
+
+  it('rejects reorder with mismatched ids', async () => {
+    await workerFetch('/api/admin/products/1/images', { admin: true, body: { url: sampleUrl } })
+
+    const res = await workerFetch('/api/admin/products/1/images/reorder', {
+      method: 'PATCH',
+      admin: true,
+      body: { image_ids: [9999] },
+    })
+    expect(res.status).toBe(400)
+  })
+
+  it('deletes a screenshot', async () => {
+    const addRes = await workerFetch('/api/admin/products/1/images', { admin: true, body: { url: sampleUrl } })
+    const added = (await addRes.json() as { screenshots: Array<{ id: number }> }).screenshots[0]
+
+    const delRes = await workerFetch(`/api/admin/products/1/images/${added.id}`, {
+      method: 'DELETE',
+      admin: true,
+    })
+    expect(delRes.status).toBe(200)
+
+    const data = await delRes.json() as { screenshots: unknown[] }
+    expect(data.screenshots).toHaveLength(0)
+  })
+
+  it('returns 404 deleting a missing screenshot', async () => {
+    const res = await workerFetch('/api/admin/products/1/images/9999', {
+      method: 'DELETE',
+      admin: true,
+    })
+    expect(res.status).toBe(404)
+  })
+
+  it('exposes screenshots on public product detail endpoint', async () => {
+    await workerFetch('/api/admin/products/1/images', { admin: true, body: { url: sampleUrl } })
+
+    const res = await workerFetch('/api/products/plant-protein-500g')
+    const data = await res.json() as { product: { screenshots: Array<{ url: string }> } }
+    expect(data.product.screenshots).toHaveLength(1)
+    expect(data.product.screenshots[0].url).toBe(sampleUrl)
   })
 })
 

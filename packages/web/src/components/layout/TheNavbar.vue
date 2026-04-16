@@ -6,6 +6,7 @@ import { useTheme } from '../../composables/useTheme'
 import { useCartStore } from '../../stores/cart'
 import { useAuthStore } from '../../stores/auth'
 import { setLocale } from '../../i18n'
+import BrandMark from '../brand/BrandMark.vue'
 
 const { t, locale } = useI18n({ useScope: 'global' })
 const { isDark, toggle } = useTheme()
@@ -34,14 +35,17 @@ async function handleLogout() {
     <div class="mx-auto max-w-[1280px] px-4 sm:px-6 lg:px-8">
       <div class="flex items-center justify-between h-16">
         <!-- Logo -->
-        <RouterLink to="/" class="flex flex-col shrink-0 leading-none">
-          <div class="flex items-center gap-2">
-            <span class="text-xl font-bold tracking-tight text-foreground">CNX</span>
-            <span class="text-xl font-bold tracking-tight text-primary">AthletX</span>
+        <RouterLink to="/" class="flex items-center gap-3 shrink-0 leading-none">
+          <BrandMark class="w-8 h-8 text-foreground" />
+          <div class="flex flex-col">
+            <div class="flex items-center gap-2">
+              <span class="text-xl font-bold tracking-tight text-foreground">CNX</span>
+              <span class="text-xl font-bold tracking-tight text-primary">AthletX</span>
+            </div>
+            <span class="mt-1 text-[10px] font-medium uppercase tracking-[0.15em] text-muted">
+              {{ t('brand.slogan') }}
+            </span>
           </div>
-          <span class="mt-1 text-[10px] font-medium uppercase tracking-[0.15em] text-muted">
-            {{ t('brand.slogan') }}
-          </span>
         </RouterLink>
 
         <!-- Desktop Navigation -->

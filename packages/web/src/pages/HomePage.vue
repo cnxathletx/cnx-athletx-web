@@ -23,7 +23,7 @@ useJsonLd(() => ({
   '@type': 'Organization',
   name: 'CNX AthletX',
   url: 'https://www.cnxnature.com',
-  logo: 'https://www.cnxnature.com/og-default.jpg',
+  logo: 'https://www.cnxnature.com/og-image.png',
   description: 'Plant-based protein powder from Chiang Mai, Thailand.',
   address: {
     '@type': 'PostalAddress',

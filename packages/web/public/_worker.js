@@ -10,7 +10,7 @@ function buildOrganizationJsonLd() {
     '@type': 'Organization',
     name: 'CNX AthletX',
     url: SITE_URL,
-    logo: `${SITE_URL}/og-default.jpg`,
+    logo: `${SITE_URL}/og-image.png`,
     description: 'Plant-based protein powder from Chiang Mai, Thailand.',
     address: {
       '@type': 'PostalAddress',
@@ -65,7 +65,7 @@ function buildProductJsonLd(product) {
 
 function buildMetaTags(title, description, ogImage, canonicalUrl) {
   const fullTitle = title ? `${title} — CNX AthletX` : 'CNX AthletX'
-  const img = ogImage || `${SITE_URL}/og-default.jpg`
+  const img = ogImage || `${SITE_URL}/og-image.png`
   return `
     <title>${fullTitle}</title>
     <meta name="description" content="${description}" />

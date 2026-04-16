@@ -185,8 +185,8 @@ describe('buildOrderCreatedEmail', () => {
       makeOrderData({ customer_name: '<img src=x onerror=alert(1)>' }),
       makePayment()
     )
-    expect(html).not.toContain('<img')
-    expect(html).toContain('&lt;img')
+    expect(html).not.toContain('<img src=x')
+    expect(html).toContain('&lt;img src=x onerror=alert(1)&gt;')
   })
 
   it('includes items table and totals', () => {

@@ -10,7 +10,7 @@ export interface HeadOptions {
 
 const BASE_TITLE = 'CNX AthletX'
 const SITE_URL = 'https://www.cnxnature.com'
-const DEFAULT_OG_IMAGE = `${SITE_URL}/og-default.jpg`
+const DEFAULT_OG_IMAGE = `${SITE_URL}/og-image.png`
 
 function unref<T>(val: T | Ref<T>): T {
   return isRef(val) ? val.value : val

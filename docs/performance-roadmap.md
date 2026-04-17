@@ -14,12 +14,15 @@ This is a code-and-build review, not a full lab benchmark. The priorities below 
 
 ## Snapshot
 
-- `dist/assets/index-*.js`: `259.07 kB` raw / `88.39 kB` gzip.
-- `dist/assets/useThaiAddress-*.js`: `211.10 kB` raw / `52.43 kB` gzip.
+- `dist/assets/index-*.js`: `261.89 kB` raw / `89.14 kB` gzip.
+- `dist/assets/useThaiAddress-*.js`: `211.10 kB` raw / `52.42 kB` gzip.
 - `dist/assets/PaymentInstructionsPage-*.js`: `82.02 kB` raw / `28.72 kB` gzip.
-- Homepage photo library under `packages/web/src/assets/photos`: `39,207,289` bytes raw.
-- Community photo set alone: `35.75 MiB` raw.
-- Initial homepage image set is especially heavy: `carrousel-1.jpeg` + `commu-1.jpeg` + `commu-2.jpeg` + `commu-3.jpeg` totals `10.19 MiB` raw before any later carousel rotation.
+- Largest homepage image emitted in the current build: `251.64 kB`.
+
+## Implemented Since Review
+
+- Homepage media delivery was optimized with resized responsive variants, deferred community loading, and removal of the old oversized root photo set.
+- Chat no longer initializes on storefront page mount; the widget now stays idle until the user opens it.
 
 ## What Is Already Good
 
@@ -29,37 +32,12 @@ This is a code-and-build review, not a full lab benchmark. The priorities below 
 
 ## Prioritized Findings
 
-### 1. Homepage media payload is far too large
-
-Priority: P0
-
-Evidence:
-
-- `packages/web/src/pages/HomePage.vue:12-29` eagerly builds the story and community image sets from local assets.
-- `packages/web/src/pages/HomePage.vue:331-377` renders those assets directly into `<img>` tags, including three community images visible at once.
-- Production build output contains homepage images ranging from `224.97 kB` to `8.15 MB`.
-
-Why it matters:
-
-- The homepage can easily move multi-megabyte image payloads during a normal session.
-- The default visible image set is already about `10.19 MiB`, which will hurt LCP, mobile data usage, and repeat navigation smoothness.
-- The rotating gallery means users continue downloading more large images after first paint.
-
-Recommendation:
-
-- Re-encode all homepage photography to web delivery formats and sizes first. Target AVIF/WebP plus a capped JPEG fallback.
-- Generate responsive variants and use `srcset`/`sizes` instead of serving original-resolution files everywhere.
-- Keep above-the-fold imagery small and defer the community gallery until after initial content is stable.
-- If Cloudflare image transforms are available, serve resized variants from the edge instead of shipping the originals.
-
-### 2. Chat transport scales linearly with transcript size and starts work too early
+### 1. Chat transport scales linearly with transcript size
 
 Priority: P1
 
 Evidence:
 
-- `packages/web/src/App.vue:21-22` mounts `ChatWidget` on every page.
-- `packages/web/src/components/chat/ChatWidget.vue:23-25` calls `chat.loadExisting()` on mount, even before the widget is opened.
 - `packages/web/src/stores/chat.ts:14` polls every `4000` ms.
 - `packages/web/src/stores/chat.ts:132-143` refetches the conversation on every poll.
 - `packages/api/src/routes/chat.ts:81-90` always loads the full message list for a conversation.
@@ -73,12 +51,11 @@ Why it matters:
 
 Recommendation:
 
-- Do not load chat state on app mount. Delay initialization until the widget is opened.
 - Replace full-transcript polling with incremental sync: `since_message_id`, `updated_since`, or cursor-based pagination.
 - Return unread counts and conversation metadata separately from message history.
 - If chat becomes a bigger product surface, move from short-interval polling to SSE or WebSocket transport.
 
-### 3. Checkout ships a large Thai-address chunk up front
+### 2. Checkout ships a large Thai-address chunk up front
 
 Priority: P1
 
@@ -100,7 +77,7 @@ Recommendation:
 - Consider moving province/district/subdistrict lookup to a small API endpoint or a separate worker KV-backed asset if the dataset grows.
 - Pre-sort lookup arrays once during data preparation rather than sorting on every computed evaluation.
 
-### 4. Product detail pages make a redundant full-catalog request
+### 3. Product detail pages make a redundant full-catalog request
 
 Priority: P1
 
@@ -119,7 +96,7 @@ Recommendation:
 - Include a related-product summary in `/api/products/:slug`, or provide a dedicated lightweight related-products endpoint.
 - Alternatively, cache the catalog in a Pinia store and reuse it across Home, Shop, and Product Detail.
 
-### 5. Admin product listing has an N+1 screenshot query pattern
+### 4. Admin product listing has an N+1 screenshot query pattern
 
 Priority: P2
 
@@ -141,22 +118,7 @@ Recommendation:
 
 ## Roadmap
 
-### Phase 1: Cut the biggest customer-facing costs
-
-Target: 2-4 days
-
-- Compress and resize all homepage photography.
-- Add responsive image delivery for story and community sections.
-- Keep only one high-priority homepage image above the fold.
-- Delay chat initialization until explicit widget open.
-
-Expected outcome:
-
-- Better LCP on the homepage.
-- Lower mobile bandwidth usage.
-- Less background work on every storefront page.
-
-### Phase 2: Remove avoidable network and CPU work
+### Phase 1: Remove avoidable network and CPU work
 
 Target: 2-3 days
 
@@ -170,7 +132,7 @@ Expected outcome:
 - Faster checkout route activation.
 - Fewer redundant storefront fetches.
 
-### Phase 3: Improve scaling paths and guardrails
+### Phase 2: Improve scaling paths and guardrails
 
 Target: 1-2 days
 
@@ -185,8 +147,6 @@ Expected outcome:
 
 ## Success Metrics
 
-- Homepage initial visible images under `1.5 MiB` transferred on a mobile-sized viewport.
-- No single homepage image asset above `300 kB` for the default viewport.
 - Checkout address chunk below `30 kB` gzip before interaction.
 - Product detail view loads related-product data without a second full-catalog request.
 - Chat steady-state refreshes return only deltas, not the full transcript.
@@ -194,9 +154,7 @@ Expected outcome:
 
 ## Recommended Implementation Order
 
-1. Homepage image optimization.
-2. Lazy chat initialization.
-3. Incremental chat sync.
-4. Lazy-loaded Thai address data.
-5. Product-detail related-product API cleanup.
-6. Admin product batching and CI budgets.
+1. Incremental chat sync.
+2. Lazy-loaded Thai address data.
+3. Product-detail related-product API cleanup.
+4. Admin product batching and CI budgets.

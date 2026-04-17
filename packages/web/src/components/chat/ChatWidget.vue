@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onBeforeUnmount, onMounted, watch } from 'vue'
+import { computed, onBeforeUnmount, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useRoute } from 'vue-router'
 import { useChatStore } from '../../stores/chat'
@@ -19,10 +19,6 @@ const showWidget = computed(() => !isAdminRoute.value)
 const hasConversation = computed(() => chat.conversation !== null)
 const isOpen = computed(() => chat.isOpen)
 const isClosed = computed(() => chat.conversation?.status === 'closed')
-
-onMounted(async () => {
-  await chat.loadExisting()
-})
 
 onBeforeUnmount(() => {
   chat.closeWidget()

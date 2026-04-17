@@ -20,6 +20,17 @@ interface PublicProductRow {
   product_line_translations_json: string | null
 }
 
+interface RelatedProductRow {
+  id: number
+  slug: string
+  name: string
+  price_thb: number
+  weight_g: number
+  image_url: string
+  available_stock: number
+  product_translations_json: string | null
+}
+
 const SUPPORTED_LOCALES = ['en', 'th'] as const
 type Locale = (typeof SUPPORTED_LOCALES)[number]
 
@@ -79,6 +90,23 @@ function applyTranslations(row: PublicProductRow, locale: Locale) {
     who_is_for: pickProductLine('who_is_for', row.who_is_for),
     regulatory_info: pickProductLine('regulatory_info', row.regulatory_info),
     product_line_name: productLineName,
+  }
+}
+
+function applyRelatedTranslation(row: RelatedProductRow, locale: Locale) {
+  const entry = pickLocaleEntry(row.product_translations_json, locale)
+  const name = (() => {
+    const t = entry?.['name']
+    return typeof t === 'string' && t.trim() !== '' ? t : row.name
+  })()
+  return {
+    id: row.id,
+    slug: row.slug,
+    name,
+    price_thb: row.price_thb,
+    weight_g: row.weight_g,
+    image_url: row.image_url,
+    available_stock: row.available_stock,
   }
 }
 
@@ -160,8 +188,28 @@ export function registerProductRoutes(router: RouterType) {
         return Response.json({ error: 'Product not found' }, { status: 404 })
       }
 
-      const screenshotMap = await loadScreenshotsByProductIds(env, [product.id])
-      return Response.json({ product: { ...applyTranslations(product, locale), screenshots: screenshotMap.get(product.id) ?? [] } })
+      const [screenshotMap, relatedRow] = await Promise.all([
+        loadScreenshotsByProductIds(env, [product.id]),
+        env.DB.prepare(
+          `SELECT p.id, p.slug, p.name, p.price_thb, p.weight_g, p.image_url,
+                  (i.stock_count - i.reserved_count) AS available_stock,
+                  p.translations_json AS product_translations_json
+           FROM products p
+           JOIN inventory i ON i.product_id = p.id
+           WHERE p.slug != ? AND p.active = 1 AND p.archived = 0
+           ORDER BY p.id ASC
+           LIMIT 1`,
+        )
+          .bind(slug)
+          .first<RelatedProductRow>(),
+      ])
+
+      const related = relatedRow ? applyRelatedTranslation(relatedRow, locale) : null
+
+      return Response.json({
+        product: { ...applyTranslations(product, locale), screenshots: screenshotMap.get(product.id) ?? [] },
+        related,
+      })
     } catch {
       return Response.json({ error: 'Database error' }, { status: 500 })
     }

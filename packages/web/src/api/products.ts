@@ -36,6 +36,21 @@ export interface ApiProduct {
   screenshots: ApiProductScreenshot[]
 }
 
+export interface ApiRelatedProduct {
+  id: number
+  slug: string
+  name: string
+  price_thb: number
+  weight_g: number
+  image_url: string
+  available_stock: number
+}
+
+export interface ProductDetailResponse {
+  product: ApiProduct
+  related: ApiRelatedProduct | null
+}
+
 export async function fetchProducts(): Promise<ApiProduct[]> {
   const res = await fetch(apiUrl(`/api/products?locale=${encodeURIComponent(currentLocale())}`))
   if (!res.ok) throw new Error('Failed to fetch products')
@@ -43,12 +58,12 @@ export async function fetchProducts(): Promise<ApiProduct[]> {
   return data.products
 }
 
-export async function fetchProductBySlug(slug: string): Promise<ApiProduct> {
+export async function fetchProductBySlug(slug: string): Promise<ProductDetailResponse> {
   const res = await fetch(apiUrl(`/api/products/${encodeURIComponent(slug)}?locale=${encodeURIComponent(currentLocale())}`))
   if (res.status === 404) throw new Error('Product not found')
   if (!res.ok) throw new Error('Failed to fetch product')
-  const data = (await res.json()) as { product: ApiProduct }
-  return data.product
+  const data = (await res.json()) as ProductDetailResponse
+  return data
 }
 
 export const formatPrice = formatMoney

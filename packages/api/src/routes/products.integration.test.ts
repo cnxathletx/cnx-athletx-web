@@ -27,6 +27,28 @@ describe('GET /api/products/:slug', () => {
     expect(data.product.name).toBe('CNX Plant Protein 500g')
   })
 
+  it('embeds a sibling product under `related`', async () => {
+    const res = await workerFetch('/api/products/plant-protein-500g')
+    expect(res.status).toBe(200)
+
+    const data = await res.json() as {
+      related: { slug: string; name: string; price_thb: number } | null
+    }
+    expect(data.related).not.toBeNull()
+    expect(data.related!.slug).not.toBe('plant-protein-500g')
+  })
+
+  it('returns related: null when the requested product is the only one', async () => {
+    const res = await workerFetch('/api/products/plant-protein-1000g')
+    expect(res.status).toBe(200)
+
+    const data = await res.json() as {
+      related: { slug: string } | null
+    }
+    expect(data.related).not.toBeNull()
+    expect(data.related!.slug).toBe('plant-protein-500g')
+  })
+
   it('returns 404 for non-existent slug', async () => {
     const res = await workerFetch('/api/products/does-not-exist')
     expect(res.status).toBe(404)

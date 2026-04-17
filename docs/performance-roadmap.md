@@ -24,6 +24,7 @@ This is a code-and-build review, not a full lab benchmark. The priorities below 
 - Homepage media delivery was optimized with resized responsive variants, deferred community loading, and removal of the old oversized root photo set.
 - Chat no longer initializes on storefront page mount; the widget now stays idle until the user opens it.
 - Chat transport now uses incremental sync: the GET and POST message endpoints accept `since_message_id` and return only newer messages; unread count is computed via SQL independent of the message payload. The frontend store tracks the last known message id, passes it on every poll and send, and merges deltas instead of replacing the transcript.
+- Product detail pages no longer refetch the full catalog for related products. `/api/products/:slug` now embeds a `related` summary (one sibling product with card-essential fields, locale-aware name) selected via a single SQL query, and the detail page consumes it directly.
 
 ## What Is Already Good
 
@@ -55,26 +56,7 @@ Recommendation:
 - Consider moving province/district/subdistrict lookup to a small API endpoint or a separate worker KV-backed asset if the dataset grows.
 - Pre-sort lookup arrays once during data preparation rather than sorting on every computed evaluation.
 
-### 2. Product detail pages make a redundant full-catalog request
-
-Priority: P1
-
-Evidence:
-
-- `packages/web/src/pages/ProductDetailPage.vue:197-211` fetches the product by slug, then immediately fetches the full product list just to pick one related product.
-
-Why it matters:
-
-- Every product-detail visit pays for two API requests instead of one.
-- The second request duplicates data that is already fetched elsewhere in the storefront and can grow with catalog size.
-- Locale changes retrigger the same pattern because `loadProduct()` runs again on locale watch.
-
-Recommendation:
-
-- Include a related-product summary in `/api/products/:slug`, or provide a dedicated lightweight related-products endpoint.
-- Alternatively, cache the catalog in a Pinia store and reuse it across Home, Shop, and Product Detail.
-
-### 3. Admin product listing has an N+1 screenshot query pattern
+### 2. Admin product listing has an N+1 screenshot query pattern
 
 Priority: P2
 
@@ -98,15 +80,13 @@ Recommendation:
 
 ### Phase 1: Remove avoidable network and CPU work
 
-Target: 1-2 days
+Target: 1 day
 
 - Lazy-load Thai address data.
-- Stop refetching the entire catalog from product-detail pages.
 
 Expected outcome:
 
 - Faster checkout route activation.
-- Fewer redundant storefront fetches.
 
 ### Phase 2: Improve scaling paths and guardrails
 
@@ -124,11 +104,9 @@ Expected outcome:
 ## Success Metrics
 
 - Checkout address chunk below `30 kB` gzip before interaction.
-- Product detail view loads related-product data without a second full-catalog request.
 - `/api/admin/products` executes in a constant number of queries.
 
 ## Recommended Implementation Order
 
 1. Lazy-loaded Thai address data.
-2. Product-detail related-product API cleanup.
-3. Admin product batching and CI budgets.
+2. Admin product batching and CI budgets.

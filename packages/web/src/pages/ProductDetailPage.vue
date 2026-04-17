@@ -7,10 +7,10 @@ import AppBadge from '../components/ui/AppBadge.vue'
 import ProductCard from '../components/ui/ProductCard.vue'
 import {
   fetchProductBySlug,
-  fetchProducts,
   formatPrice,
   formatWeight,
   type ApiProduct,
+  type ApiRelatedProduct,
 } from '../api/products'
 import { useCartStore } from '../stores/cart'
 import { useHead } from '../composables/useHead'
@@ -23,7 +23,7 @@ const cart = useCartStore()
 const route = useRoute()
 
 const product = ref<ApiProduct | null>(null)
-const relatedProduct = ref<ApiProduct | null>(null)
+const relatedProduct = ref<ApiRelatedProduct | null>(null)
 const loading = ref(true)
 const error = ref('')
 const quantity = ref(1)
@@ -204,11 +204,9 @@ async function loadProduct(slug: string) {
   closeLightbox()
 
   try {
-    product.value = await fetchProductBySlug(slug)
-
-    // Fetch related product
-    const allProducts = await fetchProducts()
-    relatedProduct.value = allProducts.find((p) => p.slug !== slug) || null
+    const detail = await fetchProductBySlug(slug)
+    product.value = detail.product
+    relatedProduct.value = detail.related
   } catch (e) {
     error.value = e instanceof Error ? e.message : 'Something went wrong'
     product.value = null

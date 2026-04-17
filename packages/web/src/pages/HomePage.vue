@@ -176,7 +176,7 @@ onBeforeUnmount(() => {
           <!-- Text Column -->
           <div class="space-y-6">
             <span
-              class="inline-flex items-center bg-accent text-background text-xs font-semibold uppercase tracking-wider rounded-full px-3 py-1"
+              class="inline-flex items-center bg-accent text-white text-xs font-semibold uppercase tracking-wider rounded-full px-3 py-1"
             >
               {{ t('home.badge') }}
             </span>

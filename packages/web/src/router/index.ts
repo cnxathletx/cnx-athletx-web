@@ -163,8 +163,13 @@ router.afterEach(() => {
 
 router.beforeEach(async (to) => {
   const auth = useAuthStore()
-  if (!auth.initialized) {
+  const needsAuthKnown =
+    Boolean(to.meta.requiresAuth) || to.name === 'login' || to.name === 'auth-verify'
+
+  if (needsAuthKnown && !auth.initialized) {
     await auth.init()
+  } else if (!auth.initialized) {
+    void auth.init()
   }
 
   if (to.meta.requiresAuth && !auth.isAuthenticated) {

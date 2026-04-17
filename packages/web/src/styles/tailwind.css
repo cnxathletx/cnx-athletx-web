@@ -1,5 +1,15 @@
 @import 'tailwindcss';
 
+/* Fallback font metrics adjusted to match Montserrat to minimize CLS on font swap */
+@font-face {
+  font-family: 'Montserrat Fallback';
+  src: local('Arial');
+  size-adjust: 106.7%;
+  ascent-override: 92.5%;
+  descent-override: 24%;
+  line-gap-override: 0%;
+}
+
 html,
 body {
   background-color: var(--bg);
@@ -9,12 +19,12 @@ body {
 :root {
   --bg: #2E2B26;
   --fg: #E5DDD0;
-  --primary: #8B9A7B;
-  --primary-light: #A3B293;
-  --primary-dark: #6F7F63;
+  --primary: #A3B293;
+  --primary-light: #BDCBA9;
+  --primary-dark: #8B9A7B;
   --accent: #B53A32;
-  --accent-light: #D4524D;
-  --sage: #8B9A7B;
+  --accent-light: #E87570;
+  --sage: #A3B293;
   --sand: #3A3730;
   --surface: #35322C;
   --surface-alt: #3D3A34;
@@ -55,7 +65,7 @@ body {
 }
 
 @theme {
-  --font-sans: 'Montserrat', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  --font-sans: 'Montserrat', 'Montserrat Fallback', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
 
   --color-background: var(--bg);
   --color-foreground: var(--fg);

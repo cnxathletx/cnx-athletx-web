@@ -176,7 +176,7 @@ onBeforeUnmount(() => {
           <!-- Text Column -->
           <div class="space-y-6">
             <span
-              class="inline-flex items-center bg-accent/10 text-accent text-xs font-semibold uppercase tracking-wider rounded-full px-3 py-1"
+              class="inline-flex items-center bg-accent text-background text-xs font-semibold uppercase tracking-wider rounded-full px-3 py-1"
             >
               {{ t('home.badge') }}
             </span>
@@ -395,17 +395,21 @@ onBeforeUnmount(() => {
             </transition>
             <div
               v-if="storyImages.length > 1"
-              class="absolute bottom-3 left-1/2 -translate-x-1/2 flex gap-1.5"
+              class="absolute bottom-1 left-1/2 -translate-x-1/2 flex"
             >
               <button
                 v-for="(_, i) in storyImages"
                 :key="i"
                 type="button"
-                class="h-1.5 rounded-full transition-all"
-                :class="i === storyIndex ? 'w-6 bg-white' : 'w-1.5 bg-white/50 hover:bg-white/75'"
+                class="p-3 flex items-center justify-center"
                 :aria-label="`Show image ${i + 1}`"
                 @click="storyIndex = i"
-              />
+              >
+                <span
+                  class="block h-1.5 rounded-full transition-all"
+                  :class="i === storyIndex ? 'w-6 bg-white' : 'w-1.5 bg-white/50 hover:bg-white/75'"
+                />
+              </button>
             </div>
           </div>
         </div>

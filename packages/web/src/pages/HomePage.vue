@@ -9,29 +9,60 @@ import { fetchProducts, formatPrice, formatWeight, type ApiProduct } from '../ap
 import { useHead } from '../composables/useHead'
 import { useJsonLd } from '../composables/useJsonLd'
 
-const storyImageModules = import.meta.glob('../assets/photos/our-story/*.{jpeg,jpg,png,webp}', {
+type ResponsiveImage = {
+  key: string
+  src: string
+  srcset: string
+}
+
+function buildResponsiveImages(modules: Record<string, string>): ResponsiveImage[] {
+  const grouped = new Map<string, Array<{ width: number; url: string }>>()
+
+  for (const [path, url] of Object.entries(modules)) {
+    const match = path.match(/\/([^/]+)-(\d+)w\.jpg$/)
+    if (!match) continue
+
+    const [, key, widthRaw] = match
+    const variants = grouped.get(key) ?? []
+    variants.push({ width: Number(widthRaw), url })
+    grouped.set(key, variants)
+  }
+
+  return Array.from(grouped.entries())
+    .sort(([a], [b]) => a.localeCompare(b, undefined, { numeric: true }))
+    .map(([key, variants]) => {
+      variants.sort((a, b) => a.width - b.width)
+      return {
+        key,
+        src: variants[variants.length - 1]?.url ?? '',
+        srcset: variants.map((variant) => `${variant.url} ${variant.width}w`).join(', '),
+      }
+    })
+}
+
+const storyImageModules = import.meta.glob('../assets/photos/optimized/our-story/*.jpg', {
   eager: true,
   import: 'default',
   query: '?url',
 }) as Record<string, string>
-const storyImages = Object.entries(storyImageModules)
-  .sort(([a], [b]) => a.localeCompare(b, undefined, { numeric: true }))
-  .map(([, url]) => url)
+const storyImages = buildResponsiveImages(storyImageModules)
 const storyIndex = ref(0)
 let storyTimer: ReturnType<typeof setInterval> | null = null
 
 const communityImageModules = import.meta.glob(
-  '../assets/photos/join-the-community/*.{jpeg,jpg,png,webp}',
+  '../assets/photos/optimized/join-the-community/*.jpg',
   { eager: true, import: 'default', query: '?url' },
 ) as Record<string, string>
-const communityImages = Object.entries(communityImageModules)
-  .sort(([a], [b]) => a.localeCompare(b, undefined, { numeric: true }))
-  .map(([, url]) => url)
+const communityImages = buildResponsiveImages(communityImageModules)
 const communitySlots = ref<number[]>(
   Array.from({ length: 3 }, (_, i) => Math.min(i, Math.max(0, communityImages.length - 1))),
 )
+const communitySection = ref<HTMLElement | null>(null)
+const communityVisible = ref(false)
 const communityTimeouts: ReturnType<typeof setTimeout>[] = []
 const communityTimers: ReturnType<typeof setInterval>[] = []
+let communityObserver: IntersectionObserver | null = null
+let communityRotationStarted = false
 
 function rotateCommunitySlot(slot: number) {
   if (communityImages.length <= 3) return
@@ -45,6 +76,21 @@ function rotateCommunitySlot(slot: number) {
   const updated = [...communitySlots.value]
   updated[slot] = next
   communitySlots.value = updated
+}
+
+function startCommunityRotation() {
+  if (communityRotationStarted || communityImages.length <= 3) return
+
+  communityRotationStarted = true
+  for (let slot = 0; slot < 3; slot++) {
+    const startDelay = slot * 1600
+    const timeout = setTimeout(() => {
+      rotateCommunitySlot(slot)
+      const timer = setInterval(() => rotateCommunitySlot(slot), 5000)
+      communityTimers.push(timer)
+    }, startDelay)
+    communityTimeouts.push(timeout)
+  }
 }
 
 const { t } = useI18n({ useScope: 'global' })
@@ -93,21 +139,29 @@ onMounted(async () => {
     }, 4000)
   }
 
-  if (communityImages.length > 3) {
-    for (let slot = 0; slot < 3; slot++) {
-      const startDelay = slot * 1600
-      const timeout = setTimeout(() => {
-        rotateCommunitySlot(slot)
-        const timer = setInterval(() => rotateCommunitySlot(slot), 5000)
-        communityTimers.push(timer)
-      }, startDelay)
-      communityTimeouts.push(timeout)
-    }
+  if (!communitySection.value || typeof IntersectionObserver === 'undefined') {
+    communityVisible.value = true
+    startCommunityRotation()
+    return
   }
+
+  communityObserver = new IntersectionObserver(
+    (entries) => {
+      if (!entries.some((entry) => entry.isIntersecting)) return
+      communityVisible.value = true
+      startCommunityRotation()
+      communityObserver?.disconnect()
+      communityObserver = null
+    },
+    { rootMargin: '200px 0px' },
+  )
+
+  communityObserver.observe(communitySection.value)
 })
 
 onBeforeUnmount(() => {
   if (storyTimer) clearInterval(storyTimer)
+  communityObserver?.disconnect()
   communityTimeouts.forEach(clearTimeout)
   communityTimers.forEach(clearInterval)
 })
@@ -329,11 +383,14 @@ onBeforeUnmount(() => {
           >
             <transition name="story-fade" mode="default">
               <img
-                :key="storyImages[storyIndex]"
-                :src="storyImages[storyIndex]"
+                :key="storyImages[storyIndex]?.key"
+                :src="storyImages[storyIndex]?.src"
+                :srcset="storyImages[storyIndex]?.srcset"
                 :alt="t('home.brandStoryTitle')"
                 class="absolute inset-0 w-full h-full object-cover"
                 decoding="async"
+                loading="lazy"
+                sizes="(min-width: 1024px) 616px, (min-width: 640px) calc(100vw - 3rem), calc(100vw - 2rem)"
               />
             </transition>
             <div
@@ -356,7 +413,7 @@ onBeforeUnmount(() => {
     </section>
 
     <!-- ============ COMMUNITY ============ -->
-    <section class="bg-background">
+    <section ref="communitySection" class="bg-background">
       <div class="mx-auto max-w-[1280px] px-4 sm:px-6 lg:px-8 py-16 sm:py-24">
         <h2 class="text-3xl sm:text-4xl font-bold text-foreground text-center mb-12">
           {{ t('home.communityTitle') }}
@@ -369,12 +426,19 @@ onBeforeUnmount(() => {
           >
             <transition name="story-fade" mode="default">
               <img
-                :key="communityImages[slotIdx]"
-                :src="communityImages[slotIdx]"
+                v-if="communityVisible"
+                :key="communityImages[slotIdx]?.key"
+                :src="communityImages[slotIdx]?.src"
+                :srcset="communityImages[slotIdx]?.srcset"
                 :alt="t('home.communityTitle')"
                 class="absolute inset-0 w-full h-full object-cover"
                 decoding="async"
                 loading="lazy"
+                sizes="(min-width: 1024px) 392px, (min-width: 640px) calc(50vw - 2rem), calc(100vw - 2rem)"
+              />
+              <div
+                v-else
+                class="absolute inset-0 bg-gradient-to-br from-primary/10 via-sage/10 to-accent/10"
               />
             </transition>
           </div>

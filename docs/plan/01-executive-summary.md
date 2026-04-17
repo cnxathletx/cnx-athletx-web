@@ -1,88 +1,112 @@
-# CNX AthletX — Implementation Plan
+# CNX AthletX — Executive Summary
 
-## Executive Summary
+Last updated: 2026-04-17
 
-CNX AthletX is a lean ecommerce platform for selling plant-based protein powder from Chiang Mai, Thailand. The platform runs entirely on Cloudflare infrastructure (Pages, Workers, D1) with manual payment verification via PromptPay/Thai bank transfer and manual fulfillment managed through an admin dashboard.
+## Current Status
 
-### Version Roadmap
+CNX AthletX is a pre-launch ecommerce platform for selling plant-based protein products from Chiang Mai, Thailand. The codebase is materially beyond an early MVP, but **v1 has not been released yet**. Today the repository represents a launch candidate with most core commerce, operations, and support workflows implemented on Cloudflare Pages, Workers, and D1.
 
-| Version | Scope | Target |
-|---------|-------|--------|
-| **v1** | Full storefront + manual PromptPay checkout + admin dashboard + discount codes + Resend emails + customer accounts (magic link auth, order history, faster checkout). 2 SKUs (500g, 1000g). No payment gateway. | MVP Launch |
-| **v1.5** | Payment proof image upload (R2 storage), order auto-expiry (24h unpaid), admin email resend button, basic analytics dashboard, brand story video embed on homepage | Fast Follow |
-| **v2** | 2C2P payment gateway integration, automated payment confirmation, additional SKUs, Thai language support, saved addresses | Growth |
+The current product supports:
+- Storefront browsing with real product data from D1
+- English and Thai customer-facing localization
+- Cart, checkout, and manual PromptPay / bank transfer payment instructions
+- Payment proof submission by transfer reference
+- Public order lookup and order status tracking
+- Passwordless customer accounts with magic links, order history, and saved address support
+- Admin operations for orders, inventory, products, product lines, discounts, site settings, support chat, and income reporting
+- Transactional email flows through Resend
 
-### Non-Goals (v1)
+The main gap is no longer basic product implementation. The remaining work for v1 release is launch hardening: production validation, browser/device QA, SEO/performance verification, deployment/config review, and final operational readiness.
+
+### Release Roadmap
+
+| Stage | Scope | Status |
+|-------|-------|--------|
+| **Current build** | Core storefront, checkout, manual payment workflow, payment proof, accounts, admin dashboard, discounts, settings, chat, reporting, and email flows | Implemented in repo, not released |
+| **v1 release** | Production-ready launch of the existing manual-commerce stack with final QA, config validation, content review, and release checklist completion | Pending |
+| **Post-launch** | Payment proof image upload (R2), unpaid order auto-expiry, deeper analytics, operational polish, and possible payment gateway automation | Future |
+
+### Non-Goals For v1 Release
+
 - No payment gateway integration
-- No automated bank confirmation
-- No advanced promotions engine (stacking rules, bundles, or automatic campaign logic)
-- No complex inventory beyond stock count
-- No saved addresses management (pre-fill from last order only)
+- No automated bank reconciliation or payment confirmation
+- No image-based payment proof upload yet
+- No fully automated fulfillment workflow
+- No advanced promotions engine beyond discount codes
+
+---
+
+## Product Snapshot
+
+CNX AthletX is designed as a lean, manually operated commerce system. Customers browse a brand-led storefront, place an order, transfer payment via PromptPay or bank transfer, then submit proof for manual verification. The owner completes fulfillment through an admin interface protected by Cloudflare Access-compatible admin authentication.
+
+This keeps the initial release operationally simple while still covering the full customer journey:
+- discover product
+- place order
+- submit payment proof
+- receive lifecycle emails
+- track order
+- manage repeat purchases through an account
+
+Compared with the original v1 planning assumptions, the codebase now also includes customer support chat, income reporting, saved addresses, product-line management, and storefront localization.
 
 ---
 
 ## Architecture Overview
 
 ```
-┌─────────────────────────────────────────────────┐
-│                  CUSTOMER                        │
-│            (Browser / Mobile)                    │
-└────────────────────┬────────────────────────────┘
-                     │
-                     ▼
-┌─────────────────────────────────────────────────┐
-│           Cloudflare Pages (SPA)                │
-│        Vue 3 + Vite + Tailwind CSS v4           │
-│   Storefront pages + Admin panel (same SPA)     │
-└────────────────────┬────────────────────────────┘
-                     │ fetch(/api/*)
-                     ▼
-┌─────────────────────────────────────────────────┐
-│          Cloudflare Workers (API)               │
-│                                                  │
-│  Public:        /api/products                    │
-│                 /api/checkout                     │
-│                 /api/orders/:id                   │
-│                 /api/orders/:id/payment-proof     │
-│                                                  │
-│  Admin:         /api/admin/*                     │
-│  (CF Access)    Cf-Access-Authenticated-User-Email│
-└──────────┬──────────────────────┬───────────────┘
-           │                      │
-           ▼                      ▼
-┌──────────────────┐   ┌──────────────────┐
-│  Cloudflare D1   │   │    Resend API    │
-│  (SQLite)        │   │  Transactional   │
-│  System of       │   │  Email Only      │
-│  Record          │   │                  │
-└──────────────────┘   └──────────────────┘
+┌─────────────────────────────────────────────────────────┐
+│                   Customer Browser                      │
+└──────────────────────────┬──────────────────────────────┘
+                           │
+                           ▼
+┌─────────────────────────────────────────────────────────┐
+│          Cloudflare Pages SPA (Vue 3 + Vite)           │
+│  Storefront, checkout, account area, admin interface   │
+└──────────────────────────┬──────────────────────────────┘
+                           │ fetch(/api/*)
+                           ▼
+┌─────────────────────────────────────────────────────────┐
+│       Cloudflare Workers API (itty-router, TS)         │
+│  Products, checkout, orders, auth, account, chat,      │
+│  admin orders, inventory, products, discounts,         │
+│  product lines, settings, reports                      │
+└───────────────┬───────────────────────────┬─────────────┘
+                │                           │
+                ▼                           ▼
+┌─────────────────────────┐     ┌─────────────────────────┐
+│ Cloudflare D1 (SQLite)  │     │       Resend API        │
+│ Orders, inventory, auth,│     │ Transactional email     │
+│ settings, chat, reports │     │ and magic links         │
+└─────────────────────────┘     └─────────────────────────┘
 ```
 
 ### Security Model
-- **Storefront**: Public, no auth required for browsing
-- **Customer accounts**: Passwordless magic link auth via Resend (HttpOnly session cookies, D1 sessions table)
-- **Admin panel + admin API**: Protected by Cloudflare Access (email domain gate)
-- **Admin identity**: Extracted from `Cf-Access-Authenticated-User-Email` header for audit logging
+
+- **Storefront**: public
+- **Customer accounts**: passwordless magic-link auth with HttpOnly session cookies
+- **Admin APIs and admin UI**: admin-only access, with Cloudflare Access JWT support plus local/dev fallbacks
+- **Auditability**: admin actions are logged in D1
 
 ### Key Architectural Decisions
-1. **Monorepo with npm workspaces** — `packages/web` (Pages) + `packages/api` (Workers)
-2. **Money stored as integers** — All THB amounts in satang (THB * 100) to avoid floating point
-3. **ULIDs for order IDs** — Sortable, URL-safe, no sequential guessing
-4. **Idempotency keys on checkout** — Prevents duplicate orders from double-submits
-5. **Email failures don't block state transitions** — Best-effort delivery, logged to D1
-6. **Passwordless customer auth** — Magic link via Resend, no password storage, HttpOnly session cookies
-7. **Dark mode default** — Near-black (#0A0A0A) default theme with toggle-to-light. CSS variable architecture — no `dark:` prefixes, colors swap automatically via `:root` / `:root.light`
+
+1. **Single monorepo**: `packages/web` and `packages/api` move together.
+2. **Cloudflare-native deployment**: Pages + Workers + D1 keep hosting and data close together.
+3. **Integer money values**: all THB values are stored in satang.
+4. **ULID order identifiers**: sortable and safe to expose publicly.
+5. **Manual payment operations for v1**: reduces launch complexity and external dependencies.
+6. **Passwordless auth**: avoids password storage and lowers account friction.
+7. **Best-effort email delivery**: email failures are logged and do not block order state changes.
 
 ---
 
-## Plan Documents
+## What Still Matters Before Release
 
-| Document | Contents |
-|----------|----------|
-| [02-backend-architecture.md](./02-backend-architecture.md) | D1 schema, API spec, admin workflow, Resend integration, testing, SEO/compliance, repo structure |
-| [03-frontend-design.md](./03-frontend-design.md) | UX information architecture, Tailwind design system, component specs, page wireframes, responsive rules |
-| [04-milestones.md](./04-milestones.md) | Phased milestones with acceptance criteria |
-| [05-user-management.md](./05-user-management.md) | Customer accounts: magic link auth, sessions, order history, checkout pre-fill |
+- Validate production environment settings, secrets, and domain configuration
+- Run full integration and E2E checks against the intended production-like setup
+- Finish release QA for desktop/mobile browsers and payment/admin flows
+- Confirm Lighthouse and SEO targets instead of assuming them from implementation
+- Review customer-facing copy, legal content, and operational runbooks for launch day
 
 ---
 
@@ -90,16 +114,27 @@ CNX AthletX is a lean ecommerce platform for selling plant-based protein powder 
 
 | Layer | Technology | Purpose |
 |-------|-----------|---------|
-| Frontend | Vue 3 + Vite + Tailwind CSS v4 | SPA storefront + admin |
-| State | Pinia | Cart, product cache |
-| Routing | Vue Router | Client-side routing |
+| Frontend | Vue 3 + Vite + Tailwind CSS v4 | Storefront, account area, admin UI |
+| State | Pinia | Cart and auth state |
+| Routing | Vue Router | SPA navigation |
+| Localization | vue-i18n | English and Thai storefront content |
 | API | Cloudflare Workers + itty-router | REST API |
-| Database | Cloudflare D1 (SQLite) | System of record |
-| Customer Auth | Magic link (Resend) + D1 sessions | Passwordless login |
-| Admin Auth | Cloudflare Access | Admin protection |
-| Email | Resend | Transactional emails |
+| Database | Cloudflare D1 | Orders, inventory, auth, settings, chat, reporting |
+| Customer Auth | Magic links + D1 sessions | Passwordless login |
+| Admin Auth | Cloudflare Access-compatible auth | Admin protection |
+| Email | Resend | Magic-link and order lifecycle emails |
 | Hosting | Cloudflare Pages | Static SPA hosting |
-| IDs | ULID | Order identifiers |
+
+---
+
+## Plan Documents
+
+| Document | Contents |
+|----------|----------|
+| [02-backend-architecture.md](./02-backend-architecture.md) | Schema, API surface, admin workflow, Resend integration, testing |
+| [03-frontend-design.md](./03-frontend-design.md) | UX structure, design system, page behavior, responsive rules |
+| [04-milestones.md](./04-milestones.md) | Phase-by-phase implementation tracking and acceptance criteria |
+| [05-user-management.md](./05-user-management.md) | Customer auth, sessions, account behavior, checkout pre-fill |
 
 ---
 
@@ -108,35 +143,9 @@ CNX AthletX is a lean ecommerce platform for selling plant-based protein powder 
 ```
 cnx-athletx/
 ├── packages/
-│   ├── web/                    # Cloudflare Pages (Vue SPA)
-│   │   ├── src/
-│   │   │   ├── components/     # Shared UI components
-│   │   │   ├── pages/          # Route-level pages
-│   │   │   │   └── admin/      # Admin pages
-│   │   │   ├── composables/    # Vue composables (useCart, useApi)
-│   │   │   ├── stores/         # Pinia stores
-│   │   │   ├── assets/         # Static assets, styles
-│   │   │   └── router/         # Vue Router config
-│   │   ├── public/             # Static files (images, robots.txt)
-│   │   ├── index.html
-│   │   ├── vite.config.ts
-│   │   └── tailwind.config.ts
-│   │
-│   └── api/                    # Cloudflare Workers
-│       ├── src/
-│       │   ├── routes/         # API route handlers
-│       │   │   └── admin/      # Admin-only routes
-│       │   ├── services/       # Business logic (email, inventory)
-│       │   ├── db/             # Schema + seed SQL
-│       │   ├── middleware/     # Auth, CORS, error handling
-│       │   ├── types/          # TypeScript interfaces
-│       │   └── index.ts        # Workers entry point
-│       ├── tests/              # Unit + integration tests
-│       ├── wrangler.toml
-│       └── vitest.config.ts
-│
-├── docs/plan/                  # This plan
-├── .github/workflows/          # CI/CD
-├── package.json                # Workspace root
-└── README.md
+│   ├── web/      # Vue storefront + account + admin SPA
+│   └── api/      # Cloudflare Worker API and D1-backed business logic
+├── docs/plan/    # Product, architecture, and milestone planning docs
+├── e2e/          # Playwright end-to-end coverage
+└── assets/       # Brand and content assets
 ```

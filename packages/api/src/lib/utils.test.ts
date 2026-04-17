@@ -117,8 +117,8 @@ describe('isValidProductImageUrl', () => {
     expect(isValidProductImageUrl('http://localhost/img.png')).toBe(true)
   })
 
-  it('accepts base64 data URIs', () => {
-    expect(isValidProductImageUrl('data:image/png;base64,iVBORw0KGgo=')).toBe(true)
+  it('rejects base64 data URIs', () => {
+    expect(isValidProductImageUrl('data:image/png;base64,iVBORw0KGgo=')).toBe(false)
   })
 
   it('rejects empty string', () => {

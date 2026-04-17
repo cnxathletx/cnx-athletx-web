@@ -4,6 +4,7 @@ import {
   addAdminProductImage,
   createAdminProduct,
   deleteAdminProductImage,
+  uploadAdminProductImage,
   fetchAdminProducts,
   fetchAdminProductLines,
   reorderAdminProductImages,
@@ -24,7 +25,7 @@ import { formatMoney } from '../utils/money'
 const PRIMARY_LOCALE: SupportedLocale = 'en'
 
 const IMAGE_UPLOAD_MAX_BYTES = 1_500_000
-const ALLOWED_IMAGE_TYPES = new Set(['image/jpeg', 'image/png', 'image/webp', 'image/gif'])
+const ALLOWED_IMAGE_TYPES = new Set(['image/jpeg', 'image/png', 'image/webp'])
 
 interface LocaleBuffer {
   name: string
@@ -217,7 +218,7 @@ function resetCreateForm() {
 
 function validateImageFile(file: File): string | null {
   if (!ALLOWED_IMAGE_TYPES.has(file.type)) {
-    return 'Use JPG, PNG, WEBP, or GIF image files.'
+    return 'Use JPG, PNG, or WEBP image files.'
   }
 
   if (file.size > IMAGE_UPLOAD_MAX_BYTES) {
@@ -225,21 +226,6 @@ function validateImageFile(file: File): string | null {
   }
 
   return null
-}
-
-function readFileAsDataUrl(file: File): Promise<string> {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader()
-    reader.onload = () => {
-      if (typeof reader.result === 'string') {
-        resolve(reader.result)
-      } else {
-        reject(new Error('Failed to read image data'))
-      }
-    }
-    reader.onerror = () => reject(new Error('Failed to read image data'))
-    reader.readAsDataURL(file)
-  })
 }
 
 async function handleImagePick(file: File, mode: 'create' | 'edit') {
@@ -256,17 +242,18 @@ async function handleImagePick(file: File, mode: 'create' | 'edit') {
   }
 
   try {
-    const dataUrl = await readFileAsDataUrl(file)
+    const { url } = await uploadAdminProductImage(file)
     if (mode === 'create') {
-      createForm.image_url = dataUrl
+      createForm.image_url = url
     } else {
-      editForm.image_url = dataUrl
+      editForm.image_url = url
     }
-  } catch {
+  } catch (err) {
+    const msg = err instanceof AdminApiErrorResponse ? err.message : 'Unable to upload image.'
     if (mode === 'create') {
-      createImageError.value = 'Unable to process selected image.'
+      createImageError.value = msg
     } else {
-      editImageError.value = 'Unable to process selected image.'
+      editImageError.value = msg
     }
   } finally {
     if (mode === 'create') {
@@ -423,8 +410,8 @@ async function onScreenshotsSelected(event: Event, productId: number) {
         screenshotError.value = fileError
         break
       }
-      const dataUrl = await readFileAsDataUrl(file)
-      screenshots = await addAdminProductImage(productId, dataUrl)
+      const { url } = await uploadAdminProductImage(file)
+      screenshots = await addAdminProductImage(productId, url)
     }
     if (screenshots) applyScreenshots(productId, screenshots)
   } catch (err) {
@@ -514,7 +501,7 @@ onMounted(async () => {
           <label class="block text-sm font-medium text-foreground">Upload Product Image</label>
           <input
             type="file"
-            accept="image/png,image/jpeg,image/webp,image/gif"
+            accept="image/png,image/jpeg,image/webp"
             class="block w-full text-sm text-muted file:mr-3 file:rounded-md file:border-0 file:bg-primary file:px-4 file:py-2 file:text-sm file:font-semibold file:text-background hover:file:bg-primary-dark"
             @change="onCreateImageSelected"
           />
@@ -688,7 +675,7 @@ onMounted(async () => {
               <label class="block text-sm font-medium text-foreground">Upload Product Image</label>
               <input
                 type="file"
-                accept="image/png,image/jpeg,image/webp,image/gif"
+                accept="image/png,image/jpeg,image/webp"
                 class="block w-full text-sm text-muted file:mr-3 file:rounded-md file:border-0 file:bg-primary file:px-4 file:py-2 file:text-sm file:font-semibold file:text-background hover:file:bg-primary-dark"
                 @change="onEditImageSelected"
               />
@@ -746,7 +733,7 @@ onMounted(async () => {
 
               <input
                 type="file"
-                accept="image/png,image/jpeg,image/webp,image/gif"
+                accept="image/png,image/jpeg,image/webp"
                 multiple
                 class="block w-full text-sm text-muted file:mr-3 file:rounded-md file:border-0 file:bg-primary file:px-4 file:py-2 file:text-sm file:font-semibold file:text-background hover:file:bg-primary-dark"
                 :disabled="screenshotUploading"

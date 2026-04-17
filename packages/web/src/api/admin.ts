@@ -458,6 +458,17 @@ export async function deleteAdminProductImage(productId: number, imageId: number
   return data.screenshots
 }
 
+export async function uploadAdminProductImage(file: File): Promise<{ url: string; key: string }> {
+  const res = await fetch(apiUrl('/api/admin/upload/product-image'), {
+    method: 'POST',
+    credentials: 'include',
+    headers: { 'Content-Type': file.type },
+    body: file,
+  })
+  if (!res.ok) await parseAdminError(res)
+  return (await res.json()) as { url: string; key: string }
+}
+
 export async function reorderAdminProductImages(productId: number, imageIds: number[]): Promise<AdminProductScreenshot[]> {
   const res = await fetch(apiUrl(`/api/admin/products/${productId}/images/reorder`), {
     method: 'PATCH',

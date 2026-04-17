@@ -1,11 +1,13 @@
 export interface Env {
   DB: D1Database
+  PRODUCT_IMAGES: R2Bucket
   RESEND_API_KEY?: string
   ALLOWED_ORIGINS?: string
   ADMIN_EMAILS?: string
   CF_ACCESS_TEAM?: string
   CF_ACCESS_AUD?: string
   ENVIRONMENT?: string
+  PUBLIC_IMAGES_BASE_URL?: string
 }
 
 export interface SessionUser {

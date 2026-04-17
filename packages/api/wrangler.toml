@@ -13,6 +13,11 @@ database_name = "cnx-athletx-dev"
 database_id = "805d023a-2d77-4aef-95eb-164a82201962"
 preview_database_id = "805d023a-2d77-4aef-95eb-164a82201962"
 
+[[r2_buckets]]
+binding = "PRODUCT_IMAGES"
+bucket_name = "cnx-product-images-dev"
+preview_bucket_name = "cnx-product-images-dev"
+
 [env.production]
 name = "cnx-athletx-api"
 workers_dev = false
@@ -26,12 +31,17 @@ ALLOWED_ORIGINS = "https://cnxnature.com,https://www.cnxnature.com"
 ADMIN_EMAILS = "jdelaire@gmail.com,athletx.cnx@gmail.com"
 CF_ACCESS_TEAM = "cnxathletx"
 CF_ACCESS_AUD = "a9101d2f5e647f9fc66a8de4adb3c9bcf100db4af2e0b4cbe943fd9c4f7f3a5b"
+PUBLIC_IMAGES_BASE_URL = "https://images.cnxnature.com"
 
 [[env.production.d1_databases]]
 binding = "DB"
 database_name = "cnx-athletx-prod"
 database_id = "63f96854-8d6f-49c5-a9c3-b5e8b90f2cae"
 preview_database_id = "63f96854-8d6f-49c5-a9c3-b5e8b90f2cae"
+
+[[env.production.r2_buckets]]
+binding = "PRODUCT_IMAGES"
+bucket_name = "cnx-product-images-prod"
 
 [env.preview]
 name = "cnx-athletx-api-preview"
@@ -46,6 +56,10 @@ binding = "DB"
 database_name = "cnx-athletx-dev"
 database_id = "805d023a-2d77-4aef-95eb-164a82201962"
 preview_database_id = "805d023a-2d77-4aef-95eb-164a82201962"
+
+[[env.preview.r2_buckets]]
+binding = "PRODUCT_IMAGES"
+bucket_name = "cnx-product-images-dev"
 
 [observability]
 enabled = true

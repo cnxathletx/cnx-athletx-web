@@ -107,6 +107,7 @@ useJsonLd(() => {
     image: p.image_url
       ? [p.image_url.startsWith('/') ? `https://www.cnxnature.com${p.image_url}` : p.image_url]
       : undefined,
+    sku: p.slug,
     url: `https://www.cnxnature.com/product/${p.slug}`,
     brand: { '@type': 'Brand', name: 'CNX AthletX' },
     offers: {

@@ -321,12 +321,12 @@ export function validateCreateProductBody(body: unknown): { errors: ValidationEr
   if (!Number.isInteger(weight) || weight <= 0 || weight > 50000) {
     errors.push({ field: 'weight_g', message: 'weight_g must be a positive integer up to 50000' })
   }
-  if (imageUrl.length < 2 || imageUrl.length > 2000000) {
-    errors.push({ field: 'image_url', message: 'image_url must be between 2 and 2000000 characters' })
+  if (imageUrl.length < 2 || imageUrl.length > 2048) {
+    errors.push({ field: 'image_url', message: 'image_url must be between 2 and 2048 characters' })
   } else if (!isValidProductImageUrl(imageUrl)) {
     errors.push({
       field: 'image_url',
-      message: 'image_url must be an absolute URL, root-relative path, or data image URL',
+      message: 'image_url must be an absolute URL or root-relative path',
     })
   }
   if (!Number.isInteger(stockCount) || stockCount < 0 || stockCount > 1000000) {
@@ -436,12 +436,12 @@ export function validateUpdateProductBody(body: unknown): { errors: ValidationEr
       errors.push({ field: 'image_url', message: 'image_url must be a string' })
     } else {
       const imageUrl = b.image_url.trim()
-      if (imageUrl.length < 2 || imageUrl.length > 2000000) {
-        errors.push({ field: 'image_url', message: 'image_url must be between 2 and 2000000 characters' })
+      if (imageUrl.length < 2 || imageUrl.length > 2048) {
+        errors.push({ field: 'image_url', message: 'image_url must be between 2 and 2048 characters' })
       } else if (!isValidProductImageUrl(imageUrl)) {
         errors.push({
           field: 'image_url',
-          message: 'image_url must be an absolute URL, root-relative path, or data image URL',
+          message: 'image_url must be an absolute URL or root-relative path',
         })
       } else {
         data.image_url = imageUrl
@@ -499,12 +499,12 @@ export function validateAddProductImageBody(body: unknown): { errors: Validation
   const b = body as Record<string, unknown>
   const url = typeof b.url === 'string' ? b.url.trim() : ''
 
-  if (url.length < 2 || url.length > 2000000) {
-    return { errors: [{ field: 'url', message: 'url must be between 2 and 2000000 characters' }], data: null }
+  if (url.length < 2 || url.length > 2048) {
+    return { errors: [{ field: 'url', message: 'url must be between 2 and 2048 characters' }], data: null }
   }
   if (!isValidProductImageUrl(url)) {
     return {
-      errors: [{ field: 'url', message: 'url must be an absolute URL, root-relative path, or data image URL' }],
+      errors: [{ field: 'url', message: 'url must be an absolute URL or root-relative path' }],
       data: null,
     }
   }

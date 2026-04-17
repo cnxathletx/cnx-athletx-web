@@ -10,6 +10,7 @@ import { registerCheckoutRoutes } from './routes/checkout'
 import { registerOrderRoutes } from './routes/orders'
 import { registerChatRoutes } from './routes/chat'
 import { registerAdminRoutes } from './routes/admin'
+import { registerPublicImageRoutes } from './routes/admin/uploads'
 
 const router = Router()
 
@@ -26,6 +27,7 @@ registerCheckoutRoutes(router)
 registerOrderRoutes(router)
 registerChatRoutes(router)
 registerAdminRoutes(router)
+registerPublicImageRoutes(router)
 
 // 404
 router.all('*', () => new Response('Not Found', { status: 404 }))

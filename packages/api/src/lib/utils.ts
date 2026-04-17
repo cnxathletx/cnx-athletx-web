@@ -37,17 +37,17 @@ export function isValidProductSlug(slug: string): boolean {
 }
 
 export function isValidProductImageUrl(value: string): boolean {
-  if (value.startsWith('/')) {
-    return value.length <= 2000000 && !/\s/.test(value)
+  if (value.length > 2048 || /\s/.test(value)) {
+    return false
   }
 
-  if (/^data:image\/(png|jpe?g|webp|gif);base64,[A-Za-z0-9+/=]+$/i.test(value)) {
-    return value.length <= 2000000
+  if (value.startsWith('/')) {
+    return true
   }
 
   try {
     const url = new URL(value)
-    return (url.protocol === 'http:' || url.protocol === 'https:') && value.length <= 2000000
+    return url.protocol === 'http:' || url.protocol === 'https:'
   } catch {
     return false
   }

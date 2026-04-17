@@ -37,6 +37,7 @@ function makeLocalRequest(headers: Record<string, string> = {}): Request {
 function makeEnv(overrides: Partial<Env> = {}): Env {
   return {
     DB: {} as D1Database,
+    PRODUCT_IMAGES: {} as R2Bucket,
     ...overrides,
   }
 }

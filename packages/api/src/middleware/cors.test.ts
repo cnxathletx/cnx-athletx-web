@@ -5,7 +5,7 @@ import type { Env } from '../lib/types'
 // --- Helpers ---
 
 function makeEnv(overrides: Partial<Env> = {}): Env {
-  return { DB: {} as D1Database, ...overrides }
+  return { DB: {} as D1Database, PRODUCT_IMAGES: {} as R2Bucket, ...overrides }
 }
 
 function makeRequest(url: string, origin?: string): Request {

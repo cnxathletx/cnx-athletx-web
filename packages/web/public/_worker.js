@@ -34,6 +34,7 @@ function buildProductJsonLd(product) {
     image: product.image_url
       ? [product.image_url.startsWith('/') ? `${SITE_URL}${product.image_url}` : product.image_url]
       : undefined,
+    sku: product.slug,
     url: `${SITE_URL}/product/${product.slug}`,
     brand: { '@type': 'Brand', name: 'CNX AthletX' },
     offers: {

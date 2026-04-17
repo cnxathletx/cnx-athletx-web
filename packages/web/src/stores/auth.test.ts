@@ -118,6 +118,20 @@ describe('auth store', () => {
     expect(mockFetchMe).toHaveBeenCalledTimes(2)
   })
 
+  it('dedupes concurrent init calls', async () => {
+    let resolve: (v: typeof testUser) => void = () => {}
+    mockFetchMe.mockImplementationOnce(() => new Promise((r) => { resolve = r }))
+    const auth = useAuthStore()
+
+    const p1 = auth.init()
+    const p2 = auth.init()
+    resolve(testUser)
+    await Promise.all([p1, p2])
+
+    expect(mockFetchMe).toHaveBeenCalledOnce()
+    expect(auth.user).toEqual(testUser)
+  })
+
   // --- setUser ---
 
   it('sets user directly and marks initialized', () => {

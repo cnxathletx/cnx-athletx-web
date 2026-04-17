@@ -30,7 +30,8 @@
     "logOut": "Log Out",
     "account": "Account",
     "myAccount": "My Account",
-    "theme": "Theme"
+    "theme": "Theme",
+    "cart": "Cart"
   },
   "footer": {
     "tagline": "Powered by Nature. Built for Performance.",

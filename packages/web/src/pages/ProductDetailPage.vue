@@ -315,6 +315,10 @@ watch(locale, () => {
                 v-if="activeImageUrl && !productImageError"
                 :src="activeImageUrl"
                 :alt="product.name"
+                width="800"
+                height="800"
+                fetchpriority="high"
+                decoding="async"
                 class="w-full h-full object-cover cursor-zoom-in"
                 @click="openLightbox"
                 @error="productImageError = true"
@@ -352,7 +356,15 @@ watch(locale, () => {
                 :aria-label="`Show image ${i + 1}`"
                 @click="activeImageIndex = i; productImageError = false"
               >
-                <img :src="url" :alt="`${product.name} image ${i + 1}`" class="w-full h-full object-cover" />
+                <img
+                  :src="url"
+                  :alt="`${product.name} image ${i + 1}`"
+                  width="160"
+                  height="160"
+                  loading="lazy"
+                  decoding="async"
+                  class="w-full h-full object-cover"
+                />
               </button>
             </div>
           </div>

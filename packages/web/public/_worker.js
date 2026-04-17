@@ -85,11 +85,16 @@ function buildMetaTags(title, description, ogImage, canonicalUrl) {
     <link rel="canonical" href="${canonicalUrl}" />`
 }
 
-function injectIntoHead(html, metaTags, jsonLd) {
+function injectIntoHead(html, metaTags, jsonLd, preloadImage) {
   // Replace the existing <title> tag
   html = html.replace(/<title>[^<]*<\/title>/, '')
 
+  const preload = preloadImage
+    ? `<link rel="preload" as="image" fetchpriority="high" href="${preloadImage}" />`
+    : ''
+
   const injection = `${metaTags}
+    ${preload}
     <script type="application/ld+json">${JSON.stringify(jsonLd)}</script>`
 
   return html.replace('</head>', `${injection}\n</head>`)
@@ -118,13 +123,16 @@ export default {
           const assetRes = await env.ASSETS.fetch(request)
           let html = await assetRes.text()
 
+          const ogImage = product.image_url
+            ? (product.image_url.startsWith('/') ? `${SITE_URL}${product.image_url}` : product.image_url)
+            : null
           const metaTags = buildMetaTags(
             product.name,
             `${product.name} — Plant-based protein powder. ฿${(product.price_thb / 100).toFixed(0)}. Ships across Thailand.`,
-            product.image_url && product.image_url.startsWith('/') ? `${SITE_URL}${product.image_url}` : null,
+            ogImage,
             `${SITE_URL}/product/${slug}`
           )
-          html = injectIntoHead(html, metaTags, buildProductJsonLd(product))
+          html = injectIntoHead(html, metaTags, buildProductJsonLd(product), ogImage)
 
           return new Response(html, {
             headers: { ...Object.fromEntries(assetRes.headers), 'content-type': 'text/html;charset=UTF-8' },

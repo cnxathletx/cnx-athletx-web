@@ -93,7 +93,7 @@ const { t } = useI18n({ useScope: 'global' })
     <!-- Supplement Disclaimer -->
     <div class="border-t border-footer-fg/10">
       <div class="mx-auto max-w-[1280px] px-4 sm:px-6 lg:px-8 py-4">
-        <p class="text-xs text-footer-fg/50 leading-relaxed text-center">
+        <p class="text-xs text-footer-fg/75 leading-relaxed text-center">
           {{ t('footer.disclaimer') }}
         </p>
       </div>

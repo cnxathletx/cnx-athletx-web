@@ -103,7 +103,7 @@ async function handleLogout() {
           <button
             @click="toggleLocale"
             class="px-2 py-1.5 text-xs font-bold text-foreground hover:text-primary transition-colors rounded-md"
-            :aria-label="t('common.language')"
+            :title="t('common.language')"
           >
             {{ locale === 'en' ? 'TH' : 'EN' }}
           </button>
@@ -144,6 +144,7 @@ async function handleLogout() {
           <RouterLink
             to="/cart"
             class="relative p-2.5 text-foreground hover:text-primary transition-colors"
+            :aria-label="t('nav.cart')"
           >
             <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path

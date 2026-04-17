@@ -7,6 +7,8 @@ interface AuthState {
   initialized: boolean
 }
 
+let inFlightInit: Promise<void> | null = null
+
 export const useAuthStore = defineStore('auth', {
   state: (): AuthState => ({
     user: null,
@@ -28,16 +30,24 @@ export const useAuthStore = defineStore('auth', {
       if (this.initialized && !force) {
         return
       }
+      if (inFlightInit && !force) {
+        return inFlightInit
+      }
 
       this.loading = true
-      try {
-        this.user = await fetchMe()
-      } catch {
-        this.user = null
-      } finally {
-        this.loading = false
-        this.initialized = true
-      }
+      const run = (async () => {
+        try {
+          this.user = await fetchMe()
+        } catch {
+          this.user = null
+        } finally {
+          this.loading = false
+          this.initialized = true
+          inFlightInit = null
+        }
+      })()
+      inFlightInit = run
+      return run
     },
 
     setUser(user: AuthUser | null) {

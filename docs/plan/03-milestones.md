@@ -308,13 +308,13 @@ Last updated: 2026-04-16
 
 **Acceptance Criteria:**
 - [x] Product pages have correct OG meta tags (title, description, image, price)
-- [ ] Google Rich Results Test validates Product JSON-LD
+- [x] Google Rich Results Test validates Product JSON-LD
 - [x] `robots.txt` disallows `/admin/` and `/api/admin/`
 - [x] Privacy Policy page exists with PDPA-required content sections
 - [x] Terms of Service page exists with payment terms, shipping, returns
 - [x] Footer includes supplement disclaimer
-- [ ] Lighthouse Performance score >= 90
-- [ ] Lighthouse Accessibility score = 100
+- [x] Lighthouse Performance score >= 90
+- [x] Lighthouse Accessibility score = 100
 - [x] All images use `loading="lazy"` for below-fold content
 - [x] 404 page renders for unknown routes with link back to home
 - [ ] Site works on Chrome, Safari, and mobile browsers

@@ -7,6 +7,7 @@ import {
   markRead,
   ChatApiErrorResponse,
   type ChatConversation,
+  type ChatMessage,
 } from '../api/chat'
 
 const VISITOR_STORAGE_KEY = 'cnx-chat-visitor'
@@ -72,6 +73,37 @@ export const useChatStore = defineStore('chat', () => {
     }
   }
 
+  function lastMessageId(): number | undefined {
+    const msgs = conversation.value?.messages
+    if (!msgs || msgs.length === 0) return undefined
+    let max = 0
+    for (const m of msgs) if (m.id > max) max = m.id
+    return max > 0 ? max : undefined
+  }
+
+  function mergeDelta(delta: ChatConversation) {
+    const current = conversation.value
+    if (!current) {
+      conversation.value = delta
+      return
+    }
+    const seen = new Set(current.messages.map((m) => m.id))
+    const newMessages: ChatMessage[] = []
+    for (const m of delta.messages) {
+      if (!seen.has(m.id)) newMessages.push(m)
+    }
+    const merged = newMessages.length > 0 ? [...current.messages, ...newMessages] : current.messages
+    conversation.value = {
+      ...current,
+      status: delta.status,
+      guest_name: delta.guest_name,
+      guest_email: delta.guest_email,
+      last_message_at: delta.last_message_at,
+      unread_count: delta.unread_count,
+      messages: merged,
+    }
+  }
+
   async function loadExisting() {
     const storedId = loadStoredConversationId()
     if (!storedId) return
@@ -119,7 +151,13 @@ export const useChatStore = defineStore('chat', () => {
     sending.value = true
     error.value = ''
     try {
-      conversation.value = await sendMessage(conversation.value.id, visitorId.value, body)
+      const delta = await sendMessage(
+        conversation.value.id,
+        visitorId.value,
+        body,
+        lastMessageId(),
+      )
+      mergeDelta(delta)
       return true
     } catch (err) {
       setError(err)
@@ -132,7 +170,12 @@ export const useChatStore = defineStore('chat', () => {
   async function poll() {
     if (!conversation.value) return
     try {
-      conversation.value = await fetchConversation(conversation.value.id, visitorId.value)
+      const delta = await fetchConversation(
+        conversation.value.id,
+        visitorId.value,
+        lastMessageId(),
+      )
+      mergeDelta(delta)
     } catch {
       // silent — next tick will retry
     }

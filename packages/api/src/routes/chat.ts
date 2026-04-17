@@ -54,18 +54,17 @@ async function loadConversationForVisitor(
   return row
 }
 
-function toPublicView(conv: ChatConversationRow, messages: ChatMessageRow[]): ChatConversationPublicView {
-  const lastRead = conv.last_customer_read_at ? Date.parse(conv.last_customer_read_at) : 0
-  let unread = 0
-  const publicMessages: ChatMessagePublicView[] = messages.map((m) => {
-    if (m.sender_type === 'admin' && Date.parse(m.created_at) > lastRead) unread++
-    return {
-      id: m.id,
-      sender_type: m.sender_type,
-      body: m.body,
-      created_at: m.created_at,
-    }
-  })
+function toPublicView(
+  conv: ChatConversationRow,
+  messages: ChatMessageRow[],
+  unreadCount: number,
+): ChatConversationPublicView {
+  const publicMessages: ChatMessagePublicView[] = messages.map((m) => ({
+    id: m.id,
+    sender_type: m.sender_type,
+    body: m.body,
+    created_at: m.created_at,
+  }))
 
   return {
     id: conv.id,
@@ -73,12 +72,27 @@ function toPublicView(conv: ChatConversationRow, messages: ChatMessageRow[]): Ch
     guest_name: conv.guest_name,
     guest_email: conv.guest_email,
     last_message_at: conv.last_message_at,
-    unread_count: unread,
+    unread_count: unreadCount,
     messages: publicMessages,
   }
 }
 
-async function fetchMessages(env: Env, conversationId: string): Promise<ChatMessageRow[]> {
+async function fetchMessages(
+  env: Env,
+  conversationId: string,
+  sinceId?: number,
+): Promise<ChatMessageRow[]> {
+  if (typeof sinceId === 'number' && sinceId > 0) {
+    const { results } = await env.DB.prepare(
+      `SELECT id, conversation_id, sender_type, sender_email, body, created_at
+       FROM chat_messages
+       WHERE conversation_id = ? AND id > ?
+       ORDER BY created_at ASC, id ASC`,
+    )
+      .bind(conversationId, sinceId)
+      .all<ChatMessageRow>()
+    return results
+  }
   const { results } = await env.DB.prepare(
     `SELECT id, conversation_id, sender_type, sender_email, body, created_at
      FROM chat_messages
@@ -88,6 +102,29 @@ async function fetchMessages(env: Env, conversationId: string): Promise<ChatMess
     .bind(conversationId)
     .all<ChatMessageRow>()
   return results
+}
+
+async function computeCustomerUnread(
+  env: Env,
+  conversationId: string,
+  lastCustomerReadAt: string | null,
+): Promise<number> {
+  const row = await env.DB.prepare(
+    `SELECT COUNT(*) AS count FROM chat_messages
+     WHERE conversation_id = ?
+       AND sender_type = 'admin'
+       AND (? IS NULL OR julianday(created_at) > julianday(?))`,
+  )
+    .bind(conversationId, lastCustomerReadAt, lastCustomerReadAt)
+    .first<{ count: number }>()
+  return row?.count ?? 0
+}
+
+function parseSinceMessageId(raw: unknown): number | undefined {
+  if (typeof raw !== 'string' && typeof raw !== 'number') return undefined
+  const n = typeof raw === 'number' ? raw : Number(raw)
+  if (!Number.isFinite(n) || n <= 0 || !Number.isInteger(n)) return undefined
+  return n
 }
 
 export function registerChatRoutes(router: RouterType) {
@@ -161,7 +198,11 @@ export function registerChatRoutes(router: RouterType) {
         return Response.json({ error: 'Database error' }, { status: 500 })
       }
       const messages = await fetchMessages(env, conversationId)
-      return Response.json({ success: true, conversation: toPublicView(conv, messages) }, { status: 201 })
+      const unread = await computeCustomerUnread(env, conversationId, conv.last_customer_read_at)
+      return Response.json(
+        { success: true, conversation: toPublicView(conv, messages, unread) },
+        { status: 201 },
+      )
     } catch {
       return Response.json({ error: 'Database error' }, { status: 500 })
     }
@@ -172,6 +213,7 @@ export function registerChatRoutes(router: RouterType) {
     const url = new URL(request.url)
     const id = url.pathname.split('/').pop() || ''
     const visitorId = url.searchParams.get('visitor_id') || ''
+    const sinceId = parseSinceMessageId(url.searchParams.get('since_message_id'))
     const auth = await resolveAuth(request, env)
 
     if (!id) {
@@ -183,8 +225,9 @@ export function registerChatRoutes(router: RouterType) {
       if (!conv) {
         return Response.json({ error: 'Conversation not found' }, { status: 404 })
       }
-      const messages = await fetchMessages(env, id)
-      return Response.json({ conversation: toPublicView(conv, messages) })
+      const messages = await fetchMessages(env, id, sinceId)
+      const unread = await computeCustomerUnread(env, id, conv.last_customer_read_at)
+      return Response.json({ conversation: toPublicView(conv, messages, unread) })
     } catch {
       return Response.json({ error: 'Database error' }, { status: 500 })
     }
@@ -199,8 +242,9 @@ export function registerChatRoutes(router: RouterType) {
     const parsed = await parseJsonBody(request)
     if (!parsed.ok) return parsed.response
 
-    const body = parsed.data as { visitor_id?: string }
+    const body = parsed.data as { visitor_id?: string; since_message_id?: unknown }
     const visitorId = typeof body.visitor_id === 'string' ? body.visitor_id.trim() : ''
+    const sinceId = parseSinceMessageId(body.since_message_id)
     const auth = await resolveAuth(request, env)
 
     const { errors, data } = validatePostChatMessageBody(parsed.data)
@@ -239,12 +283,13 @@ export function registerChatRoutes(router: RouterType) {
         ).bind(now, now, id),
       ])
 
-      const messages = await fetchMessages(env, id)
+      const messages = await fetchMessages(env, id, sinceId)
       const latest = await loadConversationForVisitor(env, id, visitorId, auth.userId)
       if (!latest) {
         return Response.json({ error: 'Database error' }, { status: 500 })
       }
-      return Response.json({ success: true, conversation: toPublicView(latest, messages) })
+      const unread = await computeCustomerUnread(env, id, latest.last_customer_read_at)
+      return Response.json({ success: true, conversation: toPublicView(latest, messages, unread) })
     } catch {
       return Response.json({ error: 'Database error' }, { status: 500 })
     }

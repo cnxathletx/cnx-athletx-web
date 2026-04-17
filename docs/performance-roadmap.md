@@ -23,6 +23,7 @@ This is a code-and-build review, not a full lab benchmark. The priorities below 
 
 - Homepage media delivery was optimized with resized responsive variants, deferred community loading, and removal of the old oversized root photo set.
 - Chat no longer initializes on storefront page mount; the widget now stays idle until the user opens it.
+- Chat transport now uses incremental sync: the GET and POST message endpoints accept `since_message_id` and return only newer messages; unread count is computed via SQL independent of the message payload. The frontend store tracks the last known message id, passes it on every poll and send, and merges deltas instead of replacing the transcript.
 
 ## What Is Already Good
 
@@ -32,30 +33,7 @@ This is a code-and-build review, not a full lab benchmark. The priorities below 
 
 ## Prioritized Findings
 
-### 1. Chat transport scales linearly with transcript size
-
-Priority: P1
-
-Evidence:
-
-- `packages/web/src/stores/chat.ts:14` polls every `4000` ms.
-- `packages/web/src/stores/chat.ts:132-143` refetches the conversation on every poll.
-- `packages/api/src/routes/chat.ts:81-90` always loads the full message list for a conversation.
-- `packages/api/src/routes/chat.ts:170-187` and `packages/api/src/routes/chat.ts:220-247` return the full transcript again for fetch and send flows.
-
-Why it matters:
-
-- Once a conversation exists, every poll re-reads and re-sends the entire transcript.
-- The current cap is `200` messages, so the worst-case cost grows exactly when a conversation becomes most active.
-- The frontend also recomputes unread state from the full message array on each refresh.
-
-Recommendation:
-
-- Replace full-transcript polling with incremental sync: `since_message_id`, `updated_since`, or cursor-based pagination.
-- Return unread counts and conversation metadata separately from message history.
-- If chat becomes a bigger product surface, move from short-interval polling to SSE or WebSocket transport.
-
-### 2. Checkout ships a large Thai-address chunk up front
+### 1. Checkout ships a large Thai-address chunk up front
 
 Priority: P1
 
@@ -77,7 +55,7 @@ Recommendation:
 - Consider moving province/district/subdistrict lookup to a small API endpoint or a separate worker KV-backed asset if the dataset grows.
 - Pre-sort lookup arrays once during data preparation rather than sorting on every computed evaluation.
 
-### 3. Product detail pages make a redundant full-catalog request
+### 2. Product detail pages make a redundant full-catalog request
 
 Priority: P1
 
@@ -96,7 +74,7 @@ Recommendation:
 - Include a related-product summary in `/api/products/:slug`, or provide a dedicated lightweight related-products endpoint.
 - Alternatively, cache the catalog in a Pinia store and reuse it across Home, Shop, and Product Detail.
 
-### 4. Admin product listing has an N+1 screenshot query pattern
+### 3. Admin product listing has an N+1 screenshot query pattern
 
 Priority: P2
 
@@ -120,15 +98,13 @@ Recommendation:
 
 ### Phase 1: Remove avoidable network and CPU work
 
-Target: 2-3 days
+Target: 1-2 days
 
-- Change chat APIs to incremental message sync.
 - Lazy-load Thai address data.
 - Stop refetching the entire catalog from product-detail pages.
 
 Expected outcome:
 
-- Lower steady-state API traffic.
 - Faster checkout route activation.
 - Fewer redundant storefront fetches.
 
@@ -149,12 +125,10 @@ Expected outcome:
 
 - Checkout address chunk below `30 kB` gzip before interaction.
 - Product detail view loads related-product data without a second full-catalog request.
-- Chat steady-state refreshes return only deltas, not the full transcript.
 - `/api/admin/products` executes in a constant number of queries.
 
 ## Recommended Implementation Order
 
-1. Incremental chat sync.
-2. Lazy-loaded Thai address data.
-3. Product-detail related-product API cleanup.
-4. Admin product batching and CI budgets.
+1. Lazy-loaded Thai address data.
+2. Product-detail related-product API cleanup.
+3. Admin product batching and CI budgets.

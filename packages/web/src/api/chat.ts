@@ -65,9 +65,17 @@ export async function createConversation(input: CreateConversationInput): Promis
   return data.conversation
 }
 
-export async function fetchConversation(id: string, visitorId: string): Promise<ChatConversation> {
+export async function fetchConversation(
+  id: string,
+  visitorId: string,
+  sinceMessageId?: number,
+): Promise<ChatConversation> {
+  const params = new URLSearchParams({ visitor_id: visitorId })
+  if (typeof sinceMessageId === 'number' && sinceMessageId > 0) {
+    params.set('since_message_id', String(sinceMessageId))
+  }
   const res = await fetch(
-    apiUrl(`/api/chat/conversations/${encodeURIComponent(id)}?visitor_id=${encodeURIComponent(visitorId)}`),
+    apiUrl(`/api/chat/conversations/${encodeURIComponent(id)}?${params.toString()}`),
     { credentials: 'include' },
   )
   if (!res.ok) await parseChatError(res)
@@ -79,12 +87,17 @@ export async function sendMessage(
   id: string,
   visitorId: string,
   body: string,
+  sinceMessageId?: number,
 ): Promise<ChatConversation> {
+  const payload: Record<string, unknown> = { visitor_id: visitorId, body }
+  if (typeof sinceMessageId === 'number' && sinceMessageId > 0) {
+    payload.since_message_id = sinceMessageId
+  }
   const res = await fetch(apiUrl(`/api/chat/conversations/${encodeURIComponent(id)}/messages`), {
     method: 'POST',
     credentials: 'include',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ visitor_id: visitorId, body }),
+    body: JSON.stringify(payload),
   })
   if (!res.ok) await parseChatError(res)
   const data = (await res.json()) as { conversation: ChatConversation }

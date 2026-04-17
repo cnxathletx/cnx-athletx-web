@@ -104,7 +104,9 @@ useJsonLd(() => {
     '@type': 'Product',
     name: p.name,
     description: p.description,
-    image: p.image_url && p.image_url.startsWith('/') ? [`https://www.cnxnature.com${p.image_url}`] : undefined,
+    image: p.image_url
+      ? [p.image_url.startsWith('/') ? `https://www.cnxnature.com${p.image_url}` : p.image_url]
+      : undefined,
     url: `https://www.cnxnature.com/product/${p.slug}`,
     brand: { '@type': 'Brand', name: 'CNX AthletX' },
     offers: {

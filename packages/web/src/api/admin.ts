@@ -120,6 +120,67 @@ export interface UpdateAdminProductPayload {
   translations_json?: string
 }
 
+// --- Admin Price Tiers ---
+
+export interface AdminPriceTier {
+  id: number
+  product_id: number
+  min_quantity: number
+  unit_price_thb: number
+  created_at: string
+  updated_at: string
+}
+
+export interface UpsertPriceTierPayload {
+  min_quantity: number
+  unit_price_thb: number
+}
+
+export async function fetchAdminPriceTiers(productId: number): Promise<AdminPriceTier[]> {
+  const res = await fetch(apiUrl(`/api/admin/products/${productId}/price-tiers`), {
+    credentials: 'include',
+  })
+  if (!res.ok) await parseAdminError(res)
+  const data = (await res.json()) as { price_tiers: AdminPriceTier[] }
+  return data.price_tiers
+}
+
+export async function createAdminPriceTier(productId: number, payload: UpsertPriceTierPayload): Promise<AdminPriceTier> {
+  const res = await fetch(apiUrl(`/api/admin/products/${productId}/price-tiers`), {
+    method: 'POST',
+    credentials: 'include',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload),
+  })
+  if (!res.ok) await parseAdminError(res)
+  const data = (await res.json()) as { success: true; price_tier: AdminPriceTier }
+  return data.price_tier
+}
+
+export async function updateAdminPriceTier(
+  productId: number,
+  tierId: number,
+  payload: UpsertPriceTierPayload
+): Promise<AdminPriceTier> {
+  const res = await fetch(apiUrl(`/api/admin/products/${productId}/price-tiers/${tierId}`), {
+    method: 'PATCH',
+    credentials: 'include',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload),
+  })
+  if (!res.ok) await parseAdminError(res)
+  const data = (await res.json()) as { success: true; price_tier: AdminPriceTier }
+  return data.price_tier
+}
+
+export async function deleteAdminPriceTier(productId: number, tierId: number): Promise<void> {
+  const res = await fetch(apiUrl(`/api/admin/products/${productId}/price-tiers/${tierId}`), {
+    method: 'DELETE',
+    credentials: 'include',
+  })
+  if (!res.ok) await parseAdminError(res)
+}
+
 // --- Admin Product Lines ---
 
 export interface AdminProductLine {

@@ -13,6 +13,7 @@ import {
   type ApiRelatedProduct,
 } from '../api/products'
 import { useCartStore } from '../stores/cart'
+import { pickUnitPrice, sortTiers, savingsPercent } from '../utils/pricing'
 import { useHead } from '../composables/useHead'
 import { useJsonLd } from '../composables/useJsonLd'
 
@@ -188,6 +189,17 @@ const ingredientRows = computed<{ label: string; sub: boolean }[]>(() => {
 const howToUseText = computed(() => product.value?.how_to_use || '')
 const whoIsForText = computed(() => product.value?.who_is_for || '')
 const regulatoryInfoText = computed(() => product.value?.regulatory_info || '')
+
+const sortedTiers = computed(() => product.value ? sortTiers(product.value.price_tiers ?? []) : [])
+const hasTiers = computed(() => sortedTiers.value.length > 0)
+const currentUnitPrice = computed(() => {
+  if (!product.value) return 0
+  return pickUnitPrice(product.value.price_thb, sortedTiers.value, quantity.value)
+})
+const currentLineTotal = computed(() => currentUnitPrice.value * quantity.value)
+const currentSavingsPct = computed(() =>
+  product.value ? savingsPercent(product.value.price_thb, currentUnitPrice.value) : 0,
+)
 
 const hasProductLineData = computed(() =>
   nutritionFacts.value.length > 0 ||
@@ -376,7 +388,57 @@ watch(locale, () => {
               <AppBadge :label="formatWeight(product.weight_g)" />
             </div>
 
-            <p class="text-4xl font-bold text-foreground">{{ formatPrice(product.price_thb) }}</p>
+            <div class="space-y-1">
+              <div class="flex items-baseline gap-3 flex-wrap">
+                <p class="text-4xl font-bold text-foreground">{{ formatPrice(currentUnitPrice) }}</p>
+                <p
+                  v-if="currentSavingsPct > 0"
+                  class="text-sm text-muted line-through"
+                >
+                  {{ formatPrice(product.price_thb) }}
+                </p>
+                <span
+                  v-if="currentSavingsPct > 0"
+                  class="inline-flex items-center rounded-full bg-accent/15 px-2 py-0.5 text-xs font-semibold text-accent"
+                >
+                  {{ t('product.savePercent', { percent: currentSavingsPct }) }}
+                </span>
+              </div>
+              <p v-if="quantity > 1" class="text-sm text-muted">
+                {{ t('product.perUnit') }} &middot; {{ t('product.lineTotal', { total: formatPrice(currentLineTotal) }) }}
+              </p>
+            </div>
+
+            <!-- Price Tier Ladder -->
+            <div
+              v-if="hasTiers"
+              class="rounded-md border border-sand bg-surface-alt p-4 space-y-2"
+              data-testid="price-tier-ladder"
+            >
+              <p class="text-xs font-semibold uppercase tracking-wide text-muted">
+                {{ t('product.volumeDiscounts') }}
+              </p>
+              <ul class="space-y-1.5">
+                <li
+                  v-for="tier in sortedTiers"
+                  :key="tier.min_quantity"
+                  class="flex items-center justify-between text-sm"
+                  :class="quantity >= tier.min_quantity ? 'text-foreground font-semibold' : 'text-muted'"
+                >
+                  <span>
+                    {{ t('product.tierLabel', { count: tier.min_quantity }) }}
+                  </span>
+                  <span class="flex items-center gap-2">
+                    <span>{{ formatPrice(tier.unit_price_thb) }} {{ t('common.each') }}</span>
+                    <span
+                      class="inline-flex items-center rounded-full bg-primary/15 px-2 py-0.5 text-xs font-semibold text-primary"
+                    >
+                      -{{ savingsPercent(product.price_thb, tier.unit_price_thb) }}%
+                    </span>
+                  </span>
+                </li>
+              </ul>
+            </div>
 
             <p class="text-muted leading-relaxed">{{ product.description }}</p>
 
@@ -432,7 +494,7 @@ watch(locale, () => {
             <PrimaryButton
               full-width
               :disabled="product.available_stock <= 0"
-              @click="cart.addItem({ productId: product.id, slug: product.slug, name: product.name, weightLabel: formatWeight(product.weight_g), priceSatang: product.price_thb, imageUrl: product.image_url }, quantity)"
+              @click="cart.addItem({ productId: product.id, slug: product.slug, name: product.name, weightLabel: formatWeight(product.weight_g), priceSatang: product.price_thb, imageUrl: product.image_url, priceTiers: sortedTiers }, quantity)"
             >
               {{ product.available_stock > 0 ? t('product.addToCart') : t('product.soldOut') }}
             </PrimaryButton>

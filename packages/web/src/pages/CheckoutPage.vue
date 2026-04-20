@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ref, computed, onMounted, watch } from 'vue'
 import { useRouter } from 'vue-router'
-import { useCartStore } from '../stores/cart'
+import { useCartStore, lineTotalFor } from '../stores/cart'
 import { formatPrice } from '../api/products'
 import { submitCheckout, CheckoutError } from '../api/checkout'
 import { fetchLastAddress } from '../api/auth'
@@ -425,7 +425,7 @@ async function handleSubmit() {
                   <p class="text-xs text-muted">{{ item.weightLabel }} x {{ item.quantity }}</p>
                 </div>
                 <p class="text-sm font-semibold text-foreground">
-                  {{ formatPrice(item.priceSatang * item.quantity) }}
+                  {{ formatPrice(lineTotalFor(item)) }}
                 </p>
               </div>
             </div>

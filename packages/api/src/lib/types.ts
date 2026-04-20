@@ -292,6 +292,23 @@ export interface ProductImageRow {
   created_at: string
 }
 
+export interface PriceTierRow {
+  id: number
+  product_id: number
+  min_quantity: number
+  unit_price_thb: number
+}
+
+export interface AdminPriceTierRow extends PriceTierRow {
+  created_at: string
+  updated_at: string
+}
+
+export interface AdminUpsertPriceTierBody {
+  min_quantity: number
+  unit_price_thb: number
+}
+
 export interface AdminAddProductImageBody {
   url: string
 }

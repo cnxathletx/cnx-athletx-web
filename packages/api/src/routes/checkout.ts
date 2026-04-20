@@ -8,6 +8,7 @@ import type {
   ValidationError,
   OrderStatusOnlyRow,
   PaymentProofBody,
+  PriceTierRow,
 } from '../lib/types'
 import { isValidOrderId } from '../lib/utils'
 import { validateCheckoutBody, validatePaymentProofBody } from '../lib/validation'
@@ -15,6 +16,7 @@ import { getSessionUser, parseJsonBody } from '../middleware/auth'
 import { sendOrderEmail, sendAdminNewOrderEmail } from '../services/email'
 import type { EmailItem } from '../services/email'
 import { generateULID } from '../lib/ulid'
+import { pickUnitPrice, type PriceTier } from '../lib/pricing'
 
 export function registerCheckoutRoutes(router: RouterType) {
   router.post('/api/checkout', async (request: Request, env: Env, ctx: ExecutionContext) => {
@@ -148,11 +150,33 @@ export function registerCheckoutRoutes(router: RouterType) {
       return Response.json({ error: 'Database error fetching site settings' }, { status: 500 })
     }
 
-    // --- Calculate subtotal ---
+    // --- Fetch price tiers for all items ---
+    const tierMap = new Map<number, PriceTier[]>()
+    try {
+      const placeholdersT = productIds.map(() => '?').join(', ')
+      const { results: tierRows } = await env.DB.prepare(
+        `SELECT id, product_id, min_quantity, unit_price_thb
+         FROM price_tiers WHERE product_id IN (${placeholdersT})`
+      )
+        .bind(...productIds)
+        .all<PriceTierRow>()
+      for (const t of tierRows) {
+        const list = tierMap.get(t.product_id) ?? []
+        list.push({ min_quantity: t.min_quantity, unit_price_thb: t.unit_price_thb })
+        tierMap.set(t.product_id, list)
+      }
+    } catch {
+      return Response.json({ error: 'Database error fetching price tiers' }, { status: 500 })
+    }
+
+    // --- Calculate subtotal (apply best volume tier per line) ---
+    const unitPriceByProduct = new Map<number, number>()
     let subtotal = 0
     for (const item of mergedItems) {
       const product = productMap.get(item.product_id)!
-      subtotal += product.price_thb * item.quantity
+      const unitPrice = pickUnitPrice(product.price_thb, tierMap.get(item.product_id) ?? [], item.quantity)
+      unitPriceByProduct.set(item.product_id, unitPrice)
+      subtotal += unitPrice * item.quantity
     }
 
     // --- Shipping cost ---
@@ -358,13 +382,13 @@ export function registerCheckoutRoutes(router: RouterType) {
     }
 
     for (const item of mergedItems) {
-      const product = productMap.get(item.product_id)!
-      const lineTotal = product.price_thb * item.quantity
+      const unitPrice = unitPriceByProduct.get(item.product_id)!
+      const lineTotal = unitPrice * item.quantity
       orderStatements.push(
         env.DB.prepare(
           `INSERT INTO order_items (order_id, product_id, quantity, unit_price_thb, line_total_thb)
            VALUES (?, ?, ?, ?, ?)`
-        ).bind(orderId, item.product_id, item.quantity, product.price_thb, lineTotal)
+        ).bind(orderId, item.product_id, item.quantity, unitPrice, lineTotal)
       )
     }
 
@@ -377,7 +401,8 @@ export function registerCheckoutRoutes(router: RouterType) {
     // --- Send Order Created email (fire-and-forget) ---
     const emailItems: EmailItem[] = mergedItems.map((item) => {
       const product = productMap.get(item.product_id)!
-      return { name: product.name, quantity: item.quantity, line_total_thb: product.price_thb * item.quantity }
+      const unitPrice = unitPriceByProduct.get(item.product_id)!
+      return { name: product.name, quantity: item.quantity, line_total_thb: unitPrice * item.quantity }
     })
 
     const orderEmailData = {

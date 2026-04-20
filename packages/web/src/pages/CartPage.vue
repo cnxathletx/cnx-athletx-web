@@ -1,7 +1,8 @@
 <script setup lang="ts">
 import { RouterLink } from 'vue-router'
 import { useI18n } from 'vue-i18n'
-import { useCartStore } from '../stores/cart'
+import { useCartStore, unitPriceFor, lineTotalFor } from '../stores/cart'
+import { nextTier } from '../utils/pricing'
 import { formatPrice } from '../api/products'
 import PrimaryButton from '../components/ui/PrimaryButton.vue'
 import SecondaryButton from '../components/ui/SecondaryButton.vue'
@@ -99,7 +100,39 @@ function decrement(productId: number, current: number) {
                 </h3>
               </RouterLink>
               <AppBadge :label="item.weightLabel" />
-              <p class="text-sm text-muted">{{ formatPrice(item.priceSatang) }} {{ t('common.each') }}</p>
+              <p class="text-sm">
+                <span
+                  v-if="unitPriceFor(item) < item.priceSatang"
+                  class="font-semibold text-foreground"
+                >
+                  {{ formatPrice(unitPriceFor(item)) }}
+                </span>
+                <span
+                  v-if="unitPriceFor(item) < item.priceSatang"
+                  class="ml-2 text-muted line-through"
+                >
+                  {{ formatPrice(item.priceSatang) }}
+                </span>
+                <span v-else class="text-muted">{{ formatPrice(item.priceSatang) }}</span>
+                <span class="text-muted"> {{ t('common.each') }}</span>
+              </p>
+              <p
+                v-if="unitPriceFor(item) < item.priceSatang"
+                class="text-xs font-medium text-success"
+              >
+                {{ t('product.tierApplied') }}
+              </p>
+              <p
+                v-else-if="nextTier(item.priceTiers ?? [], item.quantity)"
+                class="text-xs text-muted"
+              >
+                {{
+                  t('product.addMoreForDiscount', {
+                    needed: nextTier(item.priceTiers ?? [], item.quantity)!.min_quantity - item.quantity,
+                    price: formatPrice(nextTier(item.priceTiers ?? [], item.quantity)!.unit_price_thb),
+                  })
+                }}
+              </p>
             </div>
 
             <!-- Quantity Selector -->
@@ -129,7 +162,7 @@ function decrement(productId: number, current: number) {
 
             <!-- Line Total -->
             <p class="text-xl font-bold text-foreground w-28 text-right">
-              {{ formatPrice(item.priceSatang * item.quantity) }}
+              {{ formatPrice(lineTotalFor(item)) }}
             </p>
 
             <!-- Remove Button -->

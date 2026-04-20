@@ -5,6 +5,7 @@ import { useI18n } from 'vue-i18n'
 import AppBadge from './AppBadge.vue'
 import PrimaryButton from './PrimaryButton.vue'
 import { useCartStore } from '../../stores/cart'
+import type { PriceTier } from '../../utils/pricing'
 
 const { t } = useI18n({ useScope: 'global' })
 
@@ -17,6 +18,7 @@ const props = defineProps<{
   priceSatang: number
   imageUrl: string
   inStock: boolean
+  priceTiers?: PriceTier[]
 }>()
 
 const cart = useCartStore()
@@ -37,6 +39,7 @@ function addToCart() {
     weightLabel: props.weight,
     priceSatang: props.priceSatang,
     imageUrl: props.imageUrl,
+    priceTiers: props.priceTiers,
   })
 }
 </script>

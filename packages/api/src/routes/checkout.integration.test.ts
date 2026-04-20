@@ -117,6 +117,59 @@ describe('POST /api/checkout', () => {
     const data = await res.json() as { details: Array<{ message: string }> }
     expect(data.details[0].message).toContain('999')
   })
+
+  it('applies volume tier price when quantity meets threshold', async () => {
+    // Configure: buy 5+ drops unit price from 89900 to 79900
+    const tierRes = await workerFetch('/api/admin/products/1/price-tiers', {
+      admin: true,
+      body: { min_quantity: 5, unit_price_thb: 79900 },
+    })
+    expect(tierRes.status).toBe(201)
+
+    const res = await workerFetch('/api/checkout', {
+      body: checkoutBody({ items: [{ product_id: 1, quantity: 5 }] }),
+    })
+    expect(res.status).toBe(201)
+
+    const data = await res.json() as { order_id: string; subtotal_thb: number; total_thb: number }
+    // 5 * 79900 = 399500 (not 5 * 89900 = 449500)
+    expect(data.subtotal_thb).toBe(399500)
+    expect(data.total_thb).toBe(399500 + 10000) // + flat shipping
+  })
+
+  it('does not apply tier price when quantity is below threshold', async () => {
+    await workerFetch('/api/admin/products/1/price-tiers', {
+      admin: true,
+      body: { min_quantity: 5, unit_price_thb: 79900 },
+    })
+
+    const res = await workerFetch('/api/checkout', {
+      body: checkoutBody({ items: [{ product_id: 1, quantity: 4 }] }),
+    })
+    expect(res.status).toBe(201)
+
+    const data = await res.json() as { subtotal_thb: number }
+    expect(data.subtotal_thb).toBe(4 * 89900)
+  })
+
+  it('applies the lowest eligible tier when multiple match', async () => {
+    await workerFetch('/api/admin/products/1/price-tiers', {
+      admin: true,
+      body: { min_quantity: 5, unit_price_thb: 79900 },
+    })
+    await workerFetch('/api/admin/products/1/price-tiers', {
+      admin: true,
+      body: { min_quantity: 10, unit_price_thb: 69900 },
+    })
+
+    const res = await workerFetch('/api/checkout', {
+      body: checkoutBody({ items: [{ product_id: 1, quantity: 10 }] }),
+    })
+    expect(res.status).toBe(201)
+
+    const data = await res.json() as { subtotal_thb: number }
+    expect(data.subtotal_thb).toBe(10 * 69900)
+  })
 })
 
 describe('POST /api/orders/:id/payment-proof', () => {

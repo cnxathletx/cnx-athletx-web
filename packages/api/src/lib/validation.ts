@@ -12,6 +12,7 @@ import type {
   AdminUpdateProductBody,
   AdminAddProductImageBody,
   AdminReorderProductImagesBody,
+  AdminUpsertPriceTierBody,
   AdminCreateDiscountBody,
   AdminUpdateDiscountBody,
   AdminCreateProductLineBody,
@@ -533,6 +534,31 @@ export function validateReorderProductImagesBody(body: unknown): { errors: Valid
   }
 
   return { errors: [], data: { image_ids: ids } }
+}
+
+export function validateUpsertPriceTierBody(body: unknown): { errors: ValidationError[]; data: AdminUpsertPriceTierBody | null } {
+  const errors: ValidationError[] = []
+
+  if (!body || typeof body !== 'object') {
+    return { errors: [{ field: 'body', message: 'Request body must be a JSON object' }], data: null }
+  }
+
+  const b = body as Record<string, unknown>
+  const minQty = typeof b.min_quantity === 'number' ? b.min_quantity : Number.NaN
+  const unitPrice = typeof b.unit_price_thb === 'number' ? b.unit_price_thb : Number.NaN
+
+  if (!Number.isInteger(minQty) || minQty < 2 || minQty > 1000) {
+    errors.push({ field: 'min_quantity', message: 'min_quantity must be an integer between 2 and 1000' })
+  }
+  if (!Number.isInteger(unitPrice) || unitPrice <= 0 || unitPrice > 100000000) {
+    errors.push({ field: 'unit_price_thb', message: 'unit_price_thb must be a positive integer up to 100000000' })
+  }
+
+  if (errors.length > 0) {
+    return { errors, data: null }
+  }
+
+  return { errors: [], data: { min_quantity: minQty, unit_price_thb: unitPrice } }
 }
 
 export function validateCreateDiscountBody(body: unknown): { errors: ValidationError[]; data: AdminCreateDiscountBody | null } {

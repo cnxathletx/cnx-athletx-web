@@ -3,12 +3,17 @@ import { computed, onMounted, reactive, ref } from 'vue'
 import {
   addAdminProductImage,
   createAdminProduct,
+  createAdminPriceTier,
+  deleteAdminPriceTier,
   deleteAdminProductImage,
+  fetchAdminPriceTiers,
   uploadAdminProductImage,
   fetchAdminProducts,
   fetchAdminProductLines,
   reorderAdminProductImages,
+  updateAdminPriceTier,
   updateAdminProduct,
+  type AdminPriceTier,
   type AdminProduct,
   type AdminProductLine,
   type AdminProductScreenshot,
@@ -114,6 +119,127 @@ const editingId = ref<number | null>(null)
 const screenshotUploading = ref(false)
 const screenshotError = ref('')
 const screenshotBusyId = ref<number | null>(null)
+
+// --- Price tier state (keyed by product id) ---
+const tiersByProduct = reactive<Record<number, AdminPriceTier[]>>({})
+const tiersLoadedFor = reactive<Record<number, boolean>>({})
+const tierLoading = reactive<Record<number, boolean>>({})
+const tierError = reactive<Record<number, string>>({})
+const tierBusyId = ref<number | null>(null)
+
+interface TierDraft {
+  min_quantity: number | null
+  unit_price_thb: number | null
+}
+const tierDrafts = reactive<Record<number, TierDraft>>({})
+const tierEditing = reactive<Record<number, TierDraft>>({})
+const tierEditingId = ref<number | null>(null)
+
+function ensureTierDraft(productId: number): TierDraft {
+  if (!tierDrafts[productId]) tierDrafts[productId] = { min_quantity: null, unit_price_thb: null }
+  return tierDrafts[productId]
+}
+
+async function loadTiers(productId: number) {
+  tierError[productId] = ''
+  tierLoading[productId] = true
+  try {
+    const tiers = await fetchAdminPriceTiers(productId)
+    tiersByProduct[productId] = tiers
+    tiersLoadedFor[productId] = true
+  } catch (err) {
+    tierError[productId] = err instanceof AdminApiErrorResponse ? err.message : 'Unable to load tiers.'
+  } finally {
+    tierLoading[productId] = false
+  }
+}
+
+async function submitCreateTier(productId: number) {
+  const draft = ensureTierDraft(productId)
+  const minQty = Number(draft.min_quantity)
+  const priceThb = Number(draft.unit_price_thb)
+  if (!Number.isFinite(minQty) || minQty < 2) {
+    tierError[productId] = 'Min quantity must be at least 2.'
+    return
+  }
+  if (!Number.isFinite(priceThb) || priceThb <= 0) {
+    tierError[productId] = 'Unit price must be greater than 0.'
+    return
+  }
+  tierError[productId] = ''
+  tierBusyId.value = -productId
+  try {
+    const tier = await createAdminPriceTier(productId, {
+      min_quantity: Math.round(minQty),
+      unit_price_thb: Math.round(priceThb * 100),
+    })
+    tiersByProduct[productId] = [...(tiersByProduct[productId] ?? []), tier].sort(
+      (a, b) => a.min_quantity - b.min_quantity
+    )
+    tierDrafts[productId] = { min_quantity: null, unit_price_thb: null }
+  } catch (err) {
+    tierError[productId] = err instanceof AdminApiErrorResponse ? err.message : 'Failed to create tier.'
+  } finally {
+    tierBusyId.value = null
+  }
+}
+
+function startEditTier(tier: AdminPriceTier) {
+  tierEditingId.value = tier.id
+  tierEditing[tier.id] = {
+    min_quantity: tier.min_quantity,
+    unit_price_thb: tier.unit_price_thb / 100,
+  }
+}
+
+function cancelEditTier() {
+  tierEditingId.value = null
+}
+
+async function submitEditTier(productId: number, tierId: number) {
+  const draft = tierEditing[tierId]
+  if (!draft) return
+  const minQty = Number(draft.min_quantity)
+  const priceThb = Number(draft.unit_price_thb)
+  if (!Number.isFinite(minQty) || minQty < 2) {
+    tierError[productId] = 'Min quantity must be at least 2.'
+    return
+  }
+  if (!Number.isFinite(priceThb) || priceThb <= 0) {
+    tierError[productId] = 'Unit price must be greater than 0.'
+    return
+  }
+  tierError[productId] = ''
+  tierBusyId.value = tierId
+  try {
+    const updated = await updateAdminPriceTier(productId, tierId, {
+      min_quantity: Math.round(minQty),
+      unit_price_thb: Math.round(priceThb * 100),
+    })
+    tiersByProduct[productId] = (tiersByProduct[productId] ?? [])
+      .map((t) => (t.id === tierId ? updated : t))
+      .sort((a, b) => a.min_quantity - b.min_quantity)
+    tierEditingId.value = null
+  } catch (err) {
+    tierError[productId] = err instanceof AdminApiErrorResponse ? err.message : 'Failed to update tier.'
+  } finally {
+    tierBusyId.value = null
+  }
+}
+
+async function removeTier(productId: number, tierId: number) {
+  tierError[productId] = ''
+  tierBusyId.value = tierId
+  try {
+    await deleteAdminPriceTier(productId, tierId)
+    tiersByProduct[productId] = (tiersByProduct[productId] ?? []).filter((t) => t.id !== tierId)
+    if (tierEditingId.value === tierId) tierEditingId.value = null
+  } catch (err) {
+    tierError[productId] = err instanceof AdminApiErrorResponse ? err.message : 'Failed to delete tier.'
+  } finally {
+    tierBusyId.value = null
+  }
+}
 
 interface CreateFormShape {
   slug: string
@@ -332,6 +458,9 @@ function startEdit(product: AdminProduct) {
 
   const loaded = loadBuffersFromProduct(product)
   for (const l of SUPPORTED_LOCALES) editBuffers[l] = loaded[l]
+
+  if (!tiersLoadedFor[product.id]) loadTiers(product.id)
+  ensureTierDraft(product.id)
 }
 
 function cancelEdit() {
@@ -782,6 +911,102 @@ onMounted(async () => {
                 </li>
               </ul>
               <p v-else class="text-xs text-muted italic">No screenshots yet.</p>
+            </div>
+
+            <!-- Volume price tiers -->
+            <div class="space-y-3 border-t border-sand/60 pt-4">
+              <div class="flex items-center justify-between">
+                <label class="block text-sm font-medium text-foreground">Volume Pricing Tiers ({{ (tiersByProduct[product.id] ?? []).length }})</label>
+                <p v-if="tierLoading[product.id]" class="text-xs text-primary">Loading...</p>
+              </div>
+              <p class="text-xs text-muted">
+                Drop unit price when customer buys N or more. Base price {{ formatMoney(product.price_thb) }}.
+                Min qty ≥ 2. Lowest applicable price wins.
+              </p>
+
+              <p v-if="tierError[product.id]" class="text-xs text-error">{{ tierError[product.id] }}</p>
+
+              <ul v-if="(tiersByProduct[product.id] ?? []).length > 0" class="space-y-2">
+                <li
+                  v-for="tier in (tiersByProduct[product.id] ?? [])"
+                  :key="tier.id"
+                  class="rounded-md border border-sand bg-surface-alt p-3"
+                >
+                  <div v-if="tierEditingId === tier.id" class="flex flex-wrap items-center gap-2">
+                    <label class="text-xs text-muted">Qty ≥</label>
+                    <input
+                      v-model.number="tierEditing[tier.id].min_quantity"
+                      type="number"
+                      min="2"
+                      step="1"
+                      class="w-20 rounded-md border border-sand px-2 py-1 text-sm bg-surface text-foreground focus:outline-none focus:ring-2 focus:ring-primary"
+                    />
+                    <label class="text-xs text-muted">Unit ฿</label>
+                    <input
+                      v-model.number="tierEditing[tier.id].unit_price_thb"
+                      type="number"
+                      min="0.01"
+                      step="0.01"
+                      class="w-24 rounded-md border border-sand px-2 py-1 text-sm bg-surface text-foreground focus:outline-none focus:ring-2 focus:ring-primary"
+                    />
+                    <PrimaryButton size="sm" :disabled="tierBusyId === tier.id" @click="submitEditTier(product.id, tier.id)">
+                      Save
+                    </PrimaryButton>
+                    <SecondaryButton size="sm" :disabled="tierBusyId === tier.id" @click="cancelEditTier">
+                      Cancel
+                    </SecondaryButton>
+                  </div>
+                  <div v-else class="flex flex-wrap items-center gap-3 text-sm">
+                    <span class="font-semibold text-foreground">Buy {{ tier.min_quantity }}+</span>
+                    <span class="text-muted">→</span>
+                    <span class="font-semibold text-primary">{{ formatMoney(tier.unit_price_thb) }}</span>
+                    <span class="text-xs text-muted">/unit</span>
+                    <div class="ml-auto flex gap-1">
+                      <button
+                        type="button"
+                        class="px-2 py-1 text-xs rounded border border-sand bg-surface text-foreground hover:bg-surface-alt disabled:opacity-50"
+                        :disabled="tierBusyId === tier.id"
+                        @click="startEditTier(tier)"
+                      >
+                        Edit
+                      </button>
+                      <button
+                        type="button"
+                        class="px-2 py-1 text-xs rounded border border-error/40 text-error hover:bg-error/10 disabled:opacity-50"
+                        :disabled="tierBusyId === tier.id"
+                        @click="removeTier(product.id, tier.id)"
+                      >
+                        Delete
+                      </button>
+                    </div>
+                  </div>
+                </li>
+              </ul>
+              <p v-else-if="tiersLoadedFor[product.id]" class="text-xs text-muted italic">No volume tiers yet.</p>
+
+              <div class="flex flex-wrap items-center gap-2 pt-2">
+                <label class="text-xs text-muted">Qty ≥</label>
+                <input
+                  v-model.number="ensureTierDraft(product.id).min_quantity"
+                  type="number"
+                  min="2"
+                  step="1"
+                  placeholder="5"
+                  class="w-20 rounded-md border border-sand px-2 py-1 text-sm bg-surface-alt text-foreground focus:outline-none focus:ring-2 focus:ring-primary"
+                />
+                <label class="text-xs text-muted">Unit ฿</label>
+                <input
+                  v-model.number="ensureTierDraft(product.id).unit_price_thb"
+                  type="number"
+                  min="0.01"
+                  step="0.01"
+                  placeholder="799"
+                  class="w-24 rounded-md border border-sand px-2 py-1 text-sm bg-surface-alt text-foreground focus:outline-none focus:ring-2 focus:ring-primary"
+                />
+                <PrimaryButton size="sm" :disabled="tierBusyId === -product.id" @click="submitCreateTier(product.id)">
+                  Add Tier
+                </PrimaryButton>
+              </div>
             </div>
 
             <div class="flex gap-2">

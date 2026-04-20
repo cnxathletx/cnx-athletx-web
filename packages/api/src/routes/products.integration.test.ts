@@ -54,3 +54,46 @@ describe('GET /api/products/:slug', () => {
     expect(res.status).toBe(404)
   })
 })
+
+describe('price_tiers in public product APIs', () => {
+  it('exposes empty price_tiers array when none configured', async () => {
+    const res = await workerFetch('/api/products')
+    const data = await res.json() as { products: Array<{ slug: string; price_tiers: unknown[] }> }
+    const p500 = data.products.find((p) => p.slug === 'plant-protein-500g')!
+    expect(Array.isArray(p500.price_tiers)).toBe(true)
+    expect(p500.price_tiers).toHaveLength(0)
+  })
+
+  it('returns configured tiers sorted by min_quantity in list and detail endpoints', async () => {
+    // Create tiers in reverse order to verify ordering
+    const r1 = await workerFetch('/api/admin/products/1/price-tiers', {
+      admin: true,
+      body: { min_quantity: 10, unit_price_thb: 69900 },
+    })
+    expect(r1.status).toBe(201)
+    const r2 = await workerFetch('/api/admin/products/1/price-tiers', {
+      admin: true,
+      body: { min_quantity: 5, unit_price_thb: 79900 },
+    })
+    expect(r2.status).toBe(201)
+
+    const listRes = await workerFetch('/api/products')
+    const listData = await listRes.json() as {
+      products: Array<{ slug: string; price_tiers: Array<{ min_quantity: number; unit_price_thb: number }> }>
+    }
+    const p500 = listData.products.find((p) => p.slug === 'plant-protein-500g')!
+    expect(p500.price_tiers).toHaveLength(2)
+    expect(p500.price_tiers[0].min_quantity).toBe(5)
+    expect(p500.price_tiers[0].unit_price_thb).toBe(79900)
+    expect(p500.price_tiers[1].min_quantity).toBe(10)
+    expect(p500.price_tiers[1].unit_price_thb).toBe(69900)
+
+    const detailRes = await workerFetch('/api/products/plant-protein-500g')
+    const detailData = await detailRes.json() as {
+      product: { price_tiers: Array<{ min_quantity: number; unit_price_thb: number }> }
+    }
+    expect(detailData.product.price_tiers).toHaveLength(2)
+    expect(detailData.product.price_tiers[0].min_quantity).toBe(5)
+  })
+})
+

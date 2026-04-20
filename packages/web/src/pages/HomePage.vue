@@ -199,26 +199,23 @@ onBeforeUnmount(() => {
 
           <!-- Image Column -->
           <div class="aspect-[4/3] rounded-lg overflow-hidden bg-surface-alt">
-            <div
-              class="w-full h-full bg-gradient-to-br from-primary/15 via-sage/10 to-accent/10 flex items-center justify-center"
-            >
-              <div class="text-center space-y-3">
-                <svg
-                  class="w-24 h-24 mx-auto text-muted/30"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
-                    stroke-width="1"
-                    d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"
-                  />
-                </svg>
-                <p class="text-sm text-muted">{{ t('home.productImage') }}</p>
-              </div>
-            </div>
+            <picture>
+              <source
+                type="image/webp"
+                srcset="/images/hero/hero-main-600.webp 600w, /images/hero/hero-main-1200.webp 1200w"
+                sizes="(min-width: 1024px) 600px, 100vw"
+              />
+              <img
+                src="/images/hero/hero-main-1200.jpg"
+                srcset="/images/hero/hero-main-600.jpg 600w, /images/hero/hero-main-1200.jpg 1200w"
+                sizes="(min-width: 1024px) 600px, 100vw"
+                width="1200"
+                height="900"
+                alt="CNX AthletX plant protein — 500g pouches held in Chiang Mai"
+                fetchpriority="high"
+                class="w-full h-full object-cover"
+              />
+            </picture>
           </div>
         </div>
       </div>
@@ -332,6 +329,7 @@ onBeforeUnmount(() => {
             :price-satang="product.price_thb"
             :image-url="product.image_url"
             :in-stock="product.available_stock > 0"
+            :price-tiers="product.price_tiers"
           />
         </div>
         <!-- Loading skeleton -->

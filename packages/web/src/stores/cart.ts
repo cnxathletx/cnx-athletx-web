@@ -1,5 +1,6 @@
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
+import { pickUnitPrice, type PriceTier } from '../utils/pricing'
 
 export interface CartItem {
   productId: number
@@ -9,6 +10,7 @@ export interface CartItem {
   priceSatang: number
   quantity: number
   imageUrl: string
+  priceTiers?: PriceTier[]
 }
 
 const STORAGE_KEY = 'cnx-cart'
@@ -26,19 +28,30 @@ function saveCart(items: CartItem[]) {
   localStorage.setItem(STORAGE_KEY, JSON.stringify(items))
 }
 
+export function unitPriceFor(item: CartItem): number {
+  return pickUnitPrice(item.priceSatang, item.priceTiers ?? [], item.quantity)
+}
+
+export function lineTotalFor(item: CartItem): number {
+  return unitPriceFor(item) * item.quantity
+}
+
 export const useCartStore = defineStore('cart', () => {
   const items = ref<CartItem[]>(loadCart())
 
   const totalItems = computed(() => items.value.reduce((sum, item) => sum + item.quantity, 0))
 
   const subtotalSatang = computed(() =>
-    items.value.reduce((sum, item) => sum + item.priceSatang * item.quantity, 0)
+    items.value.reduce((sum, item) => sum + lineTotalFor(item), 0)
   )
 
   function addItem(product: Omit<CartItem, 'quantity'>, quantity = 1) {
     const existing = items.value.find((item) => item.productId === product.productId)
     if (existing) {
       existing.quantity = Math.min(existing.quantity + quantity, 10)
+      // Refresh tier metadata from latest product data in case admin updated tiers.
+      existing.priceSatang = product.priceSatang
+      existing.priceTiers = product.priceTiers
     } else {
       items.value.push({ ...product, quantity })
     }

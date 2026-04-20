@@ -114,6 +114,7 @@ watch(locale, loadProducts)
             :price-satang="product.price_thb"
             :image-url="product.image_url"
             :in-stock="product.available_stock > 0"
+            :price-tiers="product.price_tiers"
           />
         </div>
       </div>

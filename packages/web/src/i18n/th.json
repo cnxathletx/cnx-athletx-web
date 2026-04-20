@@ -118,7 +118,14 @@
     "regulatoryInfo": "ข้อมูลกฎระเบียบและความปลอดภัย",
     "weight": "น้ำหนัก",
     "perServing": "ต่อ 1 ครั้ง",
-    "productImage": "รูปสินค้า"
+    "productImage": "รูปสินค้า",
+    "volumeDiscounts": "ส่วนลดตามปริมาณ",
+    "tierLabel": "ซื้อ {count} ชิ้นขึ้นไป",
+    "savePercent": "ประหยัด {percent}%",
+    "perUnit": "ต่อชิ้น",
+    "lineTotal": "รวม {total}",
+    "addMoreForDiscount": "เพิ่มอีก {needed} ชิ้น เหลือชิ้นละ {price}",
+    "tierApplied": "ได้รับส่วนลดตามปริมาณ"
   },
   "cart": {
     "title": "ตะกร้าสินค้า",

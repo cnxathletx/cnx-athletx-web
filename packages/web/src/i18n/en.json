@@ -118,7 +118,14 @@
     "regulatoryInfo": "Regulatory & Safety Information",
     "weight": "Weight",
     "perServing": "per serving",
-    "productImage": "Product Image"
+    "productImage": "Product Image",
+    "volumeDiscounts": "Volume discounts",
+    "tierLabel": "Buy {count}+",
+    "savePercent": "Save {percent}%",
+    "perUnit": "per unit",
+    "lineTotal": "Line total {total}",
+    "addMoreForDiscount": "Add {needed} more for {price} each",
+    "tierApplied": "Volume discount applied"
   },
   "cart": {
     "title": "Shopping Cart",

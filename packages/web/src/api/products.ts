@@ -18,6 +18,11 @@ export interface ApiProductScreenshot {
   sort_order: number
 }
 
+export interface ApiPriceTier {
+  min_quantity: number
+  unit_price_thb: number
+}
+
 export interface ApiProduct {
   id: number
   slug: string
@@ -34,6 +39,7 @@ export interface ApiProduct {
   regulatory_info: string | null
   product_line_name: string | null
   screenshots: ApiProductScreenshot[]
+  price_tiers: ApiPriceTier[]
 }
 
 export interface ApiRelatedProduct {

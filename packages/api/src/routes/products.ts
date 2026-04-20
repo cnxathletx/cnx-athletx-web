@@ -1,5 +1,5 @@
 import type { RouterType } from 'itty-router'
-import type { Env, ProductImageRow } from '../lib/types'
+import type { Env, ProductImageRow, PriceTierRow } from '../lib/types'
 
 interface PublicProductRow {
   id: number
@@ -110,6 +110,27 @@ function applyRelatedTranslation(row: RelatedProductRow, locale: Locale) {
   }
 }
 
+async function loadPriceTiersByProductIds(env: Env, productIds: number[]) {
+  if (productIds.length === 0) return new Map<number, { min_quantity: number; unit_price_thb: number }[]>()
+  const placeholders = productIds.map(() => '?').join(',')
+  const { results } = await env.DB.prepare(
+    `SELECT id, product_id, min_quantity, unit_price_thb
+     FROM price_tiers
+     WHERE product_id IN (${placeholders})
+     ORDER BY product_id ASC, min_quantity ASC`
+  )
+    .bind(...productIds)
+    .all<PriceTierRow>()
+
+  const map = new Map<number, { min_quantity: number; unit_price_thb: number }[]>()
+  for (const row of results) {
+    const list = map.get(row.product_id) ?? []
+    list.push({ min_quantity: row.min_quantity, unit_price_thb: row.unit_price_thb })
+    map.set(row.product_id, list)
+  }
+  return map
+}
+
 async function loadScreenshotsByProductIds(env: Env, productIds: number[]) {
   if (productIds.length === 0) return new Map<number, { id: number; url: string; sort_order: number }[]>()
   const placeholders = productIds.map(() => '?').join(',')
@@ -149,8 +170,16 @@ export function registerProductRoutes(router: RouterType) {
          ORDER BY p.id ASC`
       ).all<PublicProductRow>()
 
-      const screenshotMap = await loadScreenshotsByProductIds(env, results.map((r) => r.id))
-      const products = results.map((r) => ({ ...applyTranslations(r, locale), screenshots: screenshotMap.get(r.id) ?? [] }))
+      const productIds = results.map((r) => r.id)
+      const [screenshotMap, tierMap] = await Promise.all([
+        loadScreenshotsByProductIds(env, productIds),
+        loadPriceTiersByProductIds(env, productIds),
+      ])
+      const products = results.map((r) => ({
+        ...applyTranslations(r, locale),
+        screenshots: screenshotMap.get(r.id) ?? [],
+        price_tiers: tierMap.get(r.id) ?? [],
+      }))
 
       return Response.json({ products })
     } catch {
@@ -188,8 +217,9 @@ export function registerProductRoutes(router: RouterType) {
         return Response.json({ error: 'Product not found' }, { status: 404 })
       }
 
-      const [screenshotMap, relatedRow] = await Promise.all([
+      const [screenshotMap, tierMap, relatedRow] = await Promise.all([
         loadScreenshotsByProductIds(env, [product.id]),
+        loadPriceTiersByProductIds(env, [product.id]),
         env.DB.prepare(
           `SELECT p.id, p.slug, p.name, p.price_thb, p.weight_g, p.image_url,
                   (i.stock_count - i.reserved_count) AS available_stock,
@@ -207,7 +237,11 @@ export function registerProductRoutes(router: RouterType) {
       const related = relatedRow ? applyRelatedTranslation(relatedRow, locale) : null
 
       return Response.json({
-        product: { ...applyTranslations(product, locale), screenshots: screenshotMap.get(product.id) ?? [] },
+        product: {
+          ...applyTranslations(product, locale),
+          screenshots: screenshotMap.get(product.id) ?? [],
+          price_tiers: tierMap.get(product.id) ?? [],
+        },
         related,
       })
     } catch {

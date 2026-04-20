@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, onMounted, onBeforeUnmount } from 'vue'
+import { ref, onMounted, onBeforeUnmount, watch } from 'vue'
 import { RouterLink } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import PrimaryButton from '../components/ui/PrimaryButton.vue'
@@ -93,7 +93,7 @@ function startCommunityRotation() {
   }
 }
 
-const { t } = useI18n({ useScope: 'global' })
+const { t, locale } = useI18n({ useScope: 'global' })
 
 useHead({
   title: undefined, // Just "CNX AthletX" for homepage
@@ -124,7 +124,7 @@ useJsonLd(() => ({
 const products = ref<ApiProduct[]>([])
 const productsLoaded = ref(false)
 
-onMounted(async () => {
+async function loadProducts() {
   try {
     products.value = await fetchProducts()
   } catch {
@@ -132,6 +132,12 @@ onMounted(async () => {
   } finally {
     productsLoaded.value = true
   }
+}
+
+watch(locale, loadProducts)
+
+onMounted(async () => {
+  await loadProducts()
 
   if (storyImages.length > 1) {
     storyTimer = setInterval(() => {

@@ -85,9 +85,16 @@ function buildMetaTags(title, description, ogImage, canonicalUrl) {
     <link rel="canonical" href="${canonicalUrl}" />`
 }
 
+function stripStaticMeta(html) {
+  return html
+    .replace(/<title>[^<]*<\/title>/, '')
+    .replace(/<meta\s+property="og:(?:type|title|image|image:width|image:height|description|url|site_name)"[^>]*>\s*/gi, '')
+    .replace(/<meta\s+name="(?:description|twitter:card|twitter:title|twitter:description|twitter:image)"[^>]*>\s*/gi, '')
+    .replace(/<link\s+rel="canonical"[^>]*>\s*/gi, '')
+}
+
 function injectIntoHead(html, metaTags, jsonLd, preloadImage) {
-  // Replace the existing <title> tag
-  html = html.replace(/<title>[^<]*<\/title>/, '')
+  html = stripStaticMeta(html)
 
   const preload = preloadImage
     ? `<link rel="preload" as="image" fetchpriority="high" href="${preloadImage}" />`
@@ -178,7 +185,7 @@ export default {
           `${SITE_URL}/shop`
         )
         // No JSON-LD for shop page, just meta tags
-        html = html.replace(/<title>[^<]*<\/title>/, '')
+        html = stripStaticMeta(html)
         html = html.replace('</head>', `${metaTags}\n</head>`)
 
         return new Response(html, {

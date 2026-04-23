@@ -7,6 +7,7 @@ import { registerReviewsRoutes } from './routes/reviews'
 import { registerSettingsRoutes } from './routes/settings'
 import { registerAuthRoutes } from './routes/auth'
 import { registerAccountRoutes } from './routes/account'
+import { registerAccountReviewsRoutes } from './routes/account-reviews'
 import { registerCheckoutRoutes } from './routes/checkout'
 import { registerOrderRoutes } from './routes/orders'
 import { registerChatRoutes } from './routes/chat'
@@ -25,6 +26,7 @@ registerReviewsRoutes(router)
 registerSettingsRoutes(router)
 registerAuthRoutes(router)
 registerAccountRoutes(router)
+registerAccountReviewsRoutes(router)
 registerCheckoutRoutes(router)
 registerOrderRoutes(router)
 registerChatRoutes(router)

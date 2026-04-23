@@ -496,3 +496,73 @@ export interface AdminChatConversationDetail extends ChatConversationRow {
 export interface AdminUpdateChatStatusBody {
   status: ChatConversationStatus
 }
+
+// --- Review row types ---
+
+export interface ReviewRow {
+  id: number
+  user_id: string
+  product_line_id: number
+  rating: number
+  body: string | null
+  locale: 'en' | 'th'
+  status: 'pending' | 'approved' | 'rejected'
+  rejected_reason: string | null
+  created_at: string
+  updated_at: string
+  moderated_at: string | null
+  moderated_by: string | null
+}
+
+export interface PublicReviewRow {
+  id: number
+  rating: number
+  body: string | null
+  locale: 'en' | 'th'
+  created_at: string
+}
+
+export interface ReviewSummaryRow {
+  avg_rating: number | null
+  count: number
+}
+
+export interface ReviewDistributionRow {
+  rating: number
+  count: number
+}
+
+export interface ReviewableProductRow {
+  product_line_id: number
+  slug: string
+  name: string
+  order_id: string
+  shipped_at: string
+}
+
+export interface AdminReviewListRow {
+  id: number
+  user_id: string
+  user_email: string
+  product_line_id: number
+  product_line_name: string
+  rating: number
+  body: string | null
+  locale: 'en' | 'th'
+  status: 'pending' | 'approved' | 'rejected'
+  rejected_reason: string | null
+  created_at: string
+  moderated_at: string | null
+  moderated_by: string | null
+}
+
+export interface SubmitReviewBody {
+  productLineId: number
+  rating: number
+  body?: string
+  locale: 'en' | 'th'
+}
+
+export interface RejectReviewBody {
+  reason?: string
+}

@@ -35,17 +35,17 @@ export function registerAccountReviewsRoutes(router: RouterType) {
     try {
       const { results } = await env.DB.prepare(
         `SELECT pl.id AS product_line_id,
-                p.slug AS slug,
+                MIN(p.slug) AS slug,
                 pl.name AS name,
-                o.id AS order_id,
-                s.shipped_at AS shipped_at
+                MAX(o.id) AS order_id,
+                MAX(s.shipped_at) AS shipped_at
          FROM orders o
          JOIN order_items oi ON oi.order_id = o.id
          JOIN products p ON p.id = oi.product_id
          JOIN product_lines pl ON pl.id = p.product_line_id
          LEFT JOIN shipments s ON s.order_id = o.id
          WHERE o.user_id = ?
-           AND o.status IN ('shipped','delivered')
+           AND o.status IN ${SHIPPED_STATUSES}
            AND NOT EXISTS (
              SELECT 1 FROM reviews r
              WHERE r.user_id = ? AND r.product_line_id = pl.id
@@ -136,11 +136,13 @@ export function registerAccountReviewsRoutes(router: RouterType) {
       }
 
       const now = nowIso()
+      let insertedId: number
       try {
-        await env.DB.prepare(
+        const result = await env.DB.prepare(
           `INSERT INTO reviews (user_id, product_line_id, rating, body, locale, status, created_at, updated_at)
            VALUES (?, ?, ?, ?, ?, 'pending', ?, ?)`
         ).bind(user.id, data.productLineId, data.rating, data.body ?? null, data.locale, now, now).run()
+        insertedId = Number(result.meta.last_row_id)
       } catch (err) {
         const msg = err instanceof Error ? err.message : ''
         if (/UNIQUE constraint failed/i.test(msg)) {
@@ -149,21 +151,14 @@ export function registerAccountReviewsRoutes(router: RouterType) {
         throw err
       }
 
-      const inserted = await env.DB.prepare(
-        `SELECT id, rating, body, locale, status, created_at
-         FROM reviews
-         WHERE user_id = ? AND product_line_id = ?
-         LIMIT 1`
-      ).bind(user.id, data.productLineId).first<ReviewRow>()
-
       return Response.json({
         review: {
-          id: inserted!.id,
-          rating: inserted!.rating,
-          body: inserted!.body,
-          locale: inserted!.locale,
-          status: inserted!.status,
-          createdAt: inserted!.created_at,
+          id: insertedId,
+          rating: data.rating,
+          body: data.body ?? null,
+          locale: data.locale,
+          status: 'pending',
+          createdAt: now,
         },
       })
     } catch {
@@ -187,8 +182,7 @@ export function registerAccountReviewsRoutes(router: RouterType) {
         `DELETE FROM reviews WHERE id = ? AND user_id = ?`
       ).bind(id, user.id).run()
 
-      const changes = (result as unknown as { meta?: { changes?: number } }).meta?.changes ?? 0
-      if (changes === 0) {
+      if ((result.meta.changes ?? 0) === 0) {
         return Response.json({ error: 'Review not found' }, { status: 404 })
       }
       return Response.json({ success: true })

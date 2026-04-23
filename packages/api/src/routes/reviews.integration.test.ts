@@ -11,10 +11,10 @@ async function placeShippedOrder(email: string): Promise<string> {
     cookie,
     body: checkoutBody({ customer: { name: 'Buyer', email, phone: '+66811111111', address: { line1: '1 Test Road', district: 'Mueang', province: 'CM', postal_code: '50200' } } }),
   })
-  const { order } = await checkoutRes.json() as { order: { id: string } }
-  await workerFetch(`/api/admin/orders/${order.id}/mark-paid`, { admin: true, method: 'POST' })
-  await workerFetch(`/api/admin/orders/${order.id}/pack`, { admin: true, method: 'POST' })
-  await workerFetch(`/api/admin/orders/${order.id}/ship`, { admin: true, method: 'POST', body: { carrier: 'Kerry', tracking_number: 'TRK123' } })
+  const { order_id } = await checkoutRes.json() as { order_id: string }
+  await workerFetch(`/api/admin/orders/${order_id}/mark-paid`, { admin: true, method: 'POST' })
+  await workerFetch(`/api/admin/orders/${order_id}/pack`, { admin: true, method: 'POST' })
+  await workerFetch(`/api/admin/orders/${order_id}/ship`, { admin: true, method: 'POST', body: { carrier: 'Kerry', tracking_number: 'TRK123' } })
   return cookie
 }
 

@@ -24,8 +24,10 @@ async function seedApprovedReview(cookie: string, productLineId: number, rating:
     method: 'POST',
     body: { productLineId, rating, body, locale: 'en' },
   })
+  if (!submitRes.ok) throw new Error(`seedApprovedReview: POST /api/account/reviews returned ${submitRes.status} (Task 6 not yet implemented?)`)
   const { review } = await submitRes.json() as { review: { id: number } }
-  await workerFetch(`/api/admin/reviews/${review.id}/approve`, { admin: true, method: 'POST' })
+  const approveRes = await workerFetch(`/api/admin/reviews/${review.id}/approve`, { admin: true, method: 'POST' })
+  if (!approveRes.ok) throw new Error(`seedApprovedReview: POST /api/admin/reviews/${review.id}/approve returned ${approveRes.status} (Task 8 not yet implemented?)`)
   return review.id
 }
 

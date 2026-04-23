@@ -1,5 +1,5 @@
 import type { RouterType } from 'itty-router'
-import type { Env, PublicReviewRow, ReviewSummaryRow, ReviewDistributionRow, CountRow } from '../lib/types'
+import type { Env, PublicReviewRow, ReviewSummaryRow, ReviewDistributionRow } from '../lib/types'
 
 export function registerReviewsRoutes(router: RouterType) {
   router.get('/api/products/:slug/reviews', async (request: Request, env: Env) => {
@@ -42,11 +42,6 @@ export function registerReviewsRoutes(router: RouterType) {
       const distribution: Record<string, number> = { '1': 0, '2': 0, '3': 0, '4': 0, '5': 0 }
       for (const row of distRows) distribution[String(row.rating)] = row.count
 
-      const totalRow = await env.DB.prepare(
-        `SELECT COUNT(*) AS count FROM reviews WHERE product_line_id = ? AND status = 'approved'`
-      ).bind(lineId).first<CountRow>()
-      const total = totalRow?.count ?? 0
-
       const { results: reviews } = await env.DB.prepare(
         `SELECT id, rating, body, locale, created_at
          FROM reviews
@@ -70,7 +65,7 @@ export function registerReviewsRoutes(router: RouterType) {
         })),
         page,
         pageSize,
-        total,
+        total: summary?.count ?? 0,
       }), {
         status: 200,
         headers: { 'Content-Type': 'application/json', 'Cache-Control': 'public, max-age=60' },

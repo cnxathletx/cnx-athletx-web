@@ -34,7 +34,7 @@ export async function workerFetch(
   options: {
     method?: string
     body?: unknown
-    rawBody?: BodyInit
+    rawBody?: string | Uint8Array | ArrayBuffer
     admin?: boolean
     cookie?: string
     headers?: Record<string, string>
@@ -53,10 +53,15 @@ export async function workerFetch(
   }
   const url = `http://${worker.address}:${worker.port}${path}`
   const hasBody = options.rawBody !== undefined || options.body !== undefined
+  const body = options.rawBody !== undefined
+    ? options.rawBody
+    : (options.body !== undefined ? JSON.stringify(options.body) : undefined)
+  // worker.fetch is typed via undici; cast to escape the global vs undici BodyInit mismatch.
   return worker.fetch(url, {
     method: options.method ?? (hasBody ? 'POST' : 'GET'),
     headers,
-    body: options.rawBody !== undefined ? options.rawBody : (options.body !== undefined ? JSON.stringify(options.body) : undefined),
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    body: body as any,
   }) as unknown as Promise<Response>
 }
 

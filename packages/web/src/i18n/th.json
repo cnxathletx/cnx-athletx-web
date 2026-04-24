@@ -206,7 +206,14 @@
     "previous": "ก่อนหน้า",
     "next": "ถัดไป",
     "page": "หน้า {page} จาก {total}",
-    "itemsCount": "{count} ชิ้น"
+    "itemsCount": "{count} ชิ้น",
+    "tabs": {
+      "reviews": "รีวิวของฉัน"
+    },
+    "reviews": {
+      "eligibleHeading": "สินค้าที่คุณสามารถรีวิวได้",
+      "submittedHeading": "รีวิวของคุณ"
+    }
   },
   "orderStatus": {
     "title": "สถานะคำสั่งซื้อ",
@@ -360,5 +367,27 @@
     "title": "ไม่พบหน้านี้",
     "message": "หน้าที่คุณกำลังมองหาไม่มีอยู่หรือถูกย้ายแล้ว",
     "backHome": "กลับหน้าแรก"
+  },
+  "reviews": {
+    "title": "รีวิวจากลูกค้า",
+    "summaryAverage": "{rating} จาก 5",
+    "summaryCount": "{count} รีวิว",
+    "empty": "ยังไม่มีรีวิว — เป็นคนแรกที่รีวิว",
+    "verifiedBuyer": "ลูกค้าที่ซื้อแล้ว",
+    "writeReview": "เขียนรีวิว",
+    "ratingLabel": "ให้คะแนน",
+    "bodyLabel": "ความคิดเห็น (ไม่บังคับ)",
+    "bodyPlaceholder": "บอกคนอื่นว่าคุณคิดอย่างไร…",
+    "charCount": "{count} / 1000",
+    "submit": "ส่งรีวิว",
+    "thankYou": "ขอบคุณ! รีวิวของคุณกำลังรอการอนุมัติ",
+    "statusPending": "รอตรวจสอบ",
+    "statusApproved": "เผยแพร่แล้ว",
+    "statusRejected": "ถูกปฏิเสธ",
+    "deleteConfirm": "ลบรีวิวนี้หรือไม่?",
+    "deleted": "ลบรีวิวแล้ว",
+    "errorEligibility": "คุณต้องมีคำสั่งซื้อที่ส่งแล้วซึ่งมีสินค้าชิ้นนี้จึงจะรีวิวได้",
+    "errorDuplicate": "คุณได้ส่งรีวิวสำหรับสินค้านี้แล้ว",
+    "errorGeneric": "ไม่สามารถส่งรีวิวได้ กรุณาลองอีกครั้ง"
   }
 }

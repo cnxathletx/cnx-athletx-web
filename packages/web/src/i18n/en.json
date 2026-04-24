@@ -206,7 +206,14 @@
     "previous": "Previous",
     "next": "Next",
     "page": "Page {page} of {total}",
-    "itemsCount": "{count} item(s)"
+    "itemsCount": "{count} item(s)",
+    "tabs": {
+      "reviews": "My Reviews"
+    },
+    "reviews": {
+      "eligibleHeading": "Products you can review",
+      "submittedHeading": "Your reviews"
+    }
   },
   "orderStatus": {
     "title": "Order Status",
@@ -360,5 +367,27 @@
     "title": "Page Not Found",
     "message": "The page you're looking for doesn't exist or has been moved.",
     "backHome": "Back to Home"
+  },
+  "reviews": {
+    "title": "Customer Reviews",
+    "summaryAverage": "{rating} out of 5",
+    "summaryCount": "{count} review | {count} reviews",
+    "empty": "No reviews yet — be the first.",
+    "verifiedBuyer": "Verified buyer",
+    "writeReview": "Write a review",
+    "ratingLabel": "Your rating",
+    "bodyLabel": "Your review (optional)",
+    "bodyPlaceholder": "Tell others what you thought…",
+    "charCount": "{count} / 1000",
+    "submit": "Submit review",
+    "thankYou": "Thanks! Your review is awaiting approval.",
+    "statusPending": "Pending",
+    "statusApproved": "Approved",
+    "statusRejected": "Rejected",
+    "deleteConfirm": "Delete this review?",
+    "deleted": "Review deleted.",
+    "errorEligibility": "You must have a shipped order containing this product to leave a review.",
+    "errorDuplicate": "You have already submitted a review for this product.",
+    "errorGeneric": "Could not submit review. Please try again."
   }
 }

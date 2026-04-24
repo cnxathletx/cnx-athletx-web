@@ -123,6 +123,11 @@ const router = createRouter({
       component: () => import('../pages/AdminSettingsPage.vue'),
     },
     {
+      path: '/admin/reviews',
+      name: 'admin-reviews',
+      component: () => import('../pages/AdminReviewsPage.vue'),
+    },
+    {
       path: '/login',
       name: 'login',
       component: () => import('../pages/LoginPage.vue'),

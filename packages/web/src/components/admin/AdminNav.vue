@@ -12,6 +12,7 @@ const links = [
   { to: '/admin/discounts', label: 'Discounts' },
   { to: '/admin/income', label: 'Income' },
   { to: '/admin/chat', label: 'Chat' },
+  { to: '/admin/reviews', label: 'Reviews' },
   { to: '/admin/settings', label: 'Settings' },
 ]
 

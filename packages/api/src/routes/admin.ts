@@ -10,6 +10,7 @@ import { registerAdminReportRoutes } from './admin/reports'
 import { registerAdminChatRoutes } from './admin/chat'
 import { registerAdminUploadRoutes } from './admin/uploads'
 import { registerAdminReviewsRoutes } from './admin/reviews'
+import { registerAdminCleanupRoutes } from './admin/cleanup'
 
 export function registerAdminRoutes(router: RouterType) {
   registerAdminOrderRoutes(router)
@@ -23,4 +24,5 @@ export function registerAdminRoutes(router: RouterType) {
   registerAdminChatRoutes(router)
   registerAdminUploadRoutes(router)
   registerAdminReviewsRoutes(router)
+  registerAdminCleanupRoutes(router)
 }

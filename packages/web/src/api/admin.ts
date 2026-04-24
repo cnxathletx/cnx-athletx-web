@@ -738,6 +738,56 @@ export async function reorderAdminLabTestFiles(productLineId: number, fileIds: n
   return data.lab_test_files
 }
 
+// --- Admin R2 Cleanup ---
+
+export interface R2Orphan {
+  key: string
+  uploaded: string
+  size: number
+}
+
+export interface R2CleanupSummary {
+  scanned: number
+  referenced_count: number
+  orphan_count: number
+  min_age_seconds: number
+  truncated: boolean
+}
+
+export interface R2CleanupDryRunResult extends R2CleanupSummary {
+  dry_run: true
+  orphans: R2Orphan[]
+}
+
+export interface R2CleanupResult extends R2CleanupSummary {
+  dry_run: false
+  deleted: string[]
+  errors: { key: string; error: string }[]
+}
+
+export async function previewR2Orphans(minAgeSeconds?: number): Promise<R2CleanupDryRunResult> {
+  const params = new URLSearchParams({ dry_run: '1' })
+  if (typeof minAgeSeconds === 'number') params.set('min_age_seconds', String(minAgeSeconds))
+  const res = await fetch(apiUrl(`/api/admin/cleanup/r2-orphans?${params.toString()}`), {
+    method: 'POST',
+    credentials: 'include',
+  })
+  if (!res.ok) await parseAdminError(res)
+  return (await res.json()) as R2CleanupDryRunResult
+}
+
+export async function deleteR2Orphans(minAgeSeconds?: number): Promise<R2CleanupResult> {
+  const params = new URLSearchParams()
+  if (typeof minAgeSeconds === 'number') params.set('min_age_seconds', String(minAgeSeconds))
+  const qs = params.toString()
+  const res = await fetch(apiUrl(`/api/admin/cleanup/r2-orphans${qs ? `?${qs}` : ''}`), {
+    method: 'POST',
+    credentials: 'include',
+  })
+  if (!res.ok) await parseAdminError(res)
+  return (await res.json()) as R2CleanupResult
+}
+
 // --- Admin Income Reports ---
 
 export interface IncomeReportProduct {

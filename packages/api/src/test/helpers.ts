@@ -31,7 +31,14 @@ export async function resetDb() {
 /** Send a request to the worker */
 export async function workerFetch(
   path: string,
-  options: { method?: string; body?: unknown; admin?: boolean; cookie?: string; headers?: Record<string, string> } = {}
+  options: {
+    method?: string
+    body?: unknown
+    rawBody?: BodyInit
+    admin?: boolean
+    cookie?: string
+    headers?: Record<string, string>
+  } = {}
 ): Promise<Response> {
   if (!worker) throw new Error('Worker not started — call startWorker() first')
   const headers: Record<string, string> = { ...options.headers }
@@ -41,14 +48,15 @@ export async function workerFetch(
   if (options.cookie) {
     headers['Cookie'] = options.cookie
   }
-  if (options.body) {
+  if (options.body && !options.rawBody) {
     headers['Content-Type'] = 'application/json'
   }
   const url = `http://${worker.address}:${worker.port}${path}`
+  const hasBody = options.rawBody !== undefined || options.body !== undefined
   return worker.fetch(url, {
-    method: options.method ?? (options.body ? 'POST' : 'GET'),
+    method: options.method ?? (hasBody ? 'POST' : 'GET'),
     headers,
-    body: options.body ? JSON.stringify(options.body) : undefined,
+    body: options.rawBody !== undefined ? options.rawBody : (options.body !== undefined ? JSON.stringify(options.body) : undefined),
   }) as unknown as Promise<Response>
 }
 

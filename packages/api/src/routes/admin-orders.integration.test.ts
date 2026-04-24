@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeAll, afterAll, beforeEach } from 'vitest'
-import { startWorker, stopWorker, resetDb, workerFetch, checkoutBody } from '../test/helpers'
+import { startWorker, stopWorker, resetDb, workerFetch, checkoutBody, loginAs } from '../test/helpers'
 
 beforeAll(async () => { await startWorker() })
 afterAll(async () => { await stopWorker() })
@@ -228,3 +228,57 @@ describe('Order state transitions', () => {
     expect(res.status).toBe(409)
   })
 })
+
+describe('POST /api/admin/orders/:id/ship — review prompt', () => {
+  const customer = (email: string, name = 'Buyer') => ({
+    name, email, phone: '+66811111111',
+    address: { line1: '1 Test', district: 'Mueang', province: 'CM', postal_code: '50200' },
+  })
+
+  async function shipOrder(orderId: string) {
+    await workerFetch(`/api/admin/orders/${orderId}/mark-paid`, { admin: true, method: 'POST' })
+    await workerFetch(`/api/admin/orders/${orderId}/pack`, { admin: true, method: 'POST' })
+    await workerFetch(`/api/admin/orders/${orderId}/ship`, { admin: true, method: 'POST', body: { carrier: 'Kerry', tracking_number: 'TRK1' } })
+  }
+
+  async function emailLogCount(orderId: string): Promise<number> {
+    const res = await workerFetch(`/api/__test-email-log?order_id=${orderId}&event=review_prompt`)
+    if (!res.ok) throw new Error(`__test-email-log returned ${res.status}`)
+    const data = await res.json() as { count: number }
+    return data.count
+  }
+
+  it('logs review_prompt email_logs entry on ship for account orders', async () => {
+    const email = 'rp1@example.com'
+    const cookie = await loginAs(email)
+    const checkoutRes = await workerFetch('/api/checkout', { cookie, body: checkoutBody({ customer: customer(email) }) })
+    const { order_id } = await checkoutRes.json() as { order_id: string }
+    await shipOrder(order_id)
+
+    await new Promise((r) => setTimeout(r, 200))
+
+    expect(await emailLogCount(order_id)).toBeGreaterThanOrEqual(1)
+  })
+
+  it('does not double-send review prompt on repeat ship attempts', async () => {
+    const email = 'rp2@example.com'
+    const cookie = await loginAs(email)
+    const checkoutRes = await workerFetch('/api/checkout', { cookie, body: checkoutBody({ customer: customer(email) }) })
+    const { order_id } = await checkoutRes.json() as { order_id: string }
+    await shipOrder(order_id)
+    await new Promise((r) => setTimeout(r, 200))
+
+    expect(await emailLogCount(order_id)).toBe(1)
+  })
+
+  it('skips review prompt for guest order (no user_id)', async () => {
+    const email = 'guest@example.com'
+    const checkoutRes = await workerFetch('/api/checkout', { body: checkoutBody({ customer: customer(email, 'Guest') }) })
+    const { order_id } = await checkoutRes.json() as { order_id: string }
+    await shipOrder(order_id)
+    await new Promise((r) => setTimeout(r, 200))
+
+    expect(await emailLogCount(order_id)).toBe(0)
+  })
+})
+

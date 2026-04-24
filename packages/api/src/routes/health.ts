@@ -50,4 +50,22 @@ export function registerHealthRoutes(router: RouterType) {
     await env.DB.exec(TEST_SEED)
     return Response.json({ ok: true })
   })
+
+  router.get('/api/__test-email-log', async (request: Request, env: Env) => {
+    if (env.ENVIRONMENT) {
+      return Response.json({ error: 'Not available' }, { status: 403 })
+    }
+    const url = new URL(request.url)
+    const host = url.hostname
+    const isLocal = host === 'localhost' || host === '127.0.0.1' || host === '0.0.0.0' || host.startsWith('[') || host === '::1'
+    if (!isLocal) {
+      return Response.json({ error: 'Not available' }, { status: 403 })
+    }
+    const orderId = url.searchParams.get('order_id') ?? ''
+    const event = url.searchParams.get('event') ?? ''
+    const row = await env.DB.prepare(
+      `SELECT COUNT(*) AS count FROM email_logs WHERE order_id = ? AND event = ? AND status = 'sent'`
+    ).bind(orderId, event).first<{ count: number }>()
+    return Response.json({ count: row?.count ?? 0 })
+  })
 }

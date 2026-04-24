@@ -1,5 +1,5 @@
 import { test, expect, type Page } from '@playwright/test'
-import { resetDb, addProductToCart, fillCheckoutForm } from './helpers'
+import { resetDb } from './helpers'
 
 const API_BASE = 'http://localhost:8787'
 const ADMIN_HEADER = { 'X-Admin-Email': 'jdelaire@gmail.com' }
@@ -26,27 +26,42 @@ async function loginCustomer(page: Page, email: string): Promise<void> {
   await expect(page).toHaveURL(/\/account/, { timeout: 10000 })
 }
 
-async function placeOrderAsCustomer(page: Page): Promise<string> {
-  await addProductToCart(page, 'plant-protein-500g')
-  await page.goto('/checkout')
-  await fillCheckoutForm(page)
-  await page.getByRole('button', { name: /place order/i }).click()
-  await page.waitForURL(/\/order\/.*\/payment/, { timeout: 10000 })
-  const url = page.url()
-  const match = url.match(/\/order\/([^/]+)\/payment/)
-  if (!match) throw new Error(`Could not extract order id from ${url}`)
-  return match[1]
+async function placeOrderViaApi(page: Page, email: string): Promise<string> {
+  const res = await page.request.post(`${API_BASE}/api/checkout`, {
+    data: {
+      idempotency_key: `e2e-${Date.now()}-${Math.random()}`,
+      items: [{ product_id: 1, quantity: 1 }],
+      customer: {
+        name: 'E2E Reviewer',
+        email,
+        phone: '+66812345678',
+        address: {
+          line1: '123 Test Street',
+          district: 'Mueang',
+          province: 'Chiang Mai',
+          postal_code: '50200',
+        },
+      },
+    },
+  })
+  if (!res.ok()) throw new Error(`checkout failed: ${res.status()} ${await res.text()}`)
+  const json = (await res.json()) as { order_id?: string }
+  if (!json.order_id) throw new Error(`checkout response missing order_id: ${JSON.stringify(json)}`)
+  return json.order_id
 }
 
-test.beforeEach(async () => {
+test.beforeEach(async ({ page }) => {
   await resetDb()
+  // Public reviews endpoint sets max-age=60; bypass HTTP cache so post-approve
+  // navigation sees the updated response within the test.
+  await page.setExtraHTTPHeaders({ 'Cache-Control': 'no-cache' })
 })
 
 test.describe('Reviews', () => {
   test('full review lifecycle (submit, moderate, display, delete)', async ({ page }) => {
     const email = 'e2e-review@example.com'
     await loginCustomer(page, email)
-    const orderId = await placeOrderAsCustomer(page)
+    const orderId = await placeOrderViaApi(page, email)
 
     await adminPost(`/api/admin/orders/${orderId}/mark-paid`)
     await adminPost(`/api/admin/orders/${orderId}/pack`)
@@ -67,9 +82,13 @@ test.describe('Reviews', () => {
     await page.goto('/product/plant-protein-500g')
     await expect(page.getByText(/no reviews yet/i)).toBeVisible()
 
-    // 4. Admin approve
-    await page.goto('/admin/reviews')
-    await page.getByRole('button', { name: /^approve$/i }).first().click()
+    // 4. Admin approve via API (browser admin UI requires Cloudflare Access in dev)
+    const listRes = await page.request.get(`${API_BASE}/api/admin/reviews?status=pending`, { headers: ADMIN_HEADER })
+    if (!listRes.ok()) throw new Error(`admin list failed: ${listRes.status()}`)
+    const listJson = (await listRes.json()) as { reviews: { id: number }[] }
+    const reviewId = listJson.reviews[0]?.id
+    if (!reviewId) throw new Error('no pending review found')
+    await adminPost(`/api/admin/reviews/${reviewId}/approve`)
 
     // 5. Public page now shows the review
     await page.goto('/product/plant-protein-500g')

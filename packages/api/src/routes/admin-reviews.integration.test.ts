@@ -8,11 +8,16 @@ beforeEach(async () => { await resetDb() })
 async function submitPendingReview(email: string, productLineId = 1): Promise<number> {
   const cookie = await loginAs(email)
   const checkout = await workerFetch('/api/checkout', { cookie, body: checkoutBody({ customer: { name: 'Buyer', email, phone: '+66811111111', address: { line1: '1 Test', district: 'Mueang', province: 'CM', postal_code: '50200' } } }) })
+  if (!checkout.ok) throw new Error(`submitPendingReview: POST /api/checkout returned ${checkout.status}`)
   const { order_id } = await checkout.json() as { order_id: string }
-  await workerFetch(`/api/admin/orders/${order_id}/mark-paid`, { admin: true, method: 'POST' })
-  await workerFetch(`/api/admin/orders/${order_id}/pack`, { admin: true, method: 'POST' })
-  await workerFetch(`/api/admin/orders/${order_id}/ship`, { admin: true, method: 'POST', body: { carrier: 'Kerry', tracking_number: 'TRK1' } })
+  const paid = await workerFetch(`/api/admin/orders/${order_id}/mark-paid`, { admin: true, method: 'POST' })
+  if (!paid.ok) throw new Error(`submitPendingReview: mark-paid returned ${paid.status}`)
+  const packed = await workerFetch(`/api/admin/orders/${order_id}/pack`, { admin: true, method: 'POST' })
+  if (!packed.ok) throw new Error(`submitPendingReview: pack returned ${packed.status}`)
+  const shipped = await workerFetch(`/api/admin/orders/${order_id}/ship`, { admin: true, method: 'POST', body: { carrier: 'Kerry', tracking_number: 'TRK1' } })
+  if (!shipped.ok) throw new Error(`submitPendingReview: ship returned ${shipped.status}`)
   const submit = await workerFetch('/api/account/reviews', { cookie, method: 'POST', body: { productLineId, rating: 5, body: 'Great', locale: 'en' } })
+  if (!submit.ok) throw new Error(`submitPendingReview: POST /api/account/reviews returned ${submit.status}`)
   const { review } = await submit.json() as { review: { id: number } }
   return review.id
 }
@@ -55,11 +60,20 @@ describe('POST /api/admin/reviews/:id/approve', () => {
     expect(found!.moderated_by).toBe('jdelaire@gmail.com')
   })
 
-  it('idempotent on already-approved', async () => {
+  it('idempotent on already-approved (no re-stamp, no duplicate)', async () => {
     const id = await submitPendingReview('idem@example.com')
     await workerFetch(`/api/admin/reviews/${id}/approve`, { admin: true, method: 'POST' })
+    const before = await workerFetch('/api/admin/reviews?status=approved', { admin: true })
+      .then((r) => r.json() as Promise<{ reviews: Array<{ id: number; moderated_at: string }> }>)
+    const firstStamp = before.reviews.find((r) => r.id === id)?.moderated_at
+
     const res = await workerFetch(`/api/admin/reviews/${id}/approve`, { admin: true, method: 'POST' })
     expect(res.status).toBe(200)
+
+    const after = await workerFetch('/api/admin/reviews?status=approved', { admin: true })
+      .then((r) => r.json() as Promise<{ reviews: Array<{ id: number; moderated_at: string }> }>)
+    expect(after.reviews.filter((r) => r.id === id)).toHaveLength(1)
+    expect(after.reviews.find((r) => r.id === id)?.moderated_at).toBe(firstStamp)
   })
 })
 

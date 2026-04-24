@@ -10,6 +10,13 @@ const ALLOWED_TYPES: Record<string, string> = {
   'image/webp': 'webp',
 }
 
+const LAB_TEST_ALLOWED_TYPES: Record<string, string> = {
+  'application/pdf': 'pdf',
+  'image/jpeg': 'jpg',
+  'image/png': 'png',
+  'image/webp': 'webp',
+}
+
 const MAX_BYTES = 2_000_000
 
 export function registerAdminUploadRoutes(router: RouterType) {
@@ -63,6 +70,61 @@ export function registerAdminUploadRoutes(router: RouterType) {
     }
 
     return Response.json({ url, key }, { status: 201 })
+  }))
+
+  router.post('/api/admin/upload/lab-test-file', requireAdmin(async (request, env, adminUser) => {
+    const contentType = (request.headers.get('content-type') || '').split(';')[0].trim().toLowerCase()
+    const ext = LAB_TEST_ALLOWED_TYPES[contentType]
+    if (!ext) {
+      return Response.json(
+        { error: 'Unsupported content-type. Use application/pdf, image/jpeg, image/png, or image/webp' },
+        { status: 415 }
+      )
+    }
+
+    const buffer = await request.arrayBuffer()
+    if (buffer.byteLength === 0) {
+      return Response.json({ error: 'Empty body' }, { status: 400 })
+    }
+    if (buffer.byteLength > MAX_BYTES) {
+      return Response.json({ error: `File exceeds ${MAX_BYTES} bytes` }, { status: 413 })
+    }
+
+    const key = `lab-tests/${generateULID().toLowerCase()}.${ext}`
+
+    try {
+      await env.PRODUCT_IMAGES.put(key, buffer, {
+        httpMetadata: {
+          contentType,
+          cacheControl: 'public, max-age=31536000, immutable',
+        },
+      })
+    } catch {
+      return Response.json({ error: 'Upload failed' }, { status: 500 })
+    }
+
+    const base = env.PUBLIC_IMAGES_BASE_URL?.replace(/\/$/, '') || ''
+    const url = base ? `${base}/${key}` : `/images/${key}`
+
+    try {
+      await env.DB.prepare(
+        `INSERT INTO admin_audit_log (admin_email, action, order_id, details_json, created_at)
+         VALUES (?, 'lab_test_file_upload', NULL, ?, ?)`
+      )
+        .bind(
+          adminUser.email,
+          JSON.stringify({ key, size: buffer.byteLength, content_type: contentType }),
+          nowIso()
+        )
+        .run()
+    } catch {
+      // Audit failure must not break upload
+    }
+
+    return Response.json(
+      { url, key, content_type: contentType, size_bytes: buffer.byteLength },
+      { status: 201 }
+    )
   }))
 }
 

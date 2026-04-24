@@ -1,5 +1,5 @@
 import type { RouterType } from 'itty-router'
-import type { Env, ProductImageRow, PriceTierRow } from '../lib/types'
+import type { Env, ProductImageRow, PriceTierRow, LabTestFileRow, LabTestContentType } from '../lib/types'
 
 interface PublicProductRow {
   id: number
@@ -10,6 +10,7 @@ interface PublicProductRow {
   weight_g: number
   image_url: string
   available_stock: number
+  product_line_id: number | null
   nutrition_json: string | null
   ingredients: string | null
   how_to_use: string | null
@@ -18,6 +19,13 @@ interface PublicProductRow {
   product_line_name: string | null
   product_translations_json: string | null
   product_line_translations_json: string | null
+}
+
+interface PublicLabTestFile {
+  id: number
+  url: string
+  content_type: LabTestContentType
+  label: string
 }
 
 interface RelatedProductRow {
@@ -131,6 +139,27 @@ async function loadPriceTiersByProductIds(env: Env, productIds: number[]) {
   return map
 }
 
+async function loadLabTestsByProductLineIds(env: Env, productLineIds: number[]) {
+  const map = new Map<number, PublicLabTestFile[]>()
+  if (productLineIds.length === 0) return map
+  const uniqueIds = Array.from(new Set(productLineIds))
+  const placeholders = uniqueIds.map(() => '?').join(',')
+  const { results } = await env.DB.prepare(
+    `SELECT id, product_line_id, url, r2_key, content_type, label, sort_order, size_bytes, created_at
+     FROM product_line_lab_tests
+     WHERE product_line_id IN (${placeholders})
+     ORDER BY product_line_id ASC, sort_order ASC, id ASC`
+  )
+    .bind(...uniqueIds)
+    .all<LabTestFileRow>()
+  for (const row of results) {
+    const list = map.get(row.product_line_id) ?? []
+    list.push({ id: row.id, url: row.url, content_type: row.content_type, label: row.label })
+    map.set(row.product_line_id, list)
+  }
+  return map
+}
+
 async function loadScreenshotsByProductIds(env: Env, productIds: number[]) {
   if (productIds.length === 0) return new Map<number, { id: number; url: string; sort_order: number }[]>()
   const placeholders = productIds.map(() => '?').join(',')
@@ -159,6 +188,7 @@ export function registerProductRoutes(router: RouterType) {
       const { results } = await env.DB.prepare(
         `SELECT p.id, p.slug, p.name, p.description, p.price_thb, p.weight_g, p.image_url,
                 (i.stock_count - i.reserved_count) AS available_stock,
+                p.product_line_id,
                 pl.nutrition_json, pl.ingredients, pl.how_to_use, pl.who_is_for, pl.regulatory_info,
                 pl.name AS product_line_name,
                 p.translations_json AS product_translations_json,
@@ -171,14 +201,19 @@ export function registerProductRoutes(router: RouterType) {
       ).all<PublicProductRow>()
 
       const productIds = results.map((r) => r.id)
-      const [screenshotMap, tierMap] = await Promise.all([
+      const productLineIds = results
+        .map((r) => r.product_line_id)
+        .filter((id): id is number => typeof id === 'number' && id > 0)
+      const [screenshotMap, tierMap, labTestMap] = await Promise.all([
         loadScreenshotsByProductIds(env, productIds),
         loadPriceTiersByProductIds(env, productIds),
+        loadLabTestsByProductLineIds(env, productLineIds),
       ])
       const products = results.map((r) => ({
         ...applyTranslations(r, locale),
         screenshots: screenshotMap.get(r.id) ?? [],
         price_tiers: tierMap.get(r.id) ?? [],
+        lab_test_files: r.product_line_id ? labTestMap.get(r.product_line_id) ?? [] : [],
       }))
 
       return Response.json({ products })
@@ -201,6 +236,7 @@ export function registerProductRoutes(router: RouterType) {
       const product = await env.DB.prepare(
         `SELECT p.id, p.slug, p.name, p.description, p.price_thb, p.weight_g, p.image_url,
                 (i.stock_count - i.reserved_count) AS available_stock,
+                p.product_line_id,
                 pl.nutrition_json, pl.ingredients, pl.how_to_use, pl.who_is_for, pl.regulatory_info,
                 pl.name AS product_line_name,
                 p.translations_json AS product_translations_json,
@@ -217,9 +253,10 @@ export function registerProductRoutes(router: RouterType) {
         return Response.json({ error: 'Product not found' }, { status: 404 })
       }
 
-      const [screenshotMap, tierMap, relatedRow] = await Promise.all([
+      const [screenshotMap, tierMap, labTestMap, relatedRow] = await Promise.all([
         loadScreenshotsByProductIds(env, [product.id]),
         loadPriceTiersByProductIds(env, [product.id]),
+        loadLabTestsByProductLineIds(env, product.product_line_id ? [product.product_line_id] : []),
         env.DB.prepare(
           `SELECT p.id, p.slug, p.name, p.price_thb, p.weight_g, p.image_url,
                   (i.stock_count - i.reserved_count) AS available_stock,
@@ -241,6 +278,7 @@ export function registerProductRoutes(router: RouterType) {
           ...applyTranslations(product, locale),
           screenshots: screenshotMap.get(product.id) ?? [],
           price_tiers: tierMap.get(product.id) ?? [],
+          lab_test_files: product.product_line_id ? labTestMap.get(product.product_line_id) ?? [] : [],
         },
         related,
       })

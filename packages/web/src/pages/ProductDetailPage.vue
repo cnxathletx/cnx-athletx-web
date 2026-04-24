@@ -11,6 +11,7 @@ import {
   formatWeight,
   type ApiProduct,
   type ApiRelatedProduct,
+  type ApiLabTestFile,
 } from '../api/products'
 import { useCartStore } from '../stores/cart'
 import { pickUnitPrice, sortTiers, savingsPercent } from '../utils/pricing'
@@ -34,6 +35,8 @@ const quantity = ref(1)
 const productImageError = ref(false)
 const activeImageIndex = ref(0)
 const lightboxOpen = ref(false)
+const labTestOpen = ref(false)
+const labTestIndex = ref(0)
 
 function openLightbox() {
   if (!activeImageUrl.value || productImageError.value) return
@@ -56,7 +59,38 @@ function lightboxNext() {
   activeImageIndex.value = (activeImageIndex.value + 1) % gallery.value.length
 }
 
+const labTestFiles = computed<ApiLabTestFile[]>(() => product.value?.lab_test_files ?? [])
+const activeLabTestFile = computed<ApiLabTestFile | null>(() => labTestFiles.value[labTestIndex.value] ?? null)
+
+function openLabTests(index: number) {
+  if (labTestFiles.value.length === 0) return
+  labTestIndex.value = Math.max(0, Math.min(index, labTestFiles.value.length - 1))
+  labTestOpen.value = true
+  document.body.style.overflow = 'hidden'
+}
+
+function closeLabTests() {
+  labTestOpen.value = false
+  document.body.style.overflow = ''
+}
+
+function labTestPrev() {
+  if (labTestFiles.value.length < 2) return
+  labTestIndex.value = (labTestIndex.value - 1 + labTestFiles.value.length) % labTestFiles.value.length
+}
+
+function labTestNext() {
+  if (labTestFiles.value.length < 2) return
+  labTestIndex.value = (labTestIndex.value + 1) % labTestFiles.value.length
+}
+
 function onKeydown(e: KeyboardEvent) {
+  if (labTestOpen.value) {
+    if (e.key === 'Escape') closeLabTests()
+    else if (e.key === 'ArrowLeft') labTestPrev()
+    else if (e.key === 'ArrowRight') labTestNext()
+    return
+  }
   if (!lightboxOpen.value) return
   if (e.key === 'Escape') closeLightbox()
   else if (e.key === 'ArrowLeft') lightboxPrev()
@@ -589,6 +623,15 @@ const {
 
           <div v-if="activeTab === 'regulatoryInfo'" class="max-w-2xl">
             <p class="text-foreground leading-relaxed whitespace-pre-line">{{ regulatoryInfoText }}</p>
+            <button
+              v-if="labTestFiles.length > 0"
+              type="button"
+              class="mt-4 inline-flex items-center gap-1 text-sm text-primary hover:underline focus:outline-none focus:underline"
+              @click="openLabTests(0)"
+            >
+              {{ t('product.labTestsLink', { count: labTestFiles.length }) }}
+              <span aria-hidden="true">→</span>
+            </button>
           </div>
         </div>
       </div>
@@ -682,6 +725,81 @@ const {
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
         </svg>
       </button>
+    </div>
+
+    <!-- Lab Test Files Viewer -->
+    <div
+      v-if="labTestOpen && activeLabTestFile"
+      class="fixed inset-0 z-50 bg-black/90 flex flex-col p-4 sm:p-8"
+      role="dialog"
+      aria-modal="true"
+      :aria-label="t('product.labTestsViewerLabel')"
+      @click.self="closeLabTests"
+    >
+      <button
+        type="button"
+        class="absolute top-4 right-4 w-10 h-10 rounded-full bg-white/10 hover:bg-white/20 text-white flex items-center justify-center transition-colors z-10"
+        :aria-label="t('product.labTestsClose')"
+        @click="closeLabTests"
+      >
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+        </svg>
+      </button>
+
+      <button
+        v-if="labTestFiles.length > 1"
+        type="button"
+        class="absolute left-4 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-white/10 hover:bg-white/20 text-white flex items-center justify-center transition-colors z-10"
+        :aria-label="t('product.labTestsPrev')"
+        @click="labTestPrev"
+      >
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
+        </svg>
+      </button>
+
+      <div class="flex-1 min-h-0 flex items-center justify-center" @click.self="closeLabTests">
+        <iframe
+          v-if="activeLabTestFile.content_type === 'application/pdf'"
+          :key="activeLabTestFile.id"
+          :src="activeLabTestFile.url"
+          :title="activeLabTestFile.label || 'Lab test PDF'"
+          class="w-full h-full bg-white rounded-md max-w-5xl"
+        />
+        <img
+          v-else
+          :src="activeLabTestFile.url"
+          :alt="activeLabTestFile.label || 'Lab test image'"
+          class="max-w-full max-h-full object-contain select-none"
+          @click.stop
+        />
+      </div>
+
+      <button
+        v-if="labTestFiles.length > 1"
+        type="button"
+        class="absolute right-4 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-white/10 hover:bg-white/20 text-white flex items-center justify-center transition-colors z-10"
+        :aria-label="t('product.labTestsNext')"
+        @click="labTestNext"
+      >
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
+        </svg>
+      </button>
+
+      <div class="mt-2 flex items-center justify-center gap-3 text-white text-sm">
+        <span class="truncate max-w-[60%]">{{ activeLabTestFile.label || '—' }}</span>
+        <span class="text-white/60">{{ labTestIndex + 1 }} / {{ labTestFiles.length }}</span>
+        <a
+          :href="activeLabTestFile.url"
+          target="_blank"
+          rel="noopener"
+          class="text-white/80 hover:text-white underline text-xs"
+        >
+          {{ t('product.labTestsOpenNewTab') }}
+        </a>
+      </div>
     </div>
   </div>
 </template>

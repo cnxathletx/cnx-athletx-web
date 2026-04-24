@@ -23,6 +23,19 @@ export interface ApiPriceTier {
   unit_price_thb: number
 }
 
+export type ApiLabTestContentType =
+  | 'application/pdf'
+  | 'image/jpeg'
+  | 'image/png'
+  | 'image/webp'
+
+export interface ApiLabTestFile {
+  id: number
+  url: string
+  content_type: ApiLabTestContentType
+  label: string
+}
+
 export interface ApiProduct {
   id: number
   slug: string
@@ -40,6 +53,7 @@ export interface ApiProduct {
   product_line_name: string | null
   screenshots: ApiProductScreenshot[]
   price_tiers: ApiPriceTier[]
+  lab_test_files: ApiLabTestFile[]
 }
 
 export interface ApiRelatedProduct {

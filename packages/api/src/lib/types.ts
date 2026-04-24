@@ -381,6 +381,42 @@ export interface AdminUpdateProductLineBody {
   translations_json?: string
 }
 
+// --- Lab test file types ---
+
+export type LabTestContentType =
+  | 'application/pdf'
+  | 'image/jpeg'
+  | 'image/png'
+  | 'image/webp'
+
+export interface LabTestFileRow {
+  id: number
+  product_line_id: number
+  url: string
+  r2_key: string
+  content_type: LabTestContentType
+  label: string
+  sort_order: number
+  size_bytes: number
+  created_at: string
+}
+
+export interface AdminAddLabTestFileBody {
+  url: string
+  r2_key: string
+  content_type: LabTestContentType
+  size_bytes: number
+  label?: string
+}
+
+export interface AdminUpdateLabTestFileBody {
+  label: string
+}
+
+export interface AdminReorderLabTestFilesBody {
+  file_ids: number[]
+}
+
 // --- Admin Discount Code types ---
 
 export interface AdminDiscountCodeRow {

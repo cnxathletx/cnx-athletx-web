@@ -17,10 +17,24 @@ import type {
   AdminUpdateDiscountBody,
   AdminCreateProductLineBody,
   AdminUpdateProductLineBody,
+  AdminAddLabTestFileBody,
+  AdminUpdateLabTestFileBody,
+  AdminReorderLabTestFilesBody,
+  LabTestContentType,
   CreateChatConversationBody,
   PostChatMessageBody,
   AdminUpdateChatStatusBody,
 } from './types'
+
+const LAB_TEST_CONTENT_TYPES: readonly LabTestContentType[] = [
+  'application/pdf',
+  'image/jpeg',
+  'image/png',
+  'image/webp',
+]
+
+const LAB_TEST_MAX_FILE_BYTES = 2_000_000
+const LAB_TEST_LABEL_MAX = 200
 
 const CHAT_MESSAGE_MIN = 1
 const CHAT_MESSAGE_MAX = 2000
@@ -948,6 +962,91 @@ export function validateUpdateProductLineBody(body: unknown): { errors: Validati
   }
 
   return { errors: [], data }
+}
+
+export function validateAddLabTestFileBody(body: unknown): { errors: ValidationError[]; data: AdminAddLabTestFileBody | null } {
+  const errors: ValidationError[] = []
+
+  if (!body || typeof body !== 'object') {
+    return { errors: [{ field: 'body', message: 'Request body must be a JSON object' }], data: null }
+  }
+
+  const b = body as Record<string, unknown>
+  const url = typeof b.url === 'string' ? b.url.trim() : ''
+  const r2Key = typeof b.r2_key === 'string' ? b.r2_key.trim() : ''
+  const contentType = typeof b.content_type === 'string' ? b.content_type.trim().toLowerCase() : ''
+  const sizeBytes = typeof b.size_bytes === 'number' ? b.size_bytes : Number.NaN
+  const label = typeof b.label === 'string' ? b.label.trim() : ''
+
+  if (url.length < 2 || url.length > 2048) {
+    errors.push({ field: 'url', message: 'url must be between 2 and 2048 characters' })
+  }
+  if (!/^lab-tests\/[a-z0-9]+\.(pdf|jpg|png|webp)$/i.test(r2Key)) {
+    errors.push({ field: 'r2_key', message: 'r2_key must match lab-tests/<ulid>.<ext>' })
+  }
+  if (!LAB_TEST_CONTENT_TYPES.includes(contentType as LabTestContentType)) {
+    errors.push({ field: 'content_type', message: `content_type must be one of ${LAB_TEST_CONTENT_TYPES.join(', ')}` })
+  }
+  if (!Number.isInteger(sizeBytes) || sizeBytes < 0 || sizeBytes > LAB_TEST_MAX_FILE_BYTES) {
+    errors.push({ field: 'size_bytes', message: `size_bytes must be an integer between 0 and ${LAB_TEST_MAX_FILE_BYTES}` })
+  }
+  if (label.length > LAB_TEST_LABEL_MAX) {
+    errors.push({ field: 'label', message: `label must be ${LAB_TEST_LABEL_MAX} characters or fewer` })
+  }
+
+  if (errors.length > 0) {
+    return { errors, data: null }
+  }
+
+  return {
+    errors: [],
+    data: {
+      url,
+      r2_key: r2Key,
+      content_type: contentType as LabTestContentType,
+      size_bytes: sizeBytes,
+      label,
+    },
+  }
+}
+
+export function validateUpdateLabTestFileBody(body: unknown): { errors: ValidationError[]; data: AdminUpdateLabTestFileBody | null } {
+  if (!body || typeof body !== 'object') {
+    return { errors: [{ field: 'body', message: 'Request body must be a JSON object' }], data: null }
+  }
+  const b = body as Record<string, unknown>
+  if (!('label' in b)) {
+    return { errors: [{ field: 'label', message: 'label is required' }], data: null }
+  }
+  if (typeof b.label !== 'string') {
+    return { errors: [{ field: 'label', message: 'label must be a string' }], data: null }
+  }
+  const label = b.label.trim()
+  if (label.length > LAB_TEST_LABEL_MAX) {
+    return { errors: [{ field: 'label', message: `label must be ${LAB_TEST_LABEL_MAX} characters or fewer` }], data: null }
+  }
+  return { errors: [], data: { label } }
+}
+
+export function validateReorderLabTestFilesBody(body: unknown): { errors: ValidationError[]; data: AdminReorderLabTestFilesBody | null } {
+  if (!body || typeof body !== 'object') {
+    return { errors: [{ field: 'body', message: 'Request body must be a JSON object' }], data: null }
+  }
+  const b = body as Record<string, unknown>
+  if (!Array.isArray(b.file_ids)) {
+    return { errors: [{ field: 'file_ids', message: 'file_ids must be an array of integers' }], data: null }
+  }
+  const ids: number[] = []
+  for (const raw of b.file_ids) {
+    if (typeof raw !== 'number' || !Number.isInteger(raw) || raw < 1) {
+      return { errors: [{ field: 'file_ids', message: 'file_ids must contain positive integers' }], data: null }
+    }
+    ids.push(raw)
+  }
+  if (new Set(ids).size !== ids.length) {
+    return { errors: [{ field: 'file_ids', message: 'file_ids must be unique' }], data: null }
+  }
+  return { errors: [], data: { file_ids: ids } }
 }
 
 export function validateCreateChatConversationBody(

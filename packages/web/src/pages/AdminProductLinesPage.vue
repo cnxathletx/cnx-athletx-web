@@ -4,7 +4,13 @@ import {
   fetchAdminProductLines,
   createAdminProductLine,
   updateAdminProductLine,
+  uploadAdminLabTestFile,
+  addAdminLabTestFile,
+  updateAdminLabTestFile,
+  deleteAdminLabTestFile,
+  reorderAdminLabTestFiles,
   type AdminProductLine,
+  type AdminLabTestFile,
   type CreateProductLinePayload,
   type UpdateProductLinePayload,
   AdminApiErrorResponse,
@@ -231,7 +237,7 @@ async function submitCreate() {
       translations_json: packTranslationsJson(createBuffers),
     }
     const pl = await createAdminProductLine(payload)
-    productLines.value.push(pl)
+    productLines.value.push({ ...pl, lab_test_files: pl.lab_test_files ?? [] })
     createSuccess.value = 'Product line created.'
     resetCreateForm()
   } catch (err) {
@@ -249,6 +255,8 @@ function startEdit(pl: AdminProductLine) {
   editActiveLocale.value = PRIMARY_LOCALE
   const loaded = loadBuffersFromProductLine(pl)
   for (const l of SUPPORTED_LOCALES) editBuffers[l] = loaded[l]
+  labTestUploadError.value = ''
+  for (const k of Object.keys(labTestDraftLabels)) delete labTestDraftLabels[Number(k)]
 }
 
 function cancelEdit() {
@@ -278,13 +286,136 @@ async function submitEdit() {
       translations_json: packTranslationsJson(editBuffers),
     }
     const updated = await updateAdminProductLine(editingId.value, payload)
-    productLines.value = productLines.value.map((pl) => (pl.id === editingId.value ? updated : pl))
+    productLines.value = productLines.value.map((pl) =>
+      pl.id === editingId.value ? { ...updated, lab_test_files: updated.lab_test_files ?? pl.lab_test_files ?? [] } : pl
+    )
     editSuccess.value = 'Product line updated.'
   } catch (err) {
     editError.value = err instanceof AdminApiErrorResponse ? err.message : 'Failed to update product line.'
   } finally {
     editLoading.value = false
   }
+}
+
+const LAB_TEST_MAX_BYTES = 2_000_000
+const LAB_TEST_ACCEPT = 'application/pdf,image/jpeg,image/png,image/webp'
+
+const labTestUploadError = ref('')
+const labTestUploading = ref(false)
+const labTestDraftLabels = reactive<Record<number, string>>({})
+
+function isLabTestPdf(file: AdminLabTestFile): boolean {
+  return file.content_type === 'application/pdf'
+}
+
+function currentLabTestFiles(id: number | null): AdminLabTestFile[] {
+  if (id === null) return []
+  const pl = productLines.value.find((p) => p.id === id)
+  return pl?.lab_test_files ?? []
+}
+
+function updateProductLineLabTests(productLineId: number, files: AdminLabTestFile[]) {
+  productLines.value = productLines.value.map((pl) =>
+    pl.id === productLineId ? { ...pl, lab_test_files: files } : pl
+  )
+}
+
+function r2KeyFromUrl(url: string, key: string): string {
+  // The upload endpoint returns a `key` (relative to the R2 bucket) plus the public URL.
+  // Prefer the key verbatim; fall back to extracting from the URL.
+  if (key && key.startsWith('lab-tests/')) return key
+  const m = url.match(/lab-tests\/[^/?#]+/)
+  return m ? m[0] : key
+}
+
+async function onLabTestFilesSelected(event: Event) {
+  if (editingId.value === null) return
+  const input = event.target as HTMLInputElement
+  const files = input.files ? Array.from(input.files) : []
+  if (files.length === 0) return
+
+  labTestUploadError.value = ''
+  labTestUploading.value = true
+
+  try {
+    for (const file of files) {
+      if (file.size > LAB_TEST_MAX_BYTES) {
+        labTestUploadError.value = `"${file.name}" exceeds ${LAB_TEST_MAX_BYTES.toLocaleString()} bytes.`
+        continue
+      }
+      if (!['application/pdf', 'image/jpeg', 'image/png', 'image/webp'].includes(file.type)) {
+        labTestUploadError.value = `"${file.name}" is not a supported file type.`
+        continue
+      }
+      try {
+        const uploaded = await uploadAdminLabTestFile(file)
+        const baseName = file.name.replace(/\.[^/.]+$/, '').slice(0, 200)
+        const next = await addAdminLabTestFile(editingId.value, {
+          url: uploaded.url,
+          r2_key: r2KeyFromUrl(uploaded.url, uploaded.key),
+          content_type: uploaded.content_type,
+          size_bytes: uploaded.size_bytes,
+          label: baseName,
+        })
+        updateProductLineLabTests(editingId.value, next)
+      } catch (err) {
+        labTestUploadError.value = err instanceof AdminApiErrorResponse ? err.message : `Failed to upload "${file.name}"`
+      }
+    }
+  } finally {
+    labTestUploading.value = false
+    input.value = ''
+  }
+}
+
+async function onLabTestLabelBlur(file: AdminLabTestFile) {
+  if (editingId.value === null) return
+  const draft = (labTestDraftLabels[file.id] ?? file.label).trim()
+  if (draft === file.label) return
+  try {
+    const next = await updateAdminLabTestFile(editingId.value, file.id, draft)
+    updateProductLineLabTests(editingId.value, next)
+    delete labTestDraftLabels[file.id]
+  } catch (err) {
+    labTestUploadError.value = err instanceof AdminApiErrorResponse ? err.message : 'Failed to rename file'
+  }
+}
+
+async function onLabTestDelete(file: AdminLabTestFile) {
+  if (editingId.value === null) return
+  if (!confirm(`Delete lab test file "${file.label || file.id}"? This cannot be undone.`)) return
+  try {
+    const next = await deleteAdminLabTestFile(editingId.value, file.id)
+    updateProductLineLabTests(editingId.value, next)
+  } catch (err) {
+    labTestUploadError.value = err instanceof AdminApiErrorResponse ? err.message : 'Failed to delete file'
+  }
+}
+
+async function onLabTestMove(file: AdminLabTestFile, direction: -1 | 1) {
+  if (editingId.value === null) return
+  const files = [...currentLabTestFiles(editingId.value)]
+  const idx = files.findIndex((f) => f.id === file.id)
+  if (idx < 0) return
+  const target = idx + direction
+  if (target < 0 || target >= files.length) return
+  ;[files[idx], files[target]] = [files[target], files[idx]]
+  try {
+    const next = await reorderAdminLabTestFiles(editingId.value, files.map((f) => f.id))
+    updateProductLineLabTests(editingId.value, next)
+  } catch (err) {
+    labTestUploadError.value = err instanceof AdminApiErrorResponse ? err.message : 'Failed to reorder files'
+  }
+}
+
+function labTestTypeBadge(file: AdminLabTestFile): string {
+  return isLabTestPdf(file) ? 'PDF' : 'IMG'
+}
+
+function formatBytes(n: number): string {
+  if (n < 1024) return `${n} B`
+  if (n < 1024 * 1024) return `${(n / 1024).toFixed(0)} KB`
+  return `${(n / (1024 * 1024)).toFixed(1)} MB`
 }
 
 function parseIngredientsDisplay(raw: string): { label: string; sub: boolean }[] {
@@ -619,6 +750,105 @@ onMounted(async () => {
               :placeholder="`Regulatory & Safety Information (${LOCALE_LABELS[editActiveLocale]})`"
               class="w-full rounded-md border border-sand px-4 py-3 text-sm bg-surface-alt text-foreground focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
             />
+
+            <!-- Lab Test Files -->
+            <div class="space-y-3 rounded-md border border-sand/60 bg-surface-alt/40 p-4">
+              <div>
+                <h4 class="text-sm font-semibold text-foreground">Lab Test Files</h4>
+                <p class="text-xs text-muted mt-0.5">PDFs or images. 2 MB max each. Shown to all locales.</p>
+              </div>
+
+              <div v-if="labTestUploadError" class="bg-error/10 border border-error/30 rounded-md p-2 text-xs text-error">
+                {{ labTestUploadError }}
+              </div>
+
+              <ul v-if="currentLabTestFiles(editingId).length > 0" class="space-y-2">
+                <li
+                  v-for="(file, i) in currentLabTestFiles(editingId)"
+                  :key="file.id"
+                  class="flex items-center gap-3 bg-surface rounded-md ring-1 ring-[var(--card-ring)] p-2"
+                >
+                  <div class="flex flex-col">
+                    <button
+                      type="button"
+                      @click="onLabTestMove(file, -1)"
+                      :disabled="i === 0"
+                      class="text-muted hover:text-foreground disabled:opacity-30 p-0.5"
+                      aria-label="Move up"
+                    >
+                      <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 15l7-7 7 7" /></svg>
+                    </button>
+                    <button
+                      type="button"
+                      @click="onLabTestMove(file, 1)"
+                      :disabled="i === currentLabTestFiles(editingId).length - 1"
+                      class="text-muted hover:text-foreground disabled:opacity-30 p-0.5"
+                      aria-label="Move down"
+                    >
+                      <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" /></svg>
+                    </button>
+                  </div>
+
+                  <div class="w-12 h-12 flex items-center justify-center rounded bg-surface-alt overflow-hidden shrink-0">
+                    <img v-if="!isLabTestPdf(file)" :src="file.url" :alt="file.label" class="w-full h-full object-cover" />
+                    <svg v-else class="w-6 h-6 text-muted" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                    </svg>
+                  </div>
+
+                  <span class="px-1.5 py-0.5 text-[10px] font-mono font-semibold rounded bg-primary/10 text-primary shrink-0">
+                    {{ labTestTypeBadge(file) }}
+                  </span>
+
+                  <input
+                    :value="labTestDraftLabels[file.id] ?? file.label"
+                    @input="(e) => (labTestDraftLabels[file.id] = (e.target as HTMLInputElement).value)"
+                    @blur="onLabTestLabelBlur(file)"
+                    type="text"
+                    placeholder="Label"
+                    class="flex-1 min-w-0 rounded border border-sand px-2 py-1 text-sm bg-surface-alt text-foreground focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
+                  />
+
+                  <span class="text-xs text-muted shrink-0">{{ formatBytes(file.size_bytes) }}</span>
+
+                  <a
+                    :href="file.url"
+                    target="_blank"
+                    rel="noopener"
+                    class="text-muted hover:text-primary transition-colors p-1"
+                    :aria-label="`Open ${file.label || 'file'} in new tab`"
+                  >
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" /></svg>
+                  </a>
+
+                  <button
+                    type="button"
+                    @click="onLabTestDelete(file)"
+                    class="text-muted hover:text-error transition-colors p-1"
+                    aria-label="Delete file"
+                  >
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6M1 7h22M9 7V4a1 1 0 011-1h4a1 1 0 011 1v3" /></svg>
+                  </button>
+                </li>
+              </ul>
+              <p v-else class="text-xs text-muted italic">No lab test files.</p>
+
+              <label class="flex items-center gap-3 text-sm">
+                <span class="inline-flex items-center gap-2 px-3 py-1.5 rounded-md bg-primary text-white hover:opacity-90 cursor-pointer text-xs font-medium transition-opacity" :class="labTestUploading && 'opacity-60 cursor-wait'">
+                  <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" /></svg>
+                  {{ labTestUploading ? 'Uploading...' : 'Add files' }}
+                  <input
+                    type="file"
+                    multiple
+                    :accept="LAB_TEST_ACCEPT"
+                    :disabled="labTestUploading"
+                    class="sr-only"
+                    @change="onLabTestFilesSelected"
+                  />
+                </span>
+                <span class="text-xs text-muted">PDF, JPG, PNG, WebP · up to 2 MB each</span>
+              </label>
+            </div>
 
             <div class="flex gap-2">
               <PrimaryButton :disabled="editLoading" @click="submitEdit">Save</PrimaryButton>

@@ -53,6 +53,23 @@ CREATE TABLE IF NOT EXISTS product_images (
 
 CREATE INDEX IF NOT EXISTS idx_product_images_product_id ON product_images(product_id, sort_order);
 
+-- product_line_lab_tests table (PDFs/images for Regulatory & Safety section)
+CREATE TABLE IF NOT EXISTS product_line_lab_tests (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    product_line_id INTEGER NOT NULL,
+    url TEXT NOT NULL,
+    r2_key TEXT NOT NULL,
+    content_type TEXT NOT NULL,
+    label TEXT NOT NULL DEFAULT '',
+    sort_order INTEGER NOT NULL DEFAULT 0,
+    size_bytes INTEGER NOT NULL DEFAULT 0,
+    created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (product_line_id) REFERENCES product_lines(id) ON DELETE CASCADE,
+    CHECK (content_type IN ('application/pdf','image/jpeg','image/png','image/webp'))
+);
+
+CREATE INDEX IF NOT EXISTS idx_lab_tests_line ON product_line_lab_tests(product_line_id, sort_order);
+
 -- price_tiers table (volume discount ladders per product)
 CREATE TABLE IF NOT EXISTS price_tiers (
     id INTEGER PRIMARY KEY AUTOINCREMENT,

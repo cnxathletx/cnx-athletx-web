@@ -183,6 +183,21 @@ export async function deleteAdminPriceTier(productId: number, tierId: number): P
 
 // --- Admin Product Lines ---
 
+export type AdminLabTestContentType =
+  | 'application/pdf'
+  | 'image/jpeg'
+  | 'image/png'
+  | 'image/webp'
+
+export interface AdminLabTestFile {
+  id: number
+  url: string
+  content_type: AdminLabTestContentType
+  label: string
+  sort_order: number
+  size_bytes: number
+}
+
 export interface AdminProductLine {
   id: number
   name: string
@@ -195,6 +210,7 @@ export interface AdminProductLine {
   translations_json: string
   created_at: string
   updated_at: string
+  lab_test_files: AdminLabTestFile[]
 }
 
 export interface CreateProductLinePayload {
@@ -644,6 +660,82 @@ export async function updateAdminProductLine(id: number, payload: UpdateProductL
   if (!res.ok) await parseAdminError(res)
   const data = (await res.json()) as { success: true; product_line: AdminProductLine }
   return data.product_line
+}
+
+// --- Admin Lab Test Files (on product lines) ---
+
+export async function uploadAdminLabTestFile(file: File): Promise<{
+  url: string
+  key: string
+  content_type: AdminLabTestContentType
+  size_bytes: number
+}> {
+  const res = await fetch(apiUrl('/api/admin/upload/lab-test-file'), {
+    method: 'POST',
+    credentials: 'include',
+    headers: { 'Content-Type': file.type },
+    body: file,
+  })
+  if (!res.ok) await parseAdminError(res)
+  return (await res.json()) as {
+    url: string
+    key: string
+    content_type: AdminLabTestContentType
+    size_bytes: number
+  }
+}
+
+export async function addAdminLabTestFile(
+  productLineId: number,
+  payload: { url: string; r2_key: string; content_type: AdminLabTestContentType; size_bytes: number; label?: string }
+): Promise<AdminLabTestFile[]> {
+  const res = await fetch(apiUrl(`/api/admin/product-lines/${productLineId}/lab-test-files`), {
+    method: 'POST',
+    credentials: 'include',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload),
+  })
+  if (!res.ok) await parseAdminError(res)
+  const data = (await res.json()) as { success: true; lab_test_files: AdminLabTestFile[] }
+  return data.lab_test_files
+}
+
+export async function updateAdminLabTestFile(
+  productLineId: number,
+  fileId: number,
+  label: string
+): Promise<AdminLabTestFile[]> {
+  const res = await fetch(apiUrl(`/api/admin/product-lines/${productLineId}/lab-test-files/${fileId}`), {
+    method: 'PATCH',
+    credentials: 'include',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ label }),
+  })
+  if (!res.ok) await parseAdminError(res)
+  const data = (await res.json()) as { success: true; lab_test_files: AdminLabTestFile[] }
+  return data.lab_test_files
+}
+
+export async function deleteAdminLabTestFile(productLineId: number, fileId: number): Promise<AdminLabTestFile[]> {
+  const res = await fetch(apiUrl(`/api/admin/product-lines/${productLineId}/lab-test-files/${fileId}`), {
+    method: 'DELETE',
+    credentials: 'include',
+  })
+  if (!res.ok) await parseAdminError(res)
+  const data = (await res.json()) as { success: true; lab_test_files: AdminLabTestFile[] }
+  return data.lab_test_files
+}
+
+export async function reorderAdminLabTestFiles(productLineId: number, fileIds: number[]): Promise<AdminLabTestFile[]> {
+  const res = await fetch(apiUrl(`/api/admin/product-lines/${productLineId}/lab-test-files/reorder`), {
+    method: 'PATCH',
+    credentials: 'include',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ file_ids: fileIds }),
+  })
+  if (!res.ok) await parseAdminError(res)
+  const data = (await res.json()) as { success: true; lab_test_files: AdminLabTestFile[] }
+  return data.lab_test_files
 }
 
 // --- Admin Income Reports ---

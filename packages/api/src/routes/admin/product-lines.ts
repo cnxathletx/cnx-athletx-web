@@ -1,8 +1,33 @@
 import type { RouterType } from 'itty-router'
-import type { Env, ProductLineRow } from '../../lib/types'
+import type { Env, ProductLineRow, LabTestFileRow } from '../../lib/types'
 import { nowIso } from '../../lib/utils'
-import { validateCreateProductLineBody, validateUpdateProductLineBody } from '../../lib/validation'
+import {
+  validateCreateProductLineBody,
+  validateUpdateProductLineBody,
+  validateAddLabTestFileBody,
+  validateUpdateLabTestFileBody,
+  validateReorderLabTestFilesBody,
+} from '../../lib/validation'
 import { requireAdmin, parseJsonBody } from '../../middleware/auth'
+
+async function loadLabTestFiles(env: Env, productLineId: number) {
+  const { results } = await env.DB.prepare(
+    `SELECT id, product_line_id, url, r2_key, content_type, label, sort_order, size_bytes, created_at
+     FROM product_line_lab_tests
+     WHERE product_line_id = ?
+     ORDER BY sort_order ASC, id ASC`
+  )
+    .bind(productLineId)
+    .all<LabTestFileRow>()
+  return results.map((r) => ({
+    id: r.id,
+    url: r.url,
+    content_type: r.content_type,
+    label: r.label,
+    sort_order: r.sort_order,
+    size_bytes: r.size_bytes,
+  }))
+}
 
 export function registerAdminProductLineRoutes(router: RouterType) {
   router.get('/api/admin/product-lines', requireAdmin(async (_request, env) => {
@@ -13,7 +38,215 @@ export function registerAdminProductLineRoutes(router: RouterType) {
          ORDER BY id ASC`
       ).all<ProductLineRow>()
 
-      return Response.json({ product_lines: results })
+      const productLines = await Promise.all(
+        results.map(async (pl) => ({
+          ...pl,
+          lab_test_files: await loadLabTestFiles(env, pl.id),
+        }))
+      )
+
+      return Response.json({ product_lines: productLines })
+    } catch {
+      return Response.json({ error: 'Database error' }, { status: 500 })
+    }
+  }))
+
+  router.post('/api/admin/product-lines/:id/lab-test-files', requireAdmin(async (request, env, adminUser) => {
+    const url = new URL(request.url)
+    const parts = url.pathname.split('/')
+    const productLineId = parseInt(parts[parts.length - 2] || '', 10)
+    if (!Number.isInteger(productLineId) || productLineId < 1) {
+      return Response.json({ error: 'Invalid product line ID' }, { status: 400 })
+    }
+
+    const parsed = await parseJsonBody(request)
+    if (!parsed.ok) return parsed.response
+
+    const { errors, data } = validateAddLabTestFileBody(parsed.data)
+    if (errors.length > 0 || !data) {
+      return Response.json({ error: 'Validation failed', details: errors }, { status: 400 })
+    }
+
+    const existing = await env.DB.prepare(`SELECT id FROM product_lines WHERE id = ? LIMIT 1`)
+      .bind(productLineId)
+      .first<{ id: number }>()
+    if (!existing) {
+      return Response.json({ error: 'Product line not found' }, { status: 404 })
+    }
+
+    try {
+      const maxRow = await env.DB.prepare(
+        `SELECT COALESCE(MAX(sort_order), -1) AS max_order FROM product_line_lab_tests WHERE product_line_id = ?`
+      )
+        .bind(productLineId)
+        .first<{ max_order: number }>()
+      const nextOrder = (maxRow?.max_order ?? -1) + 1
+      const now = nowIso()
+
+      const insert = await env.DB.prepare(
+        `INSERT INTO product_line_lab_tests (product_line_id, url, r2_key, content_type, label, sort_order, size_bytes, created_at)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?)`
+      )
+        .bind(productLineId, data.url, data.r2_key, data.content_type, data.label ?? '', nextOrder, data.size_bytes, now)
+        .run()
+
+      const fileId = Number(insert.meta.last_row_id)
+
+      await env.DB.prepare(
+        `INSERT INTO admin_audit_log (admin_email, action, order_id, details_json, created_at)
+         VALUES (?, 'lab_test_file_add', NULL, ?, ?)`
+      )
+        .bind(
+          adminUser.email,
+          JSON.stringify({ product_line_id: productLineId, file_id: fileId, r2_key: data.r2_key }),
+          now
+        )
+        .run()
+
+      const lab_test_files = await loadLabTestFiles(env, productLineId)
+      return Response.json({ success: true, lab_test_files }, { status: 201 })
+    } catch {
+      return Response.json({ error: 'Database error' }, { status: 500 })
+    }
+  }))
+
+  router.patch('/api/admin/product-lines/:id/lab-test-files/reorder', requireAdmin(async (request, env, adminUser) => {
+    const url = new URL(request.url)
+    const parts = url.pathname.split('/')
+    const productLineId = parseInt(parts[parts.length - 3] || '', 10)
+    if (!Number.isInteger(productLineId) || productLineId < 1) {
+      return Response.json({ error: 'Invalid product line ID' }, { status: 400 })
+    }
+
+    const parsed = await parseJsonBody(request)
+    if (!parsed.ok) return parsed.response
+
+    const { errors, data } = validateReorderLabTestFilesBody(parsed.data)
+    if (errors.length > 0 || !data) {
+      return Response.json({ error: 'Validation failed', details: errors }, { status: 400 })
+    }
+
+    const { results: existingRows } = await env.DB.prepare(
+      `SELECT id FROM product_line_lab_tests WHERE product_line_id = ?`
+    )
+      .bind(productLineId)
+      .all<{ id: number }>()
+
+    const existingIds = new Set(existingRows.map((r) => r.id))
+    if (existingIds.size !== data.file_ids.length) {
+      return Response.json(
+        { error: 'Validation failed', details: [{ field: 'file_ids', message: 'file_ids must include every lab test file for this product line' }] },
+        { status: 400 }
+      )
+    }
+    for (const id of data.file_ids) {
+      if (!existingIds.has(id)) {
+        return Response.json(
+          { error: 'Validation failed', details: [{ field: 'file_ids', message: `file ${id} does not belong to this product line` }] },
+          { status: 400 }
+        )
+      }
+    }
+
+    try {
+      const now = nowIso()
+      const statements = data.file_ids.map((id, index) =>
+        env.DB.prepare(`UPDATE product_line_lab_tests SET sort_order = ? WHERE id = ? AND product_line_id = ?`).bind(index, id, productLineId)
+      )
+      statements.push(
+        env.DB.prepare(
+          `INSERT INTO admin_audit_log (admin_email, action, order_id, details_json, created_at)
+           VALUES (?, 'lab_test_file_reorder', NULL, ?, ?)`
+        ).bind(adminUser.email, JSON.stringify({ product_line_id: productLineId, file_ids: data.file_ids }), now)
+      )
+      await env.DB.batch(statements)
+
+      const lab_test_files = await loadLabTestFiles(env, productLineId)
+      return Response.json({ success: true, lab_test_files })
+    } catch {
+      return Response.json({ error: 'Database error' }, { status: 500 })
+    }
+  }))
+
+  router.patch('/api/admin/product-lines/:id/lab-test-files/:fileId', requireAdmin(async (request, env, adminUser) => {
+    const url = new URL(request.url)
+    const parts = url.pathname.split('/')
+    const fileId = parseInt(parts[parts.length - 1] || '', 10)
+    const productLineId = parseInt(parts[parts.length - 3] || '', 10)
+    if (!Number.isInteger(productLineId) || productLineId < 1 || !Number.isInteger(fileId) || fileId < 1) {
+      return Response.json({ error: 'Invalid ID' }, { status: 400 })
+    }
+
+    const parsed = await parseJsonBody(request)
+    if (!parsed.ok) return parsed.response
+
+    const { errors, data } = validateUpdateLabTestFileBody(parsed.data)
+    if (errors.length > 0 || !data) {
+      return Response.json({ error: 'Validation failed', details: errors }, { status: 400 })
+    }
+
+    const existing = await env.DB.prepare(
+      `SELECT id FROM product_line_lab_tests WHERE id = ? AND product_line_id = ? LIMIT 1`
+    )
+      .bind(fileId, productLineId)
+      .first<{ id: number }>()
+    if (!existing) {
+      return Response.json({ error: 'Lab test file not found' }, { status: 404 })
+    }
+
+    try {
+      const now = nowIso()
+      await env.DB.batch([
+        env.DB.prepare(`UPDATE product_line_lab_tests SET label = ? WHERE id = ?`).bind(data.label, fileId),
+        env.DB.prepare(
+          `INSERT INTO admin_audit_log (admin_email, action, order_id, details_json, created_at)
+           VALUES (?, 'lab_test_file_update', NULL, ?, ?)`
+        ).bind(adminUser.email, JSON.stringify({ product_line_id: productLineId, file_id: fileId, label: data.label }), now),
+      ])
+
+      const lab_test_files = await loadLabTestFiles(env, productLineId)
+      return Response.json({ success: true, lab_test_files })
+    } catch {
+      return Response.json({ error: 'Database error' }, { status: 500 })
+    }
+  }))
+
+  router.delete('/api/admin/product-lines/:id/lab-test-files/:fileId', requireAdmin(async (request, env, adminUser) => {
+    const url = new URL(request.url)
+    const parts = url.pathname.split('/')
+    const fileId = parseInt(parts[parts.length - 1] || '', 10)
+    const productLineId = parseInt(parts[parts.length - 3] || '', 10)
+    if (!Number.isInteger(productLineId) || productLineId < 1 || !Number.isInteger(fileId) || fileId < 1) {
+      return Response.json({ error: 'Invalid ID' }, { status: 400 })
+    }
+
+    const existing = await env.DB.prepare(
+      `SELECT id, r2_key FROM product_line_lab_tests WHERE id = ? AND product_line_id = ? LIMIT 1`
+    )
+      .bind(fileId, productLineId)
+      .first<{ id: number; r2_key: string }>()
+    if (!existing) {
+      return Response.json({ error: 'Lab test file not found' }, { status: 404 })
+    }
+
+    try {
+      const now = nowIso()
+      await env.DB.batch([
+        env.DB.prepare(`DELETE FROM product_line_lab_tests WHERE id = ?`).bind(fileId),
+        env.DB.prepare(
+          `INSERT INTO admin_audit_log (admin_email, action, order_id, details_json, created_at)
+           VALUES (?, 'lab_test_file_delete', NULL, ?, ?)`
+        ).bind(adminUser.email, JSON.stringify({ product_line_id: productLineId, file_id: fileId, r2_key: existing.r2_key }), now),
+      ])
+
+      try {
+        await env.PRODUCT_IMAGES.delete(existing.r2_key)
+      } catch {
+        // Best-effort R2 cleanup
+      }
+
+      const lab_test_files = await loadLabTestFiles(env, productLineId)
+      return Response.json({ success: true, lab_test_files })
     } catch {
       return Response.json({ error: 'Database error' }, { status: 500 })
     }

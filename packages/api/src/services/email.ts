@@ -478,3 +478,68 @@ export async function sendMagicLinkEmail(env: Env, toEmail: string, magicLinkUrl
     throw new Error('Failed to send magic link email')
   }
 }
+
+export interface ReviewPromptEmailInput {
+  order_id: string
+  customer_name: string
+  customer_email: string
+  product_lines: { name: string }[]
+  review_url: string
+  locale: 'en' | 'th'
+}
+
+export interface BuiltEmail {
+  subject: string
+  html: string
+}
+
+export function buildReviewPromptEmail(input: ReviewPromptEmailInput): BuiltEmail {
+  const locale = input.locale === 'th' ? 'th' : 'en'
+
+  const lineList = input.product_lines.map((p) =>
+    `<li style="font-size: 14px; margin: 4px 0;">${escapeHtml(p.name)}</li>`
+  ).join('')
+
+  if (locale === 'th') {
+    const subject = `โปรตีน CNX AthletX เป็นอย่างไรบ้าง?`
+    const body = `<h2 style="margin: 0 0 8px; font-size: 20px;">ขอบคุณที่สั่งซื้อ ${escapeHtml(input.customer_name)}</h2>
+      <p style="margin: 0 0 16px; font-size: 15px; color: #555;">เราหวังว่าคุณจะพอใจกับสินค้าที่ได้รับ</p>
+      <ul style="padding-left: 20px; margin: 0 0 24px;">${lineList}</ul>
+      <p style="text-align: center; margin: 30px 0;">
+        <a href="${input.review_url}" style="display: inline-block; background-color: #8B9A7B; color: #ffffff; padding: 14px 32px; text-decoration: none; border-radius: 6px; font-weight: 600;">เขียนรีวิว</a>
+      </p>
+      <p style="margin: 24px 0 0; font-size: 13px; color: #777;">หมายเลขคำสั่งซื้อ: ${escapeHtml(input.order_id)}</p>`
+    return { subject, html: emailLayout(subject, body) }
+  }
+
+  const subject = `How was your CNX AthletX protein?`
+  const body = `<h2 style="margin: 0 0 8px; font-size: 20px;">Thanks for your order, ${escapeHtml(input.customer_name)}</h2>
+    <p style="margin: 0 0 16px; font-size: 15px; color: #555;">We hope you're enjoying what you received. Your feedback helps other customers.</p>
+    <ul style="padding-left: 20px; margin: 0 0 24px;">${lineList}</ul>
+    <p style="text-align: center; margin: 30px 0;">
+      <a href="${input.review_url}" style="display: inline-block; background-color: #8B9A7B; color: #ffffff; padding: 14px 32px; text-decoration: none; border-radius: 6px; font-weight: 600;">Write a Review</a>
+    </p>
+    <p style="margin: 24px 0 0; font-size: 13px; color: #777;">Order ID: ${escapeHtml(input.order_id)}</p>`
+  return { subject, html: emailLayout(subject, body) }
+}
+
+/** Fire-and-forget review prompt email; idempotent via email_logs lookup. */
+export async function sendReviewPromptEmail(env: Env, input: ReviewPromptEmailInput): Promise<void> {
+  try {
+    const existing = await env.DB.prepare(
+      `SELECT id FROM email_logs WHERE order_id = ? AND event = 'review_prompt' AND status = 'sent' LIMIT 1`
+    ).bind(input.order_id).first<{ id: number }>()
+    if (existing) return
+  } catch {
+    return
+  }
+
+  try {
+    const built = buildReviewPromptEmail(input)
+    const ok = await sendResendEmail(env, input.customer_email, built.subject, built.html)
+    await logEmail(env, input.order_id, 'review_prompt', input.customer_email, ok ? 'sent' : 'failed', ok ? undefined : 'Resend API returned non-OK')
+  } catch (err) {
+    const message = err instanceof Error ? err.message : 'Unknown error'
+    await logEmail(env, input.order_id, 'review_prompt', input.customer_email, 'failed', message)
+  }
+}

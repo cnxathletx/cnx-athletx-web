@@ -9,6 +9,7 @@ import { registerAdminSettingsRoutes } from './admin/settings'
 import { registerAdminReportRoutes } from './admin/reports'
 import { registerAdminChatRoutes } from './admin/chat'
 import { registerAdminUploadRoutes } from './admin/uploads'
+import { registerAdminReviewsRoutes } from './admin/reviews'
 
 export function registerAdminRoutes(router: RouterType) {
   registerAdminOrderRoutes(router)
@@ -21,4 +22,5 @@ export function registerAdminRoutes(router: RouterType) {
   registerAdminReportRoutes(router)
   registerAdminChatRoutes(router)
   registerAdminUploadRoutes(router)
+  registerAdminReviewsRoutes(router)
 }

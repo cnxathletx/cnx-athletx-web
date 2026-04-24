@@ -13,7 +13,7 @@ import type {
 import { nowIso, isValidOrderId } from '../../lib/utils'
 import { parseAdminPagination, validateShipmentBody } from '../../lib/validation'
 import { requireAdmin, parseJsonBody } from '../../middleware/auth'
-import { sendOrderEmail, fetchOrderEmailData } from '../../services/email'
+import { sendOrderEmail, fetchOrderEmailData, sendReviewPromptEmail } from '../../services/email'
 
 export function registerAdminOrderRoutes(router: RouterType) {
   router.get('/api/admin/orders', requireAdmin(async (request, env) => {
@@ -337,6 +337,38 @@ export function registerAdminOrderRoutes(router: RouterType) {
           if (emailData) return sendOrderEmail(env, 'order_shipped', emailData, { shipment: { carrier: data.carrier, tracking_number: data.tracking_number } })
         }).catch((err) => console.error('order_shipped email failed:', err))
       )
+
+      ctx.waitUntil((async () => {
+        try {
+          const orderRow = await env.DB.prepare(
+            `SELECT user_id, customer_name, customer_email FROM orders WHERE id = ? LIMIT 1`
+          ).bind(orderId).first<{ user_id: string | null; customer_name: string; customer_email: string }>()
+          if (!orderRow || !orderRow.user_id) return
+
+          const { results: lineRows } = await env.DB.prepare(
+            `SELECT DISTINCT pl.id AS id, pl.name AS name
+             FROM order_items oi
+             JOIN products p ON p.id = oi.product_id
+             JOIN product_lines pl ON pl.id = p.product_line_id
+             WHERE oi.order_id = ?`
+          ).bind(orderId).all<{ id: number; name: string }>()
+          if (lineRows.length === 0) return
+
+          const baseUrl = (env as unknown as { PUBLIC_BASE_URL?: string }).PUBLIC_BASE_URL ?? 'https://www.cnxnature.com'
+          const reviewUrl = `${baseUrl}/account?tab=reviews`
+
+          await sendReviewPromptEmail(env, {
+            order_id: orderId,
+            customer_name: orderRow.customer_name,
+            customer_email: orderRow.customer_email,
+            product_lines: lineRows.map((l) => ({ name: l.name })),
+            review_url: reviewUrl,
+            locale: 'en',
+          })
+        } catch (err) {
+          console.error('review_prompt email failed:', err)
+        }
+      })())
 
       return Response.json({ success: true })
     } catch {

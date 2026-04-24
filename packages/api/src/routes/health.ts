@@ -64,7 +64,7 @@ export function registerHealthRoutes(router: RouterType) {
     const orderId = url.searchParams.get('order_id') ?? ''
     const event = url.searchParams.get('event') ?? ''
     const row = await env.DB.prepare(
-      `SELECT COUNT(*) AS count FROM email_logs WHERE order_id = ? AND event = ? AND status = 'sent'`
+      `SELECT COUNT(*) AS count FROM email_logs WHERE order_id = ? AND event = ?`
     ).bind(orderId, event).first<{ count: number }>()
     return Response.json({ count: row?.count ?? 0 })
   })

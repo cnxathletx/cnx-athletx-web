@@ -47,7 +47,7 @@ test.describe('Order status page', () => {
     // Mark paid via admin API
     await fetch(`${API_BASE}/api/admin/orders/${orderId}/mark-paid`, {
       method: 'POST',
-      headers: { 'X-Admin-Email': 'test-admin@cnxnature.com' },
+      headers: { 'X-Admin-Email': 'jdelaire@gmail.com' },
     })
 
     await page.goto(`/order/${orderId}`)
@@ -60,17 +60,17 @@ test.describe('Order status page', () => {
     // Advance order: paid → packed → shipped
     await fetch(`${API_BASE}/api/admin/orders/${orderId}/mark-paid`, {
       method: 'POST',
-      headers: { 'X-Admin-Email': 'test-admin@cnxnature.com' },
+      headers: { 'X-Admin-Email': 'jdelaire@gmail.com' },
     })
     await fetch(`${API_BASE}/api/admin/orders/${orderId}/pack`, {
       method: 'POST',
-      headers: { 'X-Admin-Email': 'test-admin@cnxnature.com' },
+      headers: { 'X-Admin-Email': 'jdelaire@gmail.com' },
     })
     await fetch(`${API_BASE}/api/admin/orders/${orderId}/ship`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'X-Admin-Email': 'test-admin@cnxnature.com',
+        'X-Admin-Email': 'jdelaire@gmail.com',
       },
       body: JSON.stringify({ carrier: 'Kerry Express', tracking_number: 'KRY-E2E-001' }),
     })

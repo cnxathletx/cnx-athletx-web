@@ -16,6 +16,9 @@ import { useCartStore } from '../stores/cart'
 import { pickUnitPrice, sortTiers, savingsPercent } from '../utils/pricing'
 import { useHead } from '../composables/useHead'
 import { useJsonLd } from '../composables/useJsonLd'
+import ReviewSummary from '../components/reviews/ReviewSummary.vue'
+import ReviewList from '../components/reviews/ReviewList.vue'
+import { useProductReviews } from '../composables/useProductReviews'
 
 const { t, locale } = useI18n({ useScope: 'global' })
 
@@ -250,6 +253,18 @@ watch(locale, () => {
   const slug = route.params.slug as string
   if (slug) loadProduct(slug)
 })
+
+const productSlug = computed(() => (route.params.slug as string) ?? '')
+const {
+  summary: reviewSummary,
+  reviews: productReviews,
+  page: reviewPage,
+  pageSize: reviewPageSize,
+  total: reviewTotal,
+  loading: reviewsLoading,
+  error: reviewsError,
+  setPage: setReviewPage,
+} = useProductReviews(() => productSlug.value)
 </script>
 
 <template>
@@ -576,6 +591,25 @@ watch(locale, () => {
             <p class="text-foreground leading-relaxed whitespace-pre-line">{{ regulatoryInfoText }}</p>
           </div>
         </div>
+      </div>
+    </section>
+
+    <!-- Customer Reviews -->
+    <section class="bg-background">
+      <div class="mx-auto max-w-[1280px] px-4 sm:px-6 lg:px-8 py-12 sm:py-16">
+        <h2 class="text-2xl font-bold text-foreground mb-6">{{ t('reviews.title') }}</h2>
+        <ReviewSummary :summary="reviewSummary" />
+        <div v-if="reviewsLoading" class="mt-4 text-sm text-muted">…</div>
+        <p v-else-if="reviewsError" class="mt-4 text-sm text-accent">{{ reviewsError }}</p>
+        <ReviewList
+          v-else
+          class="mt-6"
+          :reviews="productReviews"
+          :page="reviewPage"
+          :page-size="reviewPageSize"
+          :total="reviewTotal"
+          @page="setReviewPage"
+        />
       </div>
     </section>
 

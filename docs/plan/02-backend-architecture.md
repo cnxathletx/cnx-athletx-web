@@ -2065,6 +2065,53 @@ describe('Order Lifecycle Integration', () => {
 
 ---
 
+## 6.5. Customer Reviews
+
+### Schema (`reviews` table)
+
+| Column | Type | Notes |
+|---|---|---|
+| `id` | INTEGER PK AUTOINCREMENT | |
+| `user_id` | TEXT NOT NULL | FK → `users.id` |
+| `product_line_id` | INTEGER NOT NULL | FK → `product_lines.id` (NOT per-SKU) |
+| `rating` | INTEGER NOT NULL | 1–5 inclusive |
+| `body` | TEXT | Optional, ≤1000 chars trimmed |
+| `locale` | TEXT NOT NULL | `'en'` or `'th'` |
+| `status` | TEXT NOT NULL | `'pending' \| 'approved' \| 'rejected'` |
+| `rejected_reason` | TEXT | Optional, ≤500 chars |
+| `created_at` | TEXT NOT NULL | ISO timestamp |
+| `moderated_at` | TEXT | Set on approve/reject |
+| `moderated_by` | TEXT | Admin email |
+
+`UNIQUE(user_id, product_line_id)` enforces "one review per user per product line." 500g and 1000g share one rating.
+
+### Endpoints
+
+**Public**
+- `GET /api/products/:slug/reviews?page&pageSize` → summary (avg, count, distribution) + approved review list. `Cache-Control: public, max-age=60`.
+
+**Customer (session required)**
+- `GET /api/account/reviewable-products` → product lines from this user's `shipped`/`delivered` orders, minus already-reviewed.
+- `GET /api/account/reviews` → user's own submitted reviews (any status).
+- `POST /api/account/reviews` → body `{ productLineId, rating, body?, locale }`. 403 if not eligible, 409 if duplicate.
+- `DELETE /api/account/reviews/:id` → user can delete own review at any status.
+
+**Admin (Cloudflare Access)**
+- `GET /api/admin/reviews?status=&page=` → joins `user_email` + `product_line_name`.
+- `POST /api/admin/reviews/:id/approve` → idempotent; writes audit log on state change.
+- `POST /api/admin/reviews/:id/reject` → optional `{ reason }`, ≤500 chars trimmed; idempotent.
+- `DELETE /api/admin/reviews/:id` → audit log records `prior_status`.
+
+### Eligibility Rule
+
+Customer can submit review for `product_line_id` X if and only if they have at least one order with `status IN ('shipped','delivered')` containing a product where `product.product_line_id = X`. Enforced server-side; UI hides ineligible products as a UX hint.
+
+### Review-Prompt Email
+
+Triggered as fire-and-forget (`ctx.waitUntil`) from `/api/admin/orders/:id/ship`. Skipped for guest orders (`user_id IS NULL`). Idempotent via `email_logs` lookup `WHERE event='review_prompt' AND order_id=? AND status='sent'` — re-shipping the same order does not double-send. Email failures do not block ship state transition.
+
+---
+
 ## 7. SEO + Compliance Checklist
 
 ### Meta Tags Per Page

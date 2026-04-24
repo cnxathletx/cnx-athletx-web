@@ -9,6 +9,7 @@ import {
   buildOrderShippedEmail,
   buildAdminNewOrderEmail,
   buildOrderCancelledEmail,
+  buildReviewPromptEmail,
 } from './email'
 import type { OrderEmailData, PaymentInstructions, ShipmentData, EmailItem } from './email'
 
@@ -333,5 +334,35 @@ describe('buildAdminNewOrderEmail', () => {
     const html = buildAdminNewOrderEmail(makeOrderData())
     expect(html).toContain('<!DOCTYPE html>')
     expect(html).toContain('CNX AthletX')
+  })
+})
+
+// --- buildReviewPromptEmail ---
+
+describe('buildReviewPromptEmail', () => {
+  const baseInput = {
+    order_id: '01H123',
+    customer_name: 'Buyer',
+    customer_email: 'b@example.com',
+    product_lines: [{ name: 'AthletX Protein' }],
+    review_url: 'https://www.cnxnature.com/account?tab=reviews',
+  }
+
+  it('renders English subject + body containing product line name', () => {
+    const out = buildReviewPromptEmail({ ...baseInput, locale: 'en' })
+    expect(out.subject).toContain('How was')
+    expect(out.html).toContain('AthletX Protein')
+    expect(out.html).toContain(baseInput.review_url)
+  })
+
+  it('renders Thai locale', () => {
+    const out = buildReviewPromptEmail({ ...baseInput, locale: 'th' })
+    expect(out.subject).toContain('โปรตีน')
+    expect(out.html).toContain(baseInput.review_url)
+  })
+
+  it('falls back to en for unknown locale', () => {
+    const out = buildReviewPromptEmail({ ...baseInput, locale: 'fr' as 'en' })
+    expect(out.subject).toContain('How was')
   })
 })

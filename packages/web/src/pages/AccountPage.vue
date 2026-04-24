@@ -12,6 +12,12 @@ import {
 } from '../api/auth'
 import PrimaryButton from '../components/ui/PrimaryButton.vue'
 import SecondaryButton from '../components/ui/SecondaryButton.vue'
+import ReviewableProductCard from '../components/reviews/ReviewableProductCard.vue'
+import ReviewForm from '../components/reviews/ReviewForm.vue'
+import {
+  fetchReviewableProducts, fetchMyReviews, deleteMyReview,
+  type ReviewableProduct, type MyReview,
+} from '../api/reviews'
 import { useAuthStore } from '../stores/auth'
 import { useHead } from '../composables/useHead'
 import { useThaiAddress } from '../composables/useThaiAddress'
@@ -193,6 +199,31 @@ async function handleLogout() {
   await router.push('/')
 }
 
+const reviewable = ref<ReviewableProduct[]>([])
+const myReviews = ref<MyReview[]>([])
+const reviewFormOpenFor = ref<number | null>(null)
+
+async function loadReviews() {
+  try {
+    const [r, mine] = await Promise.all([fetchReviewableProducts(), fetchMyReviews()])
+    reviewable.value = r
+    myReviews.value = mine
+  } catch {
+    // Non-critical — section will show empty
+  }
+}
+
+async function onReviewSubmitted() {
+  reviewFormOpenFor.value = null
+  await loadReviews()
+}
+
+async function onDeleteReview(id: number) {
+  if (!window.confirm(t('reviews.deleteConfirm'))) return
+  await deleteMyReview(id)
+  await loadReviews()
+}
+
 async function nextPage() {
   if (!canNext.value) return
   page.value += 1
@@ -237,6 +268,7 @@ onMounted(async () => {
   }
 
   await loadOrders()
+  await loadReviews()
   loading.value = false
 })
 </script>
@@ -400,6 +432,40 @@ onMounted(async () => {
             <SecondaryButton size="sm" :disabled="!canPrev" @click="prevPage">{{ t('account.previous') }}</SecondaryButton>
             <p class="text-xs text-muted">{{ t('account.page', { page, total: totalPages }) }}</p>
             <SecondaryButton size="sm" :disabled="!canNext" @click="nextPage">{{ t('account.next') }}</SecondaryButton>
+          </div>
+        </div>
+
+        <div class="bg-surface rounded-lg ring-1 ring-[var(--card-ring)] p-6 space-y-6">
+          <div>
+            <h2 class="text-xl font-bold text-foreground mb-4">{{ t('account.reviews.eligibleHeading') }}</h2>
+            <p v-if="reviewable.length === 0" class="text-sm text-muted">{{ t('reviews.empty') }}</p>
+            <ul v-else class="space-y-3">
+              <li v-for="p in reviewable" :key="p.productLineId">
+                <ReviewableProductCard :product="p" @open="reviewFormOpenFor = p.productLineId" />
+                <div v-if="reviewFormOpenFor === p.productLineId" class="mt-3 border border-foreground/10 rounded-lg p-4 bg-surface-alt">
+                  <ReviewForm :product-line-id="p.productLineId" @submitted="onReviewSubmitted" @cancel="reviewFormOpenFor = null" />
+                </div>
+              </li>
+            </ul>
+          </div>
+
+          <div v-if="myReviews.length > 0">
+            <h2 class="text-xl font-bold text-foreground mb-4">{{ t('account.reviews.submittedHeading') }}</h2>
+            <ul class="space-y-3">
+              <li v-for="r in myReviews" :key="r.id" class="border border-foreground/10 rounded-lg p-4 bg-surface-alt flex items-start justify-between gap-4">
+                <div>
+                  <div class="text-sm font-semibold">{{ r.productLineName }}</div>
+                  <div class="text-accent">{{ '★'.repeat(r.rating) + '☆'.repeat(5 - r.rating) }}</div>
+                  <div class="text-xs text-muted mt-1">
+                    <span v-if="r.status === 'pending'">{{ t('reviews.statusPending') }}</span>
+                    <span v-else-if="r.status === 'approved'">{{ t('reviews.statusApproved') }}</span>
+                    <span v-else>{{ t('reviews.statusRejected') }}</span>
+                  </div>
+                  <p v-if="r.body" class="mt-2 text-sm whitespace-pre-wrap">{{ r.body }}</p>
+                </div>
+                <button type="button" class="text-xs underline text-accent" @click="onDeleteReview(r.id)">×</button>
+              </li>
+            </ul>
           </div>
         </div>
       </div>

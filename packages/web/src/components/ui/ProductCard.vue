@@ -5,6 +5,7 @@ import { useI18n } from 'vue-i18n'
 import AppBadge from './AppBadge.vue'
 import PrimaryButton from './PrimaryButton.vue'
 import { useCartStore } from '../../stores/cart'
+import { prefetchProductBySlug } from '../../api/products'
 import type { PriceTier } from '../../utils/pricing'
 
 const { t } = useI18n({ useScope: 'global' })
@@ -31,6 +32,10 @@ watch(
   }
 )
 
+function prefetch() {
+  if (props.slug) prefetchProductBySlug(props.slug)
+}
+
 function addToCart() {
   cart.addItem({
     productId: props.productId,
@@ -47,6 +52,9 @@ function addToCart() {
 <template>
   <div
     class="group bg-surface rounded-lg shadow-sm ring-1 ring-[var(--card-ring)] overflow-hidden transition-all duration-300 hover:shadow-md hover:-translate-y-1"
+    @mouseenter="prefetch"
+    @focusin="prefetch"
+    @touchstart.passive="prefetch"
   >
     <!-- Image Container -->
     <RouterLink :to="`/product/${slug}`" class="block">

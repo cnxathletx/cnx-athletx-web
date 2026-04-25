@@ -37,6 +37,8 @@ Everything below is in-flight on `main` and has not been cut into a versioned re
 - Public product endpoints (`/api/products`, `/api/products/:slug`) now send `Cache-Control` headers (300s list / 600s detail) so browsers and Cloudflare edge cache hits avoid hitting D1 on warm reloads.
 - Cart persistence to `localStorage` is debounced (~300ms) with flush on `pagehide` / `beforeunload` / tab hide, removing main-thread `JSON.stringify` cost during rapid add/update.
 - `App.vue` no longer awaits `auth.init()` on mount; the router guard already awaits it for routes that need auth, so anonymous landings render without a session-fetch round-trip blocking hydration.
+- `ProductCard` prefetches `/api/products/:slug` on hover / focus / touchstart (deduped per `slug+locale`); combined with the new detail Cache-Control header, listing → detail navigation usually serves from the browser cache.
+- Resend email sends now run with a 5s `AbortController` timeout (`sendResendEmail`, magic-link send) so a slow Resend response can no longer hold a Worker request beyond `ctx.waitUntil` budget.
 
 ### Security
 - Hashed session tokens (no plaintext storage).

@@ -86,6 +86,19 @@ export async function fetchProductBySlug(slug: string): Promise<ProductDetailRes
   return data
 }
 
+const prefetched = new Set<string>()
+
+export function prefetchProductBySlug(slug: string): void {
+  const key = `${slug}|${currentLocale()}`
+  if (prefetched.has(key)) return
+  prefetched.add(key)
+  void fetch(
+    apiUrl(`/api/products/${encodeURIComponent(slug)}?locale=${encodeURIComponent(currentLocale())}`),
+  ).catch(() => {
+    prefetched.delete(key)
+  })
+}
+
 export const formatPrice = formatMoney
 
 export function formatWeight(grams: number): string {

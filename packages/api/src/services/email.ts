@@ -1,6 +1,18 @@
 import type { Env } from '../lib/types'
 import { nowIso, escapeHtml } from '../lib/utils'
 
+const RESEND_TIMEOUT_MS = 5000
+
+async function resendFetch(input: string, init: RequestInit): Promise<Response> {
+  const ctrl = new AbortController()
+  const timer = setTimeout(() => ctrl.abort(), RESEND_TIMEOUT_MS)
+  try {
+    return await fetch(input, { ...init, signal: ctrl.signal })
+  } finally {
+    clearTimeout(timer)
+  }
+}
+
 export interface EmailItem {
   name: string
   quantity: number
@@ -56,21 +68,24 @@ async function sendResendEmail(
 ): Promise<boolean> {
   if (!env.RESEND_API_KEY) return false
 
-  const res = await fetch('https://api.resend.com/emails', {
-    method: 'POST',
-    headers: {
-      Authorization: `Bearer ${env.RESEND_API_KEY}`,
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify({
-      from: 'CNX AthletX <orders@cnxnature.com>',
-      to: [to],
-      subject,
-      html,
-    }),
-  })
-
-  return res.ok
+  try {
+    const res = await resendFetch('https://api.resend.com/emails', {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${env.RESEND_API_KEY}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        from: 'CNX AthletX <orders@cnxnature.com>',
+        to: [to],
+        subject,
+        html,
+      }),
+    })
+    return res.ok
+  } catch {
+    return false
+  }
 }
 
 export function formatThb(satang: number): string {
@@ -460,19 +475,24 @@ export async function sendMagicLinkEmail(env: Env, toEmail: string, magicLinkUrl
 
   const html = emailLayout('Log In — CNX AthletX', body)
 
-  const emailRes = await fetch('https://api.resend.com/emails', {
-    method: 'POST',
-    headers: {
-      Authorization: `Bearer ${env.RESEND_API_KEY}`,
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify({
-      from: 'CNX AthletX <orders@cnxnature.com>',
-      to: [toEmail],
-      subject: 'Log in to CNX AthletX',
-      html,
-    }),
-  })
+  let emailRes: Response
+  try {
+    emailRes = await resendFetch('https://api.resend.com/emails', {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${env.RESEND_API_KEY}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        from: 'CNX AthletX <orders@cnxnature.com>',
+        to: [toEmail],
+        subject: 'Log in to CNX AthletX',
+        html,
+      }),
+    })
+  } catch {
+    throw new Error('Failed to send magic link email')
+  }
 
   if (!emailRes.ok) {
     throw new Error('Failed to send magic link email')

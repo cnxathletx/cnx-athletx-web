@@ -342,3 +342,14 @@ CREATE TABLE IF NOT EXISTS reviews (
 CREATE INDEX IF NOT EXISTS idx_reviews_line_status ON reviews(product_line_id, status, created_at DESC);
 CREATE INDEX IF NOT EXISTS idx_reviews_user ON reviews(user_id);
 CREATE INDEX IF NOT EXISTS idx_reviews_status_created ON reviews(status, created_at DESC);
+
+-- rate_limits table (fixed-window counters for abuse controls)
+CREATE TABLE IF NOT EXISTS rate_limits (
+    scope TEXT NOT NULL,
+    key TEXT NOT NULL,
+    window_start TEXT NOT NULL,
+    count INTEGER NOT NULL DEFAULT 1,
+    PRIMARY KEY (scope, key, window_start)
+);
+
+CREATE INDEX IF NOT EXISTS idx_rate_limits_window_start ON rate_limits(window_start);

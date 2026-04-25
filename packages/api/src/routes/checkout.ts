@@ -13,10 +13,16 @@ import type {
 import { isValidOrderId } from '../lib/utils'
 import { validateCheckoutBody, validatePaymentProofBody } from '../lib/validation'
 import { getSessionUser, parseJsonBody } from '../middleware/auth'
+import { enforceLimit, enforceGlobalLimit, getClientIp, rateLimitedResponse } from '../middleware/rate-limit'
 import { sendOrderEmail, sendAdminNewOrderEmail } from '../services/email'
 import type { EmailItem } from '../services/email'
 import { generateULID } from '../lib/ulid'
 import { pickUnitPrice, type PriceTier } from '../lib/pricing'
+
+const CHECKOUT_PER_IP_MAX = 30
+const CHECKOUT_PER_IP_WINDOW_SEC = 60 * 60
+const CHECKOUT_GLOBAL_MAX = 1000
+const CHECKOUT_GLOBAL_WINDOW_SEC = 60 * 60
 
 export function registerCheckoutRoutes(router: RouterType) {
   router.post('/api/checkout', async (request: Request, env: Env, ctx: ExecutionContext) => {
@@ -29,6 +35,23 @@ export function registerCheckoutRoutes(router: RouterType) {
     if (errors.length > 0 || !data) {
       return Response.json({ error: 'Validation failed', details: errors }, { status: 400 })
     }
+
+    const ip = getClientIp(request)
+    const ipLimit = await enforceLimit(env, {
+      scope: 'checkout',
+      key: ip,
+      max: CHECKOUT_PER_IP_MAX,
+      windowSec: CHECKOUT_PER_IP_WINDOW_SEC,
+    })
+    if (!ipLimit.ok) return rateLimitedResponse(ipLimit.retryAfterSec)
+
+    const globalLimit = await enforceGlobalLimit(
+      env,
+      'checkout',
+      CHECKOUT_GLOBAL_MAX,
+      CHECKOUT_GLOBAL_WINDOW_SEC,
+    )
+    if (!globalLimit.ok) return rateLimitedResponse(globalLimit.retryAfterSec)
 
     if (sessionUser && data.customer.email.trim().toLowerCase() !== sessionUser.email.toLowerCase()) {
       return Response.json(

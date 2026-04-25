@@ -35,6 +35,24 @@ describe('POST /api/auth/request-link', () => {
     const res = await workerFetch('/api/auth/request-link', { body: { email } })
     expect(res.status).toBe(429)
   })
+
+  it('rate-limits per IP across rotated emails', async () => {
+    const ipHeaders = { 'CF-Connecting-IP': '203.0.113.99' }
+    // Per-IP cap is 20 within 15 min — burn through with distinct emails
+    for (let i = 0; i < 20; i++) {
+      const res = await workerFetch('/api/auth/request-link', {
+        body: { email: `flood${i}@example.com` },
+        headers: ipHeaders,
+      })
+      expect(res.status).toBe(200)
+    }
+    const blocked = await workerFetch('/api/auth/request-link', {
+      body: { email: 'flood-final@example.com' },
+      headers: ipHeaders,
+    })
+    expect(blocked.status).toBe(429)
+    expect(blocked.headers.get('Retry-After')).toBeTruthy()
+  })
 })
 
 describe('POST /api/auth/verify', () => {

@@ -1,39 +1,44 @@
 # Changelog
 
-All notable changes to this project are recorded here. Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+All notable changes to this project are recorded here. Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); project will follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html) once the first release is cut.
 
-Update this file with every release-worthy change. Group entries under one of: `Added`, `Changed`, `Deprecated`, `Removed`, `Fixed`, `Security`. Keep an `[Unreleased]` section at the top for in-flight work; promote it to a versioned heading on release.
+> **Status:** pre-release. No GitHub release or git tag exists yet. All entries live under `[Unreleased]` until the first version ships, at which point this section is renamed to that version with its release date and a fresh `[Unreleased]` is started.
+
+Update this file with every user-visible or operationally-relevant change. Group entries under one of: `Added`, `Changed`, `Deprecated`, `Removed`, `Fixed`, `Security`.
 
 ## [Unreleased]
 
-### Fixed
-- Roll back inventory reservations and discount usage counter when order insert batch fails, preventing inflated `reserved_count` / `used_count` after concurrent idempotency-key collisions (`62c5f01`).
-- SEO worker regex now uses ` ` / ` ` escapes in literals so Workers' regex parser accepts them (`3684c9a`).
-
-## [1.0.0] — 2026-04-25
-
-First production release. Full storefront, admin dashboard, customer accounts, and supporting infrastructure on a Cloudflare-only stack (Pages + Workers + D1 + R2).
+Everything below is in-flight on `main` and has not been cut into a versioned release.
 
 ### Added
 - **Storefront**: product catalog, product detail with image lightbox, cart, checkout, order tracking pages.
-- **Customer accounts**: passwordless magic-link auth, hashed sessions, persistent shipping address with Thai address cascaded dropdowns, order history, "My Reviews" section.
+- **Customer accounts**: passwordless magic-link auth, hashed sessions, persistent shipping address with Thai cascaded dropdowns, order history, "My Reviews" section.
 - **Admin dashboard**: orders, products, inventory, discount codes, price tiers, lab tests, reviews moderation, income report, chat inbox, site settings (shipping, payment details). Cloudflare Access PIN auth + session cookies.
-- **Reviews system**: customer submission with eligibility check, admin moderation queue, public summary + list on PDP, ship → review-prompt email with idempotency.
+- **Reviews system**: customer submission with eligibility check, admin moderation queue, public summary + list on PDP, ship → review-prompt email with idempotency, dedicated `AdminReviewsPage`.
 - **Live chat widget**: customer ↔ admin messaging with incremental sync, unread tracking, email notifications, dashboard card.
 - **Discount codes**: percentage and fixed types, min-order, max-uses, expiry, archive flag.
 - **Volume price tiers** per product.
-- **Product lines** centralizing nutrition, ingredients, usage; lab test PDF/image uploads with storefront overlay.
+- **Product lines** centralizing nutrition, ingredients, usage; lab test PDF/image uploads with storefront overlay; R2 orphan cleanup endpoint with admin UI.
 - **Internationalization**: full English + Thai locales for customer surfaces, lazy-loaded Thai bundle, persisted in `localStorage`. Admin remains English.
 - **Transactional email** via Resend: order_created, paid, shipped, cancelled, review-prompt, magic-link, admin-new-order. Shared HTML templates.
-- **SEO**: dynamic meta-tag injection Worker, JSON-LD product structured data, robots.txt, sitemap, Open Graph image.
+- **SEO**: dynamic meta-tag injection Worker, JSON-LD product structured data, robots.txt, sitemap, Open Graph image, static-meta stripping.
 - **Theming**: dark mode default (warm brown), light toggle, CSS-variable theme switching, flash-prevention head script.
 - **CI/CD**: preview deployments for Pages + Workers; vitest unit + integration + Playwright e2e suites.
-- **Rate limiting**: per-IP and global limits on public write endpoints (checkout, payment-proof, magic-link, chat, reviews).
+- **Rate limiting**: per-IP and global limits on public write endpoints (checkout, payment-proof, magic-link, chat, reviews) (`3482e70`).
+
+### Fixed
+- Roll back inventory reservations and discount usage counter when order insert batch fails, preventing inflated `reserved_count` / `used_count` after concurrent idempotency-key collisions (`62c5f01`).
+- SEO worker regex now uses ` ` / ` ` escapes in literals so Workers' regex parser accepts them (`3684c9a`).
+- Hide filename in lab tests overlay caption on product detail (`c80371e`).
+- Cast workerFetch body to bypass undici BodyInit mismatch in test helpers (`cb77f98`).
+
+### Changed
+- Cookie security tightened for HTTPS / localhost (`5af3d62`).
 
 ### Security
 - Hashed session tokens (no plaintext storage).
 - Atomic inventory reservation via conditional D1 updates.
-- CORS origin validation + SameSite cookie hardening; HTTPS-only cookies in prod, relaxed for localhost.
+- CORS origin validation + SameSite cookie hardening.
 - Magic-link generation tied to request origin.
 - Spoofable CF headers removed from admin auth path; local-dev fallback disabled in production.
 - CF Access JWT verified across subdomains for `/admin/*` and `/api/admin/*`.
@@ -43,9 +48,9 @@ First production release. Full storefront, admin dashboard, customer accounts, a
 - D1 schema with money-as-integer (satang), ULID order IDs, idempotency keys.
 - Domain migrated to `cnxnature.com` (web at `www.`, API at `api.`).
 
-## Pre-1.0 milestones
+## Development history
 
-Reconstructed from git history, grouped by theme. Earlier development was iterative without semver tagging; entries below summarize what shipped each phase.
+Reconstructed from git log for context — these are not releases. Grouped by theme/period so reviewers can locate when capabilities landed on `main`.
 
 ### 2026-02-24 → 2026-02-28 — Scaffold + core storefront
 - Repo scaffold (Pages + Workers + D1).
@@ -94,4 +99,4 @@ Reconstructed from git history, grouped by theme. Earlier development was iterat
 - Product-line lab-test file uploads + storefront overlay.
 - R2 orphan cleanup endpoint + admin settings UI.
 - Cookie security tightened for HTTPS / localhost.
-- Per-IP + global rate limits on public write endpoints. **Released as 1.0.0.**
+- Per-IP + global rate limits on public write endpoints.

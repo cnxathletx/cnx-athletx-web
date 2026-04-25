@@ -418,6 +418,19 @@ export function registerCheckoutRoutes(router: RouterType) {
     try {
       await env.DB.batch(orderStatements)
     } catch {
+      const rollbacks: D1PreparedStatement[] = mergedItems.map((item) =>
+        env.DB.prepare(
+          `UPDATE inventory SET reserved_count = reserved_count - ?, updated_at = ? WHERE product_id = ?`
+        ).bind(item.quantity, now, item.product_id)
+      )
+      if (discountCodeRow) {
+        rollbacks.push(
+          env.DB.prepare(`UPDATE discount_codes SET used_count = used_count - 1 WHERE id = ? AND used_count > 0`).bind(
+            discountCodeRow.id
+          )
+        )
+      }
+      await env.DB.batch(rollbacks).catch(() => {})
       return Response.json({ error: 'Database error creating order' }, { status: 500 })
     }
 

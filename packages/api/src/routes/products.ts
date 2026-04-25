@@ -216,7 +216,10 @@ export function registerProductRoutes(router: RouterType) {
         lab_test_files: r.product_line_id ? labTestMap.get(r.product_line_id) ?? [] : [],
       }))
 
-      return Response.json({ products })
+      return Response.json(
+        { products },
+        { headers: { 'Cache-Control': 'public, max-age=300' } },
+      )
     } catch {
       return Response.json({ error: 'Database error' }, { status: 500 })
     }
@@ -273,15 +276,18 @@ export function registerProductRoutes(router: RouterType) {
 
       const related = relatedRow ? applyRelatedTranslation(relatedRow, locale) : null
 
-      return Response.json({
-        product: {
-          ...applyTranslations(product, locale),
-          screenshots: screenshotMap.get(product.id) ?? [],
-          price_tiers: tierMap.get(product.id) ?? [],
-          lab_test_files: product.product_line_id ? labTestMap.get(product.product_line_id) ?? [] : [],
+      return Response.json(
+        {
+          product: {
+            ...applyTranslations(product, locale),
+            screenshots: screenshotMap.get(product.id) ?? [],
+            price_tiers: tierMap.get(product.id) ?? [],
+            lab_test_files: product.product_line_id ? labTestMap.get(product.product_line_id) ?? [] : [],
+          },
+          related,
         },
-        related,
-      })
+        { headers: { 'Cache-Control': 'public, max-age=600' } },
+      )
     } catch {
       return Response.json({ error: 'Database error' }, { status: 500 })
     }

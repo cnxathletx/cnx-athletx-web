@@ -7,8 +7,8 @@ import { useAuthStore } from './stores/auth'
 
 const auth = useAuthStore()
 
-onMounted(async () => {
-  await auth.init()
+onMounted(() => {
+  void auth.init()
 })
 </script>
 

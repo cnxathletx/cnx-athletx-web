@@ -34,6 +34,9 @@ Everything below is in-flight on `main` and has not been cut into a versioned re
 
 ### Changed
 - Cookie security tightened for HTTPS / localhost (`5af3d62`).
+- Public product endpoints (`/api/products`, `/api/products/:slug`) now send `Cache-Control` headers (300s list / 600s detail) so browsers and Cloudflare edge cache hits avoid hitting D1 on warm reloads.
+- Cart persistence to `localStorage` is debounced (~300ms) with flush on `pagehide` / `beforeunload` / tab hide, removing main-thread `JSON.stringify` cost during rapid add/update.
+- `App.vue` no longer awaits `auth.init()` on mount; the router guard already awaits it for routes that need auth, so anonymous landings render without a session-fetch round-trip blocking hydration.
 
 ### Security
 - Hashed session tokens (no plaintext storage).

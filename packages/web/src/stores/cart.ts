@@ -24,8 +24,47 @@ function loadCart(): CartItem[] {
   }
 }
 
+const SAVE_DEBOUNCE_MS = 300
+let saveTimer: ReturnType<typeof setTimeout> | null = null
+let pendingItems: CartItem[] | null = null
+
+function writeNow(items: CartItem[]) {
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(items))
+  } catch {
+    // quota or privacy mode — ignore
+  }
+}
+
+function flushSave() {
+  if (saveTimer) {
+    clearTimeout(saveTimer)
+    saveTimer = null
+  }
+  if (pendingItems) {
+    writeNow(pendingItems)
+    pendingItems = null
+  }
+}
+
 function saveCart(items: CartItem[]) {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(items))
+  pendingItems = items
+  if (saveTimer) return
+  saveTimer = setTimeout(() => {
+    saveTimer = null
+    if (pendingItems) {
+      writeNow(pendingItems)
+      pendingItems = null
+    }
+  }, SAVE_DEBOUNCE_MS)
+}
+
+if (typeof window !== 'undefined') {
+  window.addEventListener('pagehide', flushSave)
+  window.addEventListener('beforeunload', flushSave)
+  document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'hidden') flushSave()
+  })
 }
 
 export function unitPriceFor(item: CartItem): number {

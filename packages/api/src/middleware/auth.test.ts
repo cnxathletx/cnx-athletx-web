@@ -77,14 +77,14 @@ describe('parseCookie', () => {
 // --- buildSessionCookie ---
 
 describe('buildSessionCookie', () => {
-  it('sets SameSite=Lax for same-site requests', () => {
+  it('sets SameSite=Lax; Secure for same-site HTTPS requests', () => {
     const cookie = buildSessionCookie(makeSameSiteRequest(), 'mytoken')
     expect(cookie).toContain('session=mytoken')
     expect(cookie).toContain('HttpOnly')
     expect(cookie).toContain('Path=/')
     expect(cookie).toContain(`Max-Age=${SESSION_MAX_AGE_SECONDS}`)
     expect(cookie).toContain('SameSite=Lax')
-    expect(cookie).not.toContain('Secure')
+    expect(cookie).toContain('Secure')
   })
 
   it('sets SameSite=None; Secure for cross-site requests', () => {
@@ -93,26 +93,39 @@ describe('buildSessionCookie', () => {
     expect(cookie).toContain('Secure')
   })
 
-  it('uses Lax when no Origin header', () => {
+  it('uses Lax; Secure when no Origin header on HTTPS', () => {
     const cookie = buildSessionCookie(makeRequest('https://api.cnxnature.com/test'), 'tok')
     expect(cookie).toContain('SameSite=Lax')
+    expect(cookie).toContain('Secure')
+  })
+
+  it('omits Secure on plain-HTTP localhost (dev only)', () => {
+    const cookie = buildSessionCookie(makeLocalRequest(), 'tok')
+    expect(cookie).toContain('SameSite=Lax')
+    expect(cookie).not.toContain('Secure')
   })
 })
 
 // --- clearSessionCookie ---
 
 describe('clearSessionCookie', () => {
-  it('sets Max-Age=0 and empty value', () => {
+  it('sets Max-Age=0 and empty value with Secure on HTTPS', () => {
     const cookie = clearSessionCookie(makeSameSiteRequest())
     expect(cookie).toContain('session=')
     expect(cookie).toContain('Max-Age=0')
     expect(cookie).toContain('HttpOnly')
+    expect(cookie).toContain('Secure')
   })
 
   it('sets SameSite=None; Secure for cross-site', () => {
     const cookie = clearSessionCookie(makeCrossSiteRequest())
     expect(cookie).toContain('SameSite=None')
     expect(cookie).toContain('Secure')
+  })
+
+  it('omits Secure on plain-HTTP localhost (dev only)', () => {
+    const cookie = clearSessionCookie(makeLocalRequest())
+    expect(cookie).not.toContain('Secure')
   })
 })
 

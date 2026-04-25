@@ -4,6 +4,30 @@
 const API_BASE = 'https://api.cnxnature.com'
 const SITE_URL = 'https://www.cnxnature.com'
 
+function htmlEscape(value) {
+  return String(value ?? '')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;')
+}
+
+function jsonLdSafe(obj) {
+  return JSON.stringify(obj)
+    .replace(/</g, '\\u003c')
+    .replace(/>/g, '\\u003e')
+    .replace(/&/g, '\\u0026')
+    .replace(/ /g, '\\u2028')
+    .replace(/ /g, '\\u2029')
+}
+
+function safeImageUrl(url) {
+  if (!url) return null
+  const abs = url.startsWith('/') ? `${SITE_URL}${url}` : url
+  return /^https?:\/\//i.test(abs) ? abs : null
+}
+
 function buildOrganizationJsonLd() {
   return {
     '@context': 'https://schema.org',
@@ -31,9 +55,7 @@ function buildProductJsonLd(product) {
     '@type': 'Product',
     name: product.name,
     description: product.description,
-    image: product.image_url
-      ? [product.image_url.startsWith('/') ? `${SITE_URL}${product.image_url}` : product.image_url]
-      : undefined,
+    image: safeImageUrl(product.image_url) ? [safeImageUrl(product.image_url)] : undefined,
     sku: product.slug,
     url: `${SITE_URL}/product/${product.slug}`,
     brand: { '@type': 'Brand', name: 'CNX AthletX' },
@@ -69,20 +91,24 @@ function buildProductJsonLd(product) {
 function buildMetaTags(title, description, ogImage, canonicalUrl) {
   const fullTitle = title ? `${title} — CNX AthletX` : 'CNX AthletX'
   const img = ogImage || `${SITE_URL}/og-image.png`
+  const eTitle = htmlEscape(fullTitle)
+  const eDesc = htmlEscape(description)
+  const eImg = htmlEscape(img)
+  const eCanonical = htmlEscape(canonicalUrl)
   return `
-    <title>${fullTitle}</title>
-    <meta name="description" content="${description}" />
-    <meta property="og:title" content="${fullTitle}" />
-    <meta property="og:description" content="${description}" />
-    <meta property="og:image" content="${img}" />
-    <meta property="og:url" content="${canonicalUrl}" />
+    <title>${eTitle}</title>
+    <meta name="description" content="${eDesc}" />
+    <meta property="og:title" content="${eTitle}" />
+    <meta property="og:description" content="${eDesc}" />
+    <meta property="og:image" content="${eImg}" />
+    <meta property="og:url" content="${eCanonical}" />
     <meta property="og:type" content="website" />
     <meta property="og:site_name" content="CNX AthletX" />
     <meta name="twitter:card" content="summary_large_image" />
-    <meta name="twitter:title" content="${fullTitle}" />
-    <meta name="twitter:description" content="${description}" />
-    <meta name="twitter:image" content="${img}" />
-    <link rel="canonical" href="${canonicalUrl}" />`
+    <meta name="twitter:title" content="${eTitle}" />
+    <meta name="twitter:description" content="${eDesc}" />
+    <meta name="twitter:image" content="${eImg}" />
+    <link rel="canonical" href="${eCanonical}" />`
 }
 
 function stripStaticMeta(html) {
@@ -97,12 +123,12 @@ function injectIntoHead(html, metaTags, jsonLd, preloadImage) {
   html = stripStaticMeta(html)
 
   const preload = preloadImage
-    ? `<link rel="preload" as="image" fetchpriority="high" href="${preloadImage}" />`
+    ? `<link rel="preload" as="image" fetchpriority="high" href="${htmlEscape(preloadImage)}" />`
     : ''
 
   const injection = `${metaTags}
     ${preload}
-    <script type="application/ld+json">${JSON.stringify(jsonLd)}</script>`
+    <script type="application/ld+json">${jsonLdSafe(jsonLd)}</script>`
 
   return html.replace('</head>', `${injection}\n</head>`)
 }
@@ -130,9 +156,7 @@ export default {
           const assetRes = await env.ASSETS.fetch(request)
           let html = await assetRes.text()
 
-          const ogImage = product.image_url
-            ? (product.image_url.startsWith('/') ? `${SITE_URL}${product.image_url}` : product.image_url)
-            : null
+          const ogImage = safeImageUrl(product.image_url)
           const metaTags = buildMetaTags(
             product.name,
             `${product.name} — Plant-based protein powder. ฿${(product.price_thb / 100).toFixed(0)}. Ships across Thailand.`,

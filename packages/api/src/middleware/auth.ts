@@ -32,15 +32,26 @@ function isCrossSite(request: Request): boolean {
   }
 }
 
+function isInsecureLocalhost(request: Request): boolean {
+  const url = new URL(request.url)
+  if (url.protocol === 'https:') return false
+  return url.hostname === 'localhost' || url.hostname === '127.0.0.1' || url.hostname === '::1'
+}
+
+function shouldMarkSecure(request: Request, sameSite: 'None' | 'Lax'): boolean {
+  if (sameSite === 'None') return true
+  return !isInsecureLocalhost(request)
+}
+
 export function buildSessionCookie(request: Request, token: string): string {
   const sameSite = isCrossSite(request) ? 'None' : 'Lax'
-  const secureFlag = sameSite === 'None' ? '; Secure' : ''
+  const secureFlag = shouldMarkSecure(request, sameSite) ? '; Secure' : ''
   return `session=${token}; HttpOnly; Path=/; Max-Age=${SESSION_MAX_AGE_SECONDS}; SameSite=${sameSite}${secureFlag}`
 }
 
 export function clearSessionCookie(request: Request): string {
   const sameSite = isCrossSite(request) ? 'None' : 'Lax'
-  const secureFlag = sameSite === 'None' ? '; Secure' : ''
+  const secureFlag = shouldMarkSecure(request, sameSite) ? '; Secure' : ''
   return `session=; HttpOnly; Path=/; Max-Age=0; SameSite=${sameSite}${secureFlag}`
 }
 

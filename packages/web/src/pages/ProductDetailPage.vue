@@ -789,7 +789,6 @@ const {
       </button>
 
       <div class="mt-2 flex items-center justify-center gap-3 text-white text-sm">
-        <span class="truncate max-w-[60%]">{{ activeLabTestFile.label || '—' }}</span>
         <span class="text-white/60">{{ labTestIndex + 1 }} / {{ labTestFiles.length }}</span>
         <a
           :href="activeLabTestFile.url"

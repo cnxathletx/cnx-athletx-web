@@ -28,6 +28,23 @@ const form = reactive({
   payment_deadline_hours: '',
 })
 
+const ALL_METHODS = [
+  { id: 'promptpay', label: 'PromptPay' },
+  { id: 'bank_transfer', label: 'Bank transfer' },
+] as const
+
+const enabledMethods = ref<string[]>([])
+
+function parseEnabledMethods(raw: string | undefined): string[] {
+  if (!raw) return []
+  try {
+    const parsed = JSON.parse(raw)
+    return Array.isArray(parsed) ? parsed.filter((x: unknown): x is string => typeof x === 'string') : []
+  } catch {
+    return []
+  }
+}
+
 // Display helpers — convert satang to THB for the form
 function satangToThb(val: string): string {
   const n = parseInt(val, 10)
@@ -53,6 +70,7 @@ async function loadSettings() {
     form.bank_account_name = settings.bank_account_name ?? ''
     form.bank_account_number = settings.bank_account_number ?? ''
     form.payment_deadline_hours = settings.payment_deadline_hours ?? '24'
+    enabledMethods.value = parseEnabledMethods(settings.payment_methods_enabled)
   } catch (err) {
     error.value = err instanceof AdminApiErrorResponse ? err.message : 'Unable to load settings.'
   } finally {
@@ -74,6 +92,7 @@ async function handleSave() {
       bank_account_name: form.bank_account_name.trim(),
       bank_account_number: form.bank_account_number.trim(),
       payment_deadline_hours: form.payment_deadline_hours.trim() || '24',
+      payment_methods_enabled: JSON.stringify(enabledMethods.value),
     })
 
     // Refresh form with saved values
@@ -84,6 +103,7 @@ async function handleSave() {
     form.bank_account_name = settings.bank_account_name ?? ''
     form.bank_account_number = settings.bank_account_number ?? ''
     form.payment_deadline_hours = settings.payment_deadline_hours ?? '24'
+    enabledMethods.value = parseEnabledMethods(settings.payment_methods_enabled)
 
     saveSuccess.value = 'Settings saved.'
   } catch (err) {
@@ -206,6 +226,17 @@ onMounted(async () => {
           <p class="text-sm text-muted">Shown to customers on the payment instructions page and in order confirmation emails.</p>
 
           <div class="space-y-4">
+            <div class="space-y-1">
+              <label class="block text-sm font-medium text-foreground">Enabled methods</label>
+              <div class="space-y-1">
+                <label v-for="m in ALL_METHODS" :key="m.id" class="flex items-center gap-2 text-sm">
+                  <input type="checkbox" :value="m.id" v-model="enabledMethods" />
+                  <span class="text-foreground">{{ m.label }}</span>
+                </label>
+              </div>
+              <p class="text-xs text-muted">Customers see only enabled methods at checkout.</p>
+            </div>
+
             <div class="space-y-1">
               <label class="block text-sm font-medium text-foreground">PromptPay Number</label>
               <input

@@ -92,6 +92,7 @@ export function registerAdminOrderRoutes(router: RouterType) {
                 customer_name, customer_email, customer_phone,
                 shipping_address_line1, shipping_address_line2, district, province, postal_code,
                 subtotal_thb, shipping_thb, discount_thb, total_thb,
+                payment_method,
                 created_at, updated_at
          FROM orders WHERE id = ? LIMIT 1`
       )
@@ -157,6 +158,7 @@ export function registerAdminOrderRoutes(router: RouterType) {
           shipping_thb: order.shipping_thb,
           discount_thb: order.discount_thb,
           total_thb: order.total_thb,
+          payment_method: order.payment_method,
           items: items.map((item) => ({
             product_name: item.product_name,
             quantity: item.quantity,

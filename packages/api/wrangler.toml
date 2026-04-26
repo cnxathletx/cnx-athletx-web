@@ -45,7 +45,7 @@ bucket_name = "cnx-product-images-prod"
 
 [env.preview]
 name = "cnx-athletx-api-preview"
-workers_dev = false
+workers_dev = true
 
 [env.preview.vars]
 ENVIRONMENT = "preview"

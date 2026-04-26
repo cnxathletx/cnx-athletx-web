@@ -111,6 +111,7 @@ export interface CheckoutBody {
   customer: CheckoutCustomer
   idempotency_key: string
   discount_code?: string
+  payment_method: ProviderId
 }
 
 export interface ProductRow {
@@ -128,6 +129,7 @@ export interface SiteSettings {
   bank_name: string
   bank_account_name: string
   bank_account_number: string
+  payment_methods_enabled: string[]
 }
 
 export interface DiscountCodeRow {
@@ -205,6 +207,7 @@ export interface AdminOrderDetailRow {
   shipping_thb: number
   discount_thb: number
   total_thb: number
+  payment_method: string | null
   created_at: string
   updated_at: string
 }
@@ -601,4 +604,27 @@ export interface SubmitReviewBody {
 
 export interface RejectReviewBody {
   reason?: string
+}
+
+// --- Payment provider types ---
+
+export type ProviderId = 'promptpay' | 'bank_transfer' | '2c2p' | 'nowpayments'
+
+export type SiteSettingsMap = Record<string, string>
+
+export type PaymentIntent =
+  | { kind: 'instructions'; provider: ProviderId; instructions: Record<string, unknown> }
+  | { kind: 'redirect'; provider: ProviderId; url: string; expires_at?: string }
+  | { kind: 'sdk'; provider: ProviderId; client_token: string; provider_data: unknown }
+
+export type WebhookOutcome = 'paid' | 'failed' | 'refunded'
+
+export type WebhookResult =
+  | { ok: true; order_id: string; provider_txn_id: string; status: WebhookOutcome; raw: unknown }
+  | { ok: false; reason: string }
+
+export interface CheckoutOrderForIntent {
+  id: string
+  total_thb: number
+  customer_email: string
 }

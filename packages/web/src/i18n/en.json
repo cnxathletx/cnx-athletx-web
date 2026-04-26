@@ -345,7 +345,10 @@
     "note1": "Please transfer the exact amount shown above",
     "note2": "Include your order ID {orderId} in the transfer note",
     "note3": "Payment must be completed within 24 hours or the order will be cancelled",
-    "note4": "You'll receive a confirmation email once payment is verified"
+    "note4": "You'll receive a confirmation email once payment is verified",
+    "selectMethod": "Select a payment method",
+    "noMethodsAvailable": "No payment methods available. Please contact support.",
+    "failedToLoadMethods": "Failed to load payment methods. Please refresh the page."
   },
   "about": {
     "badge": "Our Story",

@@ -48,7 +48,7 @@ test.describe('Cart', () => {
 })
 
 test.describe('Guest checkout flow', () => {
-  test('complete checkout from product to order confirmation', async ({ page }) => {
+  test('complete checkout via PromptPay', async ({ page }) => {
     // 1. Add product to cart
     await addProductToCart(page, 'plant-protein-500g')
 
@@ -60,14 +60,29 @@ test.describe('Guest checkout flow', () => {
     // 3. Fill in checkout form
     await fillCheckoutForm(page)
 
-    // 4. Submit order
+    // 4. Pick PromptPay (default first option, but make explicit)
+    await page.getByRole('radio', { name: /promptpay/i }).check()
+
+    // 5. Submit order
     await page.getByRole('button', { name: /place order/i }).click()
 
-    // 5. Should redirect to payment page
+    // 6. Should redirect to payment page
     await expect(page).toHaveURL(/\/order\/.*\/payment/, { timeout: 10000 })
 
-    // 6. Verify payment instructions page shows order details
-    await expect(page.getByText(/payment/i).first()).toBeVisible()
+    // 7. Payment page shows PromptPay number
+    await expect(page.getByText(/0812345678/)).toBeVisible()
+  })
+
+  test('complete checkout via bank transfer', async ({ page }) => {
+    await addProductToCart(page, 'plant-protein-500g')
+    await page.goto('/checkout')
+    await fillCheckoutForm(page)
+    await page.getByRole('radio', { name: /bank transfer/i }).check()
+    await page.getByRole('button', { name: /place order/i }).click()
+
+    await expect(page).toHaveURL(/\/order\/.*\/payment/, { timeout: 10000 })
+    await expect(page.getByText('123-4-56789-0')).toBeVisible()
+    await expect(page.getByText('Kasikorn Bank')).toBeVisible()
   })
 
   test('checkout with discount code', async ({ page }) => {

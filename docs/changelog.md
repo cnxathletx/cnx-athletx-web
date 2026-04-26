@@ -11,6 +11,21 @@ Update this file with every user-visible or operationally-relevant change. Group
 Everything below is in-flight on `main` and has not been cut into a versioned release.
 
 ### Added
+- **Payment provider abstraction**: `PaymentProvider` registry in `packages/api/src/services/payments/`. PromptPay and bank transfer become independent providers; future 2C2P / NowPayments slot in by adding a file and registering it. Discriminated `PaymentIntent` union (`instructions` | `redirect` | `sdk`) replaces the hard-coded `payment_instructions` shape.
+- **Public `GET /api/payment-methods`** lists enabled providers with localized display names; powers the new checkout method picker.
+- **`GET /api/orders/:id/intent`** rebuilds the payment intent from `payment_method` + current settings so `PaymentInstructionsPage` survives reloads and device switches.
+- **Webhook scaffold `POST /api/payments/:provider/webhook`** with idempotency via `UNIQUE(provider, provider_txn_id)` and gated state transitions; returns 404 for manual providers (no `verifyWebhook`). Stub for future gateways.
+- **Customer payment method picker** on the checkout page (radio list, defaults to first enabled).
+- **Admin toggle for enabled payment methods** in site settings (`payment_methods_enabled` JSON array).
+- **Email templates**: `payment_failed` and `payment_refunded` events wired into `sendOrderEmail`.
+
+### Changed
+- **Order schema**: new `orders.payment_method` column. Status enum expanded with `awaiting_gateway`, `failed`, `refunded`.
+- **Payments schema**: new `provider`, `provider_txn_id`, `status`, `payload_json` columns. `payments.method` CHECK constraint dropped (registry handles validation).
+- **`POST /api/checkout`** now requires `payment_method` and returns a discriminated `intent` object instead of the fixed `payment_instructions` shape.
+- **Migration `0009_payment_providers.sql`**: backfills `orders.payment_method` from existing `payments.method` rows; seeds `payment_methods_enabled = '["promptpay","bank_transfer"]'`.
+
+### Storefront
 - **Storefront**: product catalog, product detail with image lightbox, cart, checkout, order tracking pages.
 - **Customer accounts**: passwordless magic-link auth, hashed sessions, persistent shipping address with Thai cascaded dropdowns, order history, "My Reviews" section.
 - **Admin dashboard**: orders, products, inventory, discount codes, price tiers, lab tests, reviews moderation, income report, chat inbox, site settings (shipping, payment details). Cloudflare Access PIN auth + session cookies.

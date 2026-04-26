@@ -161,10 +161,14 @@ CREATE TABLE IF NOT EXISTS orders (
     status TEXT NOT NULL DEFAULT 'pending_payment',
     idempotency_key TEXT NOT NULL UNIQUE,
     discount_code TEXT,
+    payment_method TEXT,
     created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE SET NULL,
-    CHECK (status IN ('pending_payment', 'paid', 'packed', 'shipped', 'delivered', 'cancelled'))
+    CHECK (status IN (
+      'pending_payment', 'awaiting_gateway', 'paid', 'failed',
+      'packed', 'shipped', 'delivered', 'refunded', 'cancelled'
+    ))
 );
 
 CREATE INDEX IF NOT EXISTS idx_orders_status ON orders(status);
@@ -193,17 +197,22 @@ CREATE TABLE IF NOT EXISTS payments (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     order_id TEXT NOT NULL,
     method TEXT NOT NULL,
+    provider TEXT,
+    provider_txn_id TEXT,
+    status TEXT NOT NULL DEFAULT 'pending',
+    payload_json TEXT,
     reference TEXT,
     amount_thb INTEGER NOT NULL,
     verified_at TEXT,
     verified_by TEXT,
     created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (order_id) REFERENCES orders(id) ON DELETE CASCADE,
-    CHECK (method IN ('promptpay', 'bank_transfer'))
+    FOREIGN KEY (order_id) REFERENCES orders(id) ON DELETE CASCADE
 );
 
 CREATE INDEX IF NOT EXISTS idx_payments_order_id ON payments(order_id);
 CREATE INDEX IF NOT EXISTS idx_payments_verified_at ON payments(verified_at);
+CREATE UNIQUE INDEX IF NOT EXISTS idx_payments_provider_txn
+  ON payments(provider, provider_txn_id) WHERE provider_txn_id IS NOT NULL;
 
 -- payment_proofs table
 CREATE TABLE IF NOT EXISTS payment_proofs (

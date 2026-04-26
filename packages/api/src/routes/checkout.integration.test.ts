@@ -16,14 +16,18 @@ describe('POST /api/checkout', () => {
       shipping_thb: number
       discount_thb: number
       total_thb: number
-      payment_instructions: { promptpay: { number: string; qr_url: string } | null; bank_transfer: { bank_name: string } }
+      intent: { kind: string; provider: string; instructions: Record<string, string> }
     }
     expect(data.order_id).toBeTruthy()
     expect(data.subtotal_thb).toBe(89900) // 1x plant-protein-500g
     expect(data.shipping_thb).toBe(10000) // flat rate
     expect(data.discount_thb).toBe(0)
     expect(data.total_thb).toBe(99900)
-    expect(data.payment_instructions.bank_transfer.bank_name).toBe('Kasikorn Bank')
+    expect(data.intent.kind).toBe('instructions')
+    expect(data.intent.provider).toBe('promptpay')
+    expect(data.intent.instructions.promptpay_number).toBe('0812345678')
+    expect(data.intent.instructions.amount_thb).toBe('999.00')
+    expect(data.intent.instructions.qr_url).toBe('https://promptpay.io/0812345678/999.00.png')
   })
 
   it('creates order with multiple items', async () => {
@@ -169,6 +173,51 @@ describe('POST /api/checkout', () => {
 
     const data = await res.json() as { subtotal_thb: number }
     expect(data.subtotal_thb).toBe(10 * 69900)
+  })
+
+  it('rejects when payment_method missing', async () => {
+    const body = checkoutBody()
+    delete (body as Record<string, unknown>).payment_method
+    const res = await workerFetch('/api/checkout', { body })
+    expect(res.status).toBe(400)
+    const data = await res.json() as { details: Array<{ field: string }> }
+    expect(data.details.some((d) => d.field === 'payment_method')).toBe(true)
+  })
+
+  it('rejects payment_method not in registry', async () => {
+    const res = await workerFetch('/api/checkout', { body: checkoutBody({ payment_method: 'bitcoin' }) })
+    expect(res.status).toBe(400)
+  })
+
+  it('rejects payment_method not in enabled list', async () => {
+    // Disable promptpay leaving only bank_transfer enabled
+    await workerFetch('/api/admin/settings', {
+      method: 'PATCH',
+      admin: true,
+      body: { settings: { payment_methods_enabled: '["bank_transfer"]' } },
+    })
+    const res = await workerFetch('/api/checkout', { body: checkoutBody({ payment_method: 'promptpay' }) })
+    expect(res.status).toBe(400)
+    const data = await res.json() as { details: Array<{ message: string }> }
+    expect(data.details.some((d) => d.message.includes('disabled'))).toBe(true)
+  })
+
+  it('returns bank_transfer intent when chosen', async () => {
+    const res = await workerFetch('/api/checkout', { body: checkoutBody({ payment_method: 'bank_transfer' }) })
+    expect(res.status).toBe(201)
+    const data = await res.json() as { intent: { kind: string; provider: string; instructions: Record<string, string> } }
+    expect(data.intent.kind).toBe('instructions')
+    expect(data.intent.provider).toBe('bank_transfer')
+    expect(data.intent.instructions.bank_name).toBe('Kasikorn Bank')
+    expect(data.intent.instructions.account_number).toBe('123-4-56789-0')
+  })
+
+  it('persists payment_method on the order row', async () => {
+    const res = await workerFetch('/api/checkout', { body: checkoutBody({ payment_method: 'bank_transfer' }) })
+    const data = await res.json() as { order_id: string }
+    const orderRes = await workerFetch(`/api/admin/orders/${data.order_id}`, { admin: true })
+    const orderJson = await orderRes.json() as { order: { payment_method?: string } }
+    expect(orderJson.order.payment_method).toBe('bank_transfer')
   })
 })
 

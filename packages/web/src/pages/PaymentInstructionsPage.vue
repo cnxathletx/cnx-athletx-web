@@ -2,12 +2,14 @@
 import { ref, onMounted, computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
-import { fetchOrder, submitPaymentProof, CheckoutError, type CheckoutResponse, type ApiOrder } from '../api/checkout'
+import { fetchOrder, submitPaymentProof, CheckoutError, type CheckoutResponse, type ApiOrder, type PaymentIntent } from '../api/checkout'
+import { fetchOrderIntent } from '../api/paymentMethods'
 import PrimaryButton from '../components/ui/PrimaryButton.vue'
 import SecondaryButton from '../components/ui/SecondaryButton.vue'
 import CheckoutStepper from '../components/ui/CheckoutStepper.vue'
-import PromptPayQR from '../components/ui/PromptPayQR.vue'
-import { formatMoney, satangToThb } from '../utils/money'
+import PromptPayInstructions from '../components/payment/PromptPayInstructions.vue'
+import BankTransferInstructions from '../components/payment/BankTransferInstructions.vue'
+import { formatMoney } from '../utils/money'
 
 const { t } = useI18n({ useScope: 'global' })
 
@@ -16,7 +18,7 @@ const router = useRouter()
 const orderId = route.params.id as string
 
 const order = ref<ApiOrder | null>(null)
-const checkoutResult = ref<CheckoutResponse | null>(null)
+const intent = ref<PaymentIntent | null>(null)
 const loading = ref(true)
 const error = ref('')
 const copied = ref('')
@@ -39,22 +41,30 @@ async function loadOrder() {
 }
 
 onMounted(async () => {
-  // Try to get payment instructions from sessionStorage (set during checkout)
+  // Fast path: read cached checkout response if it matches this order
   const stored = sessionStorage.getItem('cnx-last-order')
   if (stored) {
     try {
       const parsed = JSON.parse(stored) as CheckoutResponse
-      if (parsed.order_id === orderId) {
-        checkoutResult.value = parsed
+      if (parsed.order_id === orderId && parsed.intent) {
+        intent.value = parsed.intent
       }
     } catch {
       // ignore parse errors
     }
   }
 
-  // Always fetch fresh order data
+  // Always fetch fresh order data; rebuild intent from server if not cached
   try {
     await loadOrder()
+    if (!intent.value) {
+      try {
+        const fresh = await fetchOrderIntent(orderId)
+        intent.value = fresh.intent
+      } catch {
+        // Acceptable — page renders order without intent UI
+      }
+    }
   } catch {
     error.value = 'Order not found. Please check your order ID.'
   } finally {
@@ -62,17 +72,7 @@ onMounted(async () => {
   }
 })
 
-const amountDisplay = computed(() => {
-  if (checkoutResult.value) return formatMoney(checkoutResult.value.total_thb)
-  if (order.value) return formatMoney(order.value.total_thb)
-  return ''
-})
-
-const amountThb = computed(() => {
-  if (checkoutResult.value) return satangToThb(checkoutResult.value.total_thb)
-  if (order.value) return satangToThb(order.value.total_thb)
-  return undefined
-})
+const amountDisplay = computed(() => order.value ? formatMoney(order.value.total_thb) : '')
 
 async function copyToClipboard(text: string, label: string) {
   try {
@@ -177,111 +177,28 @@ async function handleSubmitProof() {
               <p class="text-4xl font-bold text-primary">{{ amountDisplay }}</p>
             </div>
 
-            <!-- PromptPay -->
+            <!-- Provider-specific instructions -->
+            <template v-if="intent && intent.kind === 'instructions'">
+              <PromptPayInstructions
+                v-if="intent.provider === 'promptpay'"
+                :promptpay-number="String(intent.instructions.promptpay_number)"
+                :amount-thb="String(intent.instructions.amount_thb)"
+              />
+              <BankTransferInstructions
+                v-else-if="intent.provider === 'bank_transfer'"
+                :bank-name="String(intent.instructions.bank_name)"
+                :account-name="String(intent.instructions.account_name)"
+                :account-number="String(intent.instructions.account_number)"
+              />
+            </template>
+
+            <!-- Fallback when no intent available -->
             <div
-              v-if="checkoutResult?.payment_instructions?.promptpay"
-              class="bg-surface rounded-lg ring-1 ring-[var(--card-ring)] p-6 space-y-4"
-            >
-              <div class="flex items-center gap-3">
-                <div class="w-10 h-10 bg-primary/15 rounded-lg flex items-center justify-center">
-                  <svg class="w-5 h-5 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                      d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z" />
-                  </svg>
-                </div>
-                <div>
-                  <h2 class="text-xl font-bold text-foreground">{{ t('payment.promptpay') }}</h2>
-                  <p class="text-sm text-muted">{{ t('payment.scanQRDesc') }}</p>
-                </div>
-              </div>
-
-              <div class="flex justify-center py-4">
-                <div class="bg-white rounded-lg p-4">
-                  <PromptPayQR
-                    :promptpay-id="checkoutResult.payment_instructions.promptpay.number"
-                    :amount="amountThb"
-                    :size="192"
-                  />
-                </div>
-              </div>
-
-              <div class="flex items-center justify-between bg-surface-alt rounded-md px-4 py-3">
-                <div>
-                  <p class="text-xs text-muted">{{ t('payment.promptpayNumber') }}</p>
-                  <p class="font-mono text-foreground">
-                    {{ checkoutResult.payment_instructions.promptpay.number }}
-                  </p>
-                </div>
-                <button
-                  @click="copyToClipboard(checkoutResult!.payment_instructions.promptpay!.number, 'promptpay')"
-                  class="text-primary text-sm font-semibold hover:underline underline-offset-4"
-                >
-                  {{ copied === 'promptpay' ? t('payment.copied') : t('payment.copy') }}
-                </button>
-              </div>
-            </div>
-
-            <!-- Bank Transfer -->
-            <div
-              v-if="checkoutResult?.payment_instructions?.bank_transfer"
-              class="bg-surface rounded-lg ring-1 ring-[var(--card-ring)] p-6 space-y-4"
-            >
-              <div class="flex items-center gap-3">
-                <div class="w-10 h-10 bg-primary/15 rounded-lg flex items-center justify-center">
-                  <svg class="w-5 h-5 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                      d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
-                  </svg>
-                </div>
-                <div>
-                  <h2 class="text-xl font-bold text-foreground">{{ t('payment.bankTransfer') }}</h2>
-                  <p class="text-sm text-muted">{{ t('payment.transferToAccount') }}</p>
-                </div>
-              </div>
-
-              <div class="space-y-3">
-                <div class="flex items-center justify-between bg-surface-alt rounded-md px-4 py-3">
-                  <div>
-                    <p class="text-xs text-muted">{{ t('payment.bankName') }}</p>
-                    <p class="font-medium text-foreground">
-                      {{ checkoutResult.payment_instructions.bank_transfer.bank_name }}
-                    </p>
-                  </div>
-                </div>
-                <div class="flex items-center justify-between bg-surface-alt rounded-md px-4 py-3">
-                  <div>
-                    <p class="text-xs text-muted">{{ t('payment.accountName') }}</p>
-                    <p class="font-medium text-foreground">
-                      {{ checkoutResult.payment_instructions.bank_transfer.account_name }}
-                    </p>
-                  </div>
-                </div>
-                <div class="flex items-center justify-between bg-surface-alt rounded-md px-4 py-3">
-                  <div>
-                    <p class="text-xs text-muted">{{ t('payment.accountNumber') }}</p>
-                    <p class="font-mono text-foreground">
-                      {{ checkoutResult.payment_instructions.bank_transfer.account_number }}
-                    </p>
-                  </div>
-                  <button
-                    @click="copyToClipboard(checkoutResult!.payment_instructions.bank_transfer.account_number, 'account')"
-                    class="text-primary text-sm font-semibold hover:underline underline-offset-4"
-                  >
-                    {{ copied === 'account' ? t('payment.copied') : t('payment.copy') }}
-                  </button>
-                </div>
-              </div>
-            </div>
-
-            <!-- Fallback when no payment instructions from checkout -->
-            <div
-              v-if="!checkoutResult"
+              v-else
               class="bg-surface rounded-lg ring-1 ring-[var(--card-ring)] p-6 space-y-4"
             >
               <h2 class="text-xl font-bold text-foreground">{{ t('payment.paymentDetails') }}</h2>
-              <p class="text-muted">
-                {{ t('payment.paymentDetailsFallback') }}
-              </p>
+              <p class="text-muted">{{ t('payment.paymentDetailsFallback') }}</p>
             </div>
 
             <!-- Payment Proof -->

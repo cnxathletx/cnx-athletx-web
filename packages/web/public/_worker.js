@@ -5,7 +5,7 @@ const API_BASE = 'https://api.cnxnature.com'
 const SITE_URL = 'https://www.cnxnature.com'
 
 const SECURITY_HEADERS = {
-  'Content-Security-Policy': "default-src 'self'; script-src 'self' 'unsafe-inline' https://static.cloudflareinsights.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: https://images.cnxnature.com https://promptpay.io; connect-src 'self' https://api.cnxnature.com https://images.cnxnature.com https://cloudflareinsights.com; frame-src 'self' https://images.cnxnature.com; frame-ancestors 'none'; base-uri 'self'; form-action 'self'; object-src 'none'",
+  'Content-Security-Policy': "default-src 'self'; script-src 'self' 'unsafe-inline' https://static.cloudflareinsights.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: https://images.cnxnature.com https://promptpay.io; connect-src 'self' https://api.cnxnature.com https://cnx-athletx-api-preview.athletx-cnx.workers.dev https://images.cnxnature.com https://cloudflareinsights.com; frame-src 'self' https://images.cnxnature.com; frame-ancestors 'none'; base-uri 'self'; form-action 'self'; object-src 'none'",
   'X-Frame-Options': 'DENY',
   'X-Content-Type-Options': 'nosniff',
   'Referrer-Policy': 'strict-origin-when-cross-origin',

@@ -1,6 +1,7 @@
 import type { RouterType } from 'itty-router'
-import type { Env, OrderRow, OrderItemRow, ShipmentRow, PaymentProofRow } from '../lib/types'
+import type { Env, OrderRow, OrderItemRow, ShipmentRow, PaymentProofRow, PaymentIntent, SiteSettingsMap } from '../lib/types'
 import { isValidOrderId } from '../lib/utils'
+import { getProvider } from '../services/payments/registry'
 
 export function registerOrderRoutes(router: RouterType) {
   router.get('/api/orders/:id', async (request: Request, env: Env) => {
@@ -84,5 +85,58 @@ export function registerOrderRoutes(router: RouterType) {
     } catch {
       return Response.json({ error: 'Database error' }, { status: 500 })
     }
+  })
+
+  router.get('/api/orders/:id/intent', async (request: Request, env: Env) => {
+    const url = new URL(request.url)
+    const id = url.pathname.split('/')[3] || ''
+    if (!isValidOrderId(id)) {
+      return Response.json({ error: 'Invalid order ID format' }, { status: 400 })
+    }
+    const orderId = id.toUpperCase()
+
+    let row: { payment_method: string | null; total_thb: number; customer_email: string; status: string } | null
+    try {
+      row = await env.DB.prepare(
+        `SELECT payment_method, total_thb, customer_email, status FROM orders WHERE id = ? LIMIT 1`
+      )
+        .bind(orderId)
+        .first<{ payment_method: string | null; total_thb: number; customer_email: string; status: string }>()
+    } catch {
+      return Response.json({ error: 'Database error' }, { status: 500 })
+    }
+    if (!row) return Response.json({ error: 'Order not found' }, { status: 404 })
+    if (!row.payment_method) {
+      return Response.json({ error: 'Order has no payment method' }, { status: 404 })
+    }
+
+    const provider = getProvider(row.payment_method)
+    if (!provider) {
+      return Response.json({ error: 'Payment method no longer supported' }, { status: 410 })
+    }
+
+    const settingsMap: SiteSettingsMap = {}
+    try {
+      const { results } = await env.DB.prepare(`SELECT key, value FROM site_settings`).all<{
+        key: string
+        value: string
+      }>()
+      for (const r of results) settingsMap[r.key] = r.value
+    } catch {
+      return Response.json({ error: 'Database error' }, { status: 500 })
+    }
+
+    let intent: PaymentIntent
+    try {
+      intent = await provider.createIntent({
+        order: { id: orderId, total_thb: row.total_thb, customer_email: row.customer_email },
+        settings: settingsMap,
+        env,
+      })
+    } catch {
+      return Response.json({ error: 'Failed to rebuild intent' }, { status: 500 })
+    }
+
+    return Response.json({ intent, status: row.status })
   })
 }

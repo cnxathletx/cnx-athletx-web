@@ -103,6 +103,7 @@ export function checkoutBody(overrides: Record<string, unknown> = {}) {
         postal_code: '50200',
       },
     },
+    payment_method: 'promptpay',
     ...overrides,
   }
 }

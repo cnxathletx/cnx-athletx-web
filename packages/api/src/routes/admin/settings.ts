@@ -16,7 +16,23 @@ const ALLOWED_KEYS = new Set([
   'bank_account_name',
   'bank_account_number',
   'payment_deadline_hours',
+  'payment_methods_enabled',
 ])
+
+function validateSettingValue(key: string, value: string): string | null {
+  if (key === 'payment_methods_enabled') {
+    let parsed: unknown
+    try {
+      parsed = JSON.parse(value)
+    } catch {
+      return 'payment_methods_enabled must be a JSON array of strings'
+    }
+    if (!Array.isArray(parsed) || !parsed.every((x) => typeof x === 'string')) {
+      return 'payment_methods_enabled must be a JSON array of strings'
+    }
+  }
+  return null
+}
 
 export function registerAdminSettingsRoutes(router: RouterType) {
   router.get('/api/admin/settings', requireAdmin(async (_request, env) => {
@@ -54,6 +70,10 @@ export function registerAdminSettingsRoutes(router: RouterType) {
       }
       if (typeof value !== 'string') {
         return Response.json({ error: `Value for ${key} must be a string` }, { status: 400 })
+      }
+      const valErr = validateSettingValue(key, value)
+      if (valErr) {
+        return Response.json({ error: valErr }, { status: 400 })
       }
       entries.push([key, value])
     }

@@ -11,6 +11,7 @@ import { registerAccountReviewsRoutes } from './routes/account-reviews'
 import { registerCheckoutRoutes } from './routes/checkout'
 import { registerOrderRoutes } from './routes/orders'
 import { registerPaymentMethodsRoutes } from './routes/payment-methods'
+import { registerPaymentsRoutes } from './routes/payments'
 import { registerChatRoutes } from './routes/chat'
 import { registerAdminRoutes } from './routes/admin'
 import { registerPublicImageRoutes } from './routes/admin/uploads'
@@ -31,6 +32,7 @@ registerAccountReviewsRoutes(router)
 registerCheckoutRoutes(router)
 registerOrderRoutes(router)
 registerPaymentMethodsRoutes(router)
+registerPaymentsRoutes(router)
 registerChatRoutes(router)
 registerAdminRoutes(router)
 registerPublicImageRoutes(router)

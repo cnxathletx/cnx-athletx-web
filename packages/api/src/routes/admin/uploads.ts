@@ -131,7 +131,12 @@ export function registerAdminUploadRoutes(router: RouterType) {
 export function registerPublicImageRoutes(router: RouterType) {
   router.get('/images/:rest+', async (request: Request, env: Env) => {
     const url = new URL(request.url)
-    const key = decodeURIComponent(url.pathname.replace(/^\/images\//, ''))
+    let key: string
+    try {
+      key = decodeURIComponent(url.pathname.replace(/^\/images\//, ''))
+    } catch {
+      return new Response('Not Found', { status: 404 })
+    }
     if (!key || key.includes('..')) {
       return new Response('Not Found', { status: 404 })
     }
@@ -156,6 +161,19 @@ export function registerPublicImageRoutes(router: RouterType) {
     ;(obj as R2ObjectBody).writeHttpMetadata(headers)
     headers.set('etag', (obj as R2ObjectBody).httpEtag)
     headers.set('cache-control', 'public, max-age=31536000, immutable')
+    headers.set('x-content-type-options', 'nosniff')
+
+    // Neutralize active content (PDF JS, HTML, SVG scripts) by sandboxing the response.
+    // Images served inline keep their content-type intact; everything else is forced to attachment.
+    const storedType = (headers.get('content-type') || '').toLowerCase()
+    const isImage = /^image\/(jpeg|png|webp|gif)$/.test(storedType)
+    if (storedType === 'application/pdf') {
+      headers.set('content-security-policy', 'sandbox')
+    } else if (!isImage) {
+      const safeName = (key.split('/').pop() || 'file').replace(/[^a-zA-Z0-9._-]/g, '_')
+      headers.set('content-disposition', `attachment; filename="${safeName}"`)
+    }
+
     return new Response((obj as R2ObjectBody).body, { headers })
   })
 }

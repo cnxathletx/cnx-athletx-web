@@ -16,6 +16,39 @@ export interface CheckoutPayload {
   }
   idempotency_key: string
   discount_code?: string
+  payment_method: string
+}
+
+export type PaymentIntent =
+  | {
+      kind: 'instructions'
+      provider: string
+      instructions: Record<string, unknown>
+    }
+  | {
+      kind: 'redirect'
+      provider: string
+      url: string
+      expires_at?: string
+    }
+  | {
+      kind: 'sdk'
+      provider: string
+      client_token: string
+      provider_data: unknown
+    }
+
+export interface PromptPayInstructionsData {
+  promptpay_number: string
+  qr_url: string
+  amount_thb: string
+}
+
+export interface BankTransferInstructionsData {
+  bank_name: string
+  account_name: string
+  account_number: string
+  amount_thb: string
 }
 
 export interface CheckoutResponse {
@@ -24,15 +57,7 @@ export interface CheckoutResponse {
   shipping_thb: number
   discount_thb: number
   total_thb: number
-  payment_instructions: {
-    promptpay: { number: string; qr_url: string } | null
-    bank_transfer: {
-      bank_name: string
-      account_name: string
-      account_number: string
-    }
-    amount_thb: string
-  }
+  intent: PaymentIntent
   message?: string
 }
 

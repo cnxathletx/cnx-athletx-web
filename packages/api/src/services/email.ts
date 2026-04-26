@@ -265,6 +265,40 @@ export function buildOrderCancelledEmail(order: OrderEmailData): string {
   return emailLayout('Order Cancelled — CNX AthletX', body)
 }
 
+export function buildPaymentFailedEmail(order: OrderEmailData): string {
+  const body = `<h2 style="margin: 0 0 8px; font-size: 20px; color: #B53A32;">Payment Failed</h2>
+    <p style="margin: 0 0 20px; font-size: 15px; color: #555;">Hi ${escapeHtml(order.customer_name)}, we couldn't confirm your payment for the order below.</p>
+
+    <div style="background: #F2EDE4; border-radius: 8px; padding: 12px 16px; margin-bottom: 20px;">
+      <p style="margin: 0; font-size: 13px; color: #555;">Order ID</p>
+      <p style="margin: 4px 0 0; font-size: 16px; font-weight: 700; font-family: monospace; letter-spacing: 0.5px;">${order.order_id}</p>
+    </div>
+
+    ${itemsTableHtml(order.items)}
+    ${orderTotalsHtml(order)}
+
+    <p style="margin: 24px 0 0; font-size: 14px; color: #555;">Please try the payment again from your order page, or contact us at <a href="mailto:contact@cnxnature.com" style="color: #8B9A7B;">contact@cnxnature.com</a> for help.</p>`
+
+  return emailLayout('Payment Failed — CNX AthletX', body)
+}
+
+export function buildPaymentRefundedEmail(order: OrderEmailData): string {
+  const body = `<h2 style="margin: 0 0 8px; font-size: 20px; color: #2E2B26;">Refund Issued</h2>
+    <p style="margin: 0 0 20px; font-size: 15px; color: #555;">Hi ${escapeHtml(order.customer_name)}, a refund of <strong>${formatThb(order.total_thb)}</strong> has been issued for the order below.</p>
+
+    <div style="background: #F2EDE4; border-radius: 8px; padding: 12px 16px; margin-bottom: 20px;">
+      <p style="margin: 0; font-size: 13px; color: #555;">Order ID</p>
+      <p style="margin: 4px 0 0; font-size: 16px; font-weight: 700; font-family: monospace; letter-spacing: 0.5px;">${order.order_id}</p>
+    </div>
+
+    ${itemsTableHtml(order.items)}
+    ${orderTotalsHtml(order)}
+
+    <p style="margin: 24px 0 0; font-size: 14px; color: #555;">The funds should appear in your account within 5–10 business days depending on your bank or card issuer.</p>`
+
+  return emailLayout('Refund Issued — CNX AthletX', body)
+}
+
 export interface AdminOrderAddress {
   line1: string
   line2?: string
@@ -344,7 +378,7 @@ export async function sendAdminNewOrderEmail(
 /** Fire-and-forget: sends email and logs result, never throws */
 export async function sendOrderEmail(
   env: Env,
-  event: 'order_created' | 'payment_confirmed' | 'order_shipped' | 'order_cancelled',
+  event: 'order_created' | 'payment_confirmed' | 'order_shipped' | 'order_cancelled' | 'payment_failed' | 'payment_refunded',
   order: OrderEmailData,
   extra?: { payment?: PaymentInstructions; shipment?: ShipmentData }
 ): Promise<void> {
@@ -368,6 +402,14 @@ export async function sendOrderEmail(
       case 'order_cancelled':
         subject = `Order Cancelled — ${order.order_id}`
         html = buildOrderCancelledEmail(order)
+        break
+      case 'payment_failed':
+        subject = `Payment Failed — ${order.order_id}`
+        html = buildPaymentFailedEmail(order)
+        break
+      case 'payment_refunded':
+        subject = `Refund Issued — ${order.order_id}`
+        html = buildPaymentRefundedEmail(order)
         break
     }
 

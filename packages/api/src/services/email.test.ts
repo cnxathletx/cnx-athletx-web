@@ -9,6 +9,8 @@ import {
   buildOrderShippedEmail,
   buildAdminNewOrderEmail,
   buildOrderCancelledEmail,
+  buildPaymentFailedEmail,
+  buildPaymentRefundedEmail,
   buildReviewPromptEmail,
 } from './email'
 import type { OrderEmailData, PaymentInstructions, ShipmentData, EmailItem } from './email'
@@ -272,6 +274,42 @@ describe('buildOrderCancelledEmail', () => {
     const html = buildOrderCancelledEmail(makeOrderData({ customer_name: '<b>Bad</b>' }))
     expect(html).not.toContain('<b>Bad</b>')
     expect(html).toContain('&lt;b&gt;Bad&lt;/b&gt;')
+  })
+})
+
+// --- buildPaymentFailedEmail ---
+
+describe('buildPaymentFailedEmail', () => {
+  it('contains order ID and failure heading', () => {
+    const html = buildPaymentFailedEmail(makeOrderData())
+    expect(html).toContain('ORD-TEST-001')
+    expect(html).toContain('Payment Failed')
+  })
+
+  it('includes contact email for help', () => {
+    const html = buildPaymentFailedEmail(makeOrderData())
+    expect(html).toContain('contact@cnxnature.com')
+  })
+
+  it('escapes customer name', () => {
+    const html = buildPaymentFailedEmail(makeOrderData({ customer_name: '<b>X</b>' }))
+    expect(html).toContain('&lt;b&gt;X&lt;/b&gt;')
+  })
+})
+
+// --- buildPaymentRefundedEmail ---
+
+describe('buildPaymentRefundedEmail', () => {
+  it('contains order ID and refund amount', () => {
+    const html = buildPaymentRefundedEmail(makeOrderData({ total_thb: 50000 }))
+    expect(html).toContain('ORD-TEST-001')
+    expect(html).toContain('Refund Issued')
+    expect(html).toContain('฿500.00')
+  })
+
+  it('escapes customer name', () => {
+    const html = buildPaymentRefundedEmail(makeOrderData({ customer_name: '<b>X</b>' }))
+    expect(html).toContain('&lt;b&gt;X&lt;/b&gt;')
   })
 })
 

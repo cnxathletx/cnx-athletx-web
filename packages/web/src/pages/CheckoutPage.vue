@@ -5,8 +5,10 @@ import { useCartStore, lineTotalFor } from '../stores/cart'
 import { formatPrice } from '../api/products'
 import { submitCheckout, CheckoutError } from '../api/checkout'
 import { fetchLastAddress } from '../api/auth'
+import { fetchPaymentMethods, type PaymentMethod } from '../api/paymentMethods'
 import PrimaryButton from '../components/ui/PrimaryButton.vue'
 import CheckoutStepper from '../components/ui/CheckoutStepper.vue'
+import PaymentMethodPicker from '../components/payment/PaymentMethodPicker.vue'
 import { useAuthStore } from '../stores/auth'
 import { useHead } from '../composables/useHead'
 import { useThaiAddress } from '../composables/useThaiAddress'
@@ -67,6 +69,10 @@ watch(thaiAddr.postalCode, (v) => { form.value.postal_code = v })
 const submitting = ref(false)
 const apiError = ref('')
 const fieldErrors = ref<Record<string, string>>({})
+
+const paymentMethods = ref<PaymentMethod[]>([])
+const selectedMethod = ref('')
+const methodsError = ref('')
 
 // Generate idempotency key once per page load
 const idempotencyKey = crypto.randomUUID()
@@ -144,6 +150,17 @@ function validate(): boolean {
 const canSubmit = computed(() => cart.items.length > 0 && !submitting.value)
 
 onMounted(async () => {
+  try {
+    paymentMethods.value = await fetchPaymentMethods()
+    if (paymentMethods.value.length > 0) {
+      selectedMethod.value = paymentMethods.value[0].id
+    } else {
+      methodsError.value = t('payment.noMethodsAvailable')
+    }
+  } catch {
+    methodsError.value = t('payment.failedToLoadMethods')
+  }
+
   if (!auth.initialized) {
     await auth.init()
   }
@@ -175,6 +192,10 @@ onMounted(async () => {
 
 async function handleSubmit() {
   if (!validate() || !canSubmit.value) return
+  if (!selectedMethod.value) {
+    apiError.value = t('payment.selectMethod')
+    return
+  }
 
   submitting.value = true
   apiError.value = ''
@@ -200,16 +221,23 @@ async function handleSubmit() {
       },
       idempotency_key: idempotencyKey,
       discount_code: form.value.discount_code.trim() || undefined,
+      payment_method: selectedMethod.value,
     })
 
-    // Store checkout result for payment page
+    // Store checkout result for payment page (intent included)
     sessionStorage.setItem('cnx-last-order', JSON.stringify(result))
     sessionStorage.setItem('cnx-last-checkout-email', form.value.email.trim().toLowerCase())
 
     // Clear cart
     cart.clearCart()
 
-    // Navigate to payment instructions
+    // Dispatch by intent kind
+    if (result.intent.kind === 'redirect') {
+      window.location.href = result.intent.url
+      return
+    }
+
+    // 'instructions' or 'sdk' → navigate to payment page
     router.push(`/order/${result.order_id}/payment`)
   } catch (e) {
     if (e instanceof CheckoutError) {
@@ -389,6 +417,16 @@ async function handleSubmit() {
                 <p v-if="fieldErrors.postal_code" class="mt-1 text-xs text-error">{{ fieldErrors.postal_code }}</p>
               </div>
             </div>
+          </div>
+
+          <!-- Payment Method -->
+          <div class="space-y-2">
+            <div v-if="methodsError" class="text-sm text-error">{{ methodsError }}</div>
+            <PaymentMethodPicker
+              v-else-if="paymentMethods.length"
+              v-model="selectedMethod"
+              :methods="paymentMethods"
+            />
           </div>
 
           <!-- Discount Code -->

@@ -48,4 +48,5 @@ INSERT INTO site_settings (key, value) VALUES
 ('bank_name', 'Kasikorn Bank'),
 ('bank_account_name', 'CNX AthletX Co., Ltd.'),
 ('bank_account_number', '123-4-56789-0'),
-('payment_deadline_hours', '24');
+('payment_deadline_hours', '24'),
+('payment_methods_enabled', '["promptpay","bank_transfer"]');

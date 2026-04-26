@@ -23,7 +23,7 @@ Replace hardwired PromptPay + bank-transfer payment logic with a `PaymentProvide
 
 ## Schema changes
 
-Migration `0008_payment_providers.sql`:
+Migration `0009_payment_providers.sql` (0008 is `rate_limits`):
 
 ```sql
 -- Add payment_method to orders, backfilled from payments.method
@@ -290,7 +290,7 @@ Add keys `payment.method.promptpay` and `payment.method.bank_transfer` (display 
 
 ## Migration plan (production)
 
-1. Deploy migration `0008_payment_providers.sql` via wrangler. Backfill `orders.payment_method` from `payments.method`. Set default `payment_methods_enabled = '["promptpay","bank_transfer"]'`.
+1. Deploy migration `0009_payment_providers.sql` via wrangler. Backfill `orders.payment_method` from `payments.method`. Set default `payment_methods_enabled = '["promptpay","bank_transfer"]'`.
 2. Deploy API + web together (single coordinated release). Both sides under our control, so no transitional dual-shape support is needed.
 3. Smoke test: place test order with each method. Confirm admin dashboard shows `payment_method` column.
 4. Update `docs/changelog.md` `[Unreleased]` section per repo convention.

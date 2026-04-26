@@ -18,6 +18,8 @@ import { sendOrderEmail, sendAdminNewOrderEmail } from '../services/email'
 import type { EmailItem } from '../services/email'
 import { generateULID } from '../lib/ulid'
 import { pickUnitPrice, type PriceTier } from '../lib/pricing'
+import { getProvider, listEnabledProviders } from '../services/payments/registry'
+import type { PaymentIntent, SiteSettingsMap } from '../lib/types'
 
 const CHECKOUT_PER_IP_MAX = 30
 const CHECKOUT_PER_IP_WINDOW_SEC = 60 * 60
@@ -148,29 +150,54 @@ export function registerCheckoutRoutes(router: RouterType) {
 
     // --- Fetch site settings ---
     let settings: SiteSettings
+    let settingsMap: SiteSettingsMap
     try {
       const { results } = await env.DB.prepare(
         `SELECT key, value FROM site_settings WHERE key IN (
           'shipping_flat_rate', 'shipping_free_threshold',
-          'promptpay_number', 'bank_name', 'bank_account_name', 'bank_account_number'
+          'promptpay_number', 'bank_name', 'bank_account_name', 'bank_account_number',
+          'payment_methods_enabled'
         )`
       ).all<{ key: string; value: string }>()
 
-      const settingsMap = new Map<string, string>()
+      settingsMap = {}
       for (const row of results) {
-        settingsMap.set(row.key, row.value)
+        settingsMap[row.key] = row.value
       }
 
       settings = {
-        shipping_flat_rate: parseInt(settingsMap.get('shipping_flat_rate') ?? '10000', 10),
-        shipping_free_threshold: parseInt(settingsMap.get('shipping_free_threshold') ?? '0', 10),
-        promptpay_number: settingsMap.get('promptpay_number') ?? '',
-        bank_name: settingsMap.get('bank_name') ?? '',
-        bank_account_name: settingsMap.get('bank_account_name') ?? '',
-        bank_account_number: settingsMap.get('bank_account_number') ?? '',
+        shipping_flat_rate: parseInt(settingsMap.shipping_flat_rate ?? '10000', 10),
+        shipping_free_threshold: parseInt(settingsMap.shipping_free_threshold ?? '0', 10),
+        promptpay_number: settingsMap.promptpay_number ?? '',
+        bank_name: settingsMap.bank_name ?? '',
+        bank_account_name: settingsMap.bank_account_name ?? '',
+        bank_account_number: settingsMap.bank_account_number ?? '',
+        payment_methods_enabled: [],
       }
     } catch {
       return Response.json({ error: 'Database error fetching site settings' }, { status: 500 })
+    }
+
+    // --- Verify chosen payment method is enabled ---
+    const provider = getProvider(data.payment_method)
+    if (!provider) {
+      return Response.json(
+        {
+          error: 'Validation failed',
+          details: [{ field: 'payment_method', message: `payment_method "${data.payment_method}" is not supported` }],
+        },
+        { status: 400 }
+      )
+    }
+    const enabledIds = new Set(listEnabledProviders(settingsMap).map((p) => p.id))
+    if (!enabledIds.has(provider.id)) {
+      return Response.json(
+        {
+          error: 'Validation failed',
+          details: [{ field: 'payment_method', message: `payment_method "${provider.id}" is currently disabled` }],
+        },
+        { status: 400 }
+      )
     }
 
     // --- Fetch price tiers for all items ---
@@ -368,9 +395,9 @@ export function registerCheckoutRoutes(router: RouterType) {
           shipping_address_line1, shipping_address_line2,
           district, province, postal_code,
           subtotal_thb, shipping_thb, discount_thb, total_thb,
-          status, idempotency_key, discount_code,
+          status, idempotency_key, discount_code, payment_method,
           created_at, updated_at
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'pending_payment', ?, ?, ?, ?)`
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'pending_payment', ?, ?, ?, ?, ?)`
       ).bind(
         orderId,
         sessionUser?.id ?? null,
@@ -388,6 +415,7 @@ export function registerCheckoutRoutes(router: RouterType) {
         total,
         data.idempotency_key,
         discountCodeRow ? discountCodeRow.code : null,
+        provider.id,
         now,
         now
       )
@@ -479,11 +507,18 @@ export function registerCheckoutRoutes(router: RouterType) {
       ).catch((err) => console.error('admin new order email failed:', err))
     )
 
-    // --- Build payment instructions ---
-    const totalTHB = (total / 100).toFixed(2)
-    const promptpayUrl = settings.promptpay_number
-      ? `https://promptpay.io/${settings.promptpay_number}/${totalTHB}.png`
-      : null
+    // --- Build payment intent via provider ---
+    let intent: PaymentIntent
+    try {
+      intent = await provider.createIntent({
+        order: { id: orderId, total_thb: total, customer_email: data.customer.email.toLowerCase().trim() },
+        settings: settingsMap,
+        env,
+      })
+    } catch (err) {
+      console.error('createIntent failed:', err)
+      return Response.json({ error: 'Failed to initialize payment' }, { status: 500 })
+    }
 
     return Response.json(
       {
@@ -492,20 +527,7 @@ export function registerCheckoutRoutes(router: RouterType) {
         shipping_thb: shipping,
         discount_thb: discountThb,
         total_thb: total,
-        payment_instructions: {
-          promptpay: promptpayUrl
-            ? {
-                number: settings.promptpay_number,
-                qr_url: promptpayUrl,
-              }
-            : null,
-          bank_transfer: {
-            bank_name: settings.bank_name,
-            account_name: settings.bank_account_name,
-            account_number: settings.bank_account_number,
-          },
-          amount_thb: totalTHB,
-        },
+        intent,
       },
       { status: 201 }
     )

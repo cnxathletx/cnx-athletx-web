@@ -1,4 +1,5 @@
 import { isValidEmail, isValidPhoneNumber, isValidProductSlug, isValidProductImageUrl } from './utils'
+import { getProvider } from '../services/payments/registry'
 import type {
   ValidationError,
   RequestLinkBody,
@@ -217,6 +218,12 @@ export function validateCheckoutBody(body: unknown): { errors: ValidationError[]
     if (typeof b.discount_code !== 'string') {
       errors.push({ field: 'discount_code', message: 'discount_code must be a string' })
     }
+  }
+
+  if (typeof b.payment_method !== 'string' || b.payment_method.trim() === '') {
+    errors.push({ field: 'payment_method', message: 'payment_method is required' })
+  } else if (!getProvider(b.payment_method)) {
+    errors.push({ field: 'payment_method', message: `payment_method "${b.payment_method}" is not supported` })
   }
 
   if (errors.length > 0) {

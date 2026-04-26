@@ -29,6 +29,7 @@ function validCheckoutBody(overrides: Record<string, unknown> = {}) {
         postal_code: '50200',
       },
     },
+    payment_method: 'promptpay',
     ...overrides,
   }
 }
@@ -191,6 +192,34 @@ describe('validateCheckoutBody', () => {
   it('rejects non-string discount_code', () => {
     const { errors } = validateCheckoutBody(validCheckoutBody({ discount_code: 123 }))
     expect(errors.some((e) => e.field === 'discount_code')).toBe(true)
+  })
+
+  it('accepts payment_method=promptpay', () => {
+    const { errors, data } = validateCheckoutBody(validCheckoutBody({ payment_method: 'promptpay' }))
+    expect(errors).toEqual([])
+    expect(data?.payment_method).toBe('promptpay')
+  })
+
+  it('accepts payment_method=bank_transfer', () => {
+    const { errors } = validateCheckoutBody(validCheckoutBody({ payment_method: 'bank_transfer' }))
+    expect(errors).toEqual([])
+  })
+
+  it('rejects when payment_method missing', () => {
+    const body = validCheckoutBody()
+    delete (body as Record<string, unknown>).payment_method
+    const { errors } = validateCheckoutBody(body)
+    expect(errors.some((e) => e.field === 'payment_method')).toBe(true)
+  })
+
+  it('rejects payment_method not in registry', () => {
+    const { errors } = validateCheckoutBody(validCheckoutBody({ payment_method: 'bitcoin' }))
+    expect(errors.some((e) => e.field === 'payment_method')).toBe(true)
+  })
+
+  it('rejects non-string payment_method', () => {
+    const { errors } = validateCheckoutBody(validCheckoutBody({ payment_method: 123 }))
+    expect(errors.some((e) => e.field === 'payment_method')).toBe(true)
   })
 })
 

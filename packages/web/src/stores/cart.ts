@@ -36,7 +36,7 @@ function writeNow(items: CartItem[]) {
   }
 }
 
-function flushSave() {
+export function flushSave() {
   if (saveTimer) {
     clearTimeout(saveTimer)
     saveTimer = null

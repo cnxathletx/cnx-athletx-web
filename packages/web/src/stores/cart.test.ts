@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest'
 import { setActivePinia, createPinia } from 'pinia'
-import { useCartStore, type CartItem } from './cart'
+import { useCartStore, flushSave, type CartItem } from './cart'
 
 function makeProduct(id = 1): Omit<CartItem, 'quantity'> {
   return {
@@ -87,6 +87,7 @@ describe('cart store', () => {
   it('persists to localStorage after add', () => {
     const cart = useCartStore()
     cart.addItem(makeProduct())
+    flushSave()
     const stored = JSON.parse(store['cnx-cart'])
     expect(stored).toHaveLength(1)
   })
@@ -146,6 +147,7 @@ describe('cart store', () => {
     cart.addItem(makeProduct(1))
     cart.addItem(makeProduct(2))
     cart.clearCart()
+    flushSave()
     expect(cart.items).toHaveLength(0)
     expect(store['cnx-cart']).toBe('[]')
   })

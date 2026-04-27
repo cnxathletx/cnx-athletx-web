@@ -114,7 +114,7 @@ function decrement(productId: number, current: number) {
                   {{ formatPrice(item.priceSatang) }}
                 </span>
                 <span v-else class="text-muted">{{ formatPrice(item.priceSatang) }}</span>
-                <span class="text-muted"> {{ t('common.each') }}</span>
+                <span class="ml-1 text-muted">{{ t('common.each') }}</span>
               </p>
               <p
                 v-if="unitPriceFor(item) < item.priceSatang"

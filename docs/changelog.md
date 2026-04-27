@@ -42,6 +42,7 @@ Everything below is in-flight on `main` and has not been cut into a versioned re
 - **Rate limiting**: per-IP and global limits on public write endpoints (checkout, payment-proof, magic-link, chat, reviews) (`3482e70`).
 
 ### Fixed
+- Cart link (and other lazy-route navigations) silently no-oped after a deploy on Safari: stale `index.html` from cache referenced removed chunk hashes, the auto-reload re-served the same cached HTML, and the one-shot session flag suppressed all further attempts. `_headers` now sends `Cache-Control: no-cache` for `/` and `/index.html`, the chunk-reload regex catches Firefox's wording too, the recovery uses a 10s timestamp throttle (instead of a one-shot flag) and appends `?_r=<ts>` to bypass the HTML cache.
 - Roll back inventory reservations and discount usage counter when order insert batch fails, preventing inflated `reserved_count` / `used_count` after concurrent idempotency-key collisions (`62c5f01`).
 - SEO worker regex now uses ` ` / ` ` escapes in literals so Workers' regex parser accepts them (`3684c9a`).
 - Hide filename in lab tests overlay caption on product detail (`c80371e`).

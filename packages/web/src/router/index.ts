@@ -153,17 +153,20 @@ const router = createRouter({
 
 router.onError((error, to) => {
   const message = error instanceof Error ? error.message : String(error)
-  if (/Failed to fetch dynamically imported module|Importing a module script failed/i.test(message)) {
-    const key = 'cnx-chunk-reload'
-    if (!sessionStorage.getItem(key)) {
-      sessionStorage.setItem(key, '1')
-      window.location.assign(to.fullPath)
-    }
-  }
-})
+  const isChunkError =
+    /Failed to fetch dynamically imported module|Importing a module script failed|error loading dynamically imported module|Loading chunk|ChunkLoadError/i.test(
+      message,
+    )
+  if (!isChunkError) return
 
-router.afterEach(() => {
-  sessionStorage.removeItem('cnx-chunk-reload')
+  const key = 'cnx-chunk-reload-at'
+  const last = Number(sessionStorage.getItem(key) ?? '0')
+  if (Date.now() - last < 10_000) return
+
+  sessionStorage.setItem(key, String(Date.now()))
+  const url = new URL(to.fullPath, window.location.origin)
+  url.searchParams.set('_r', String(Date.now()))
+  window.location.assign(url.pathname + url.search + url.hash)
 })
 
 router.beforeEach(async (to) => {

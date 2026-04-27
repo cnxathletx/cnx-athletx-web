@@ -1,5 +1,6 @@
 import type { Env } from '../lib/types'
 import { nowIso, escapeHtml } from '../lib/utils'
+import type { InstructionsBlock } from './payments/types'
 
 const RESEND_TIMEOUT_MS = 5000
 
@@ -167,6 +168,35 @@ export function orderTotalsHtml(order: OrderEmailData): string {
   </table>`
 
   return html
+}
+
+export function renderInstructionsHtml(block: InstructionsBlock): string {
+  const rows = block.rows
+    .map((r) => {
+      const valueStyle = r.mono ? ' style="font-family: monospace;"' : ''
+      return `<p style="margin: 8px 0 4px; font-size: 14px;"><strong>${escapeHtml(r.label)}:</strong> <span${valueStyle}>${escapeHtml(r.value)}</span></p>`
+    })
+    .join('')
+
+  const qr = block.qrImageUrl
+    ? `<p style="margin: 12px 0; text-align: center;"><img src="${block.qrImageUrl}" alt="PromptPay QR" style="display: inline-block; max-width: 220px; height: auto; border: 0;"></p>`
+    : ''
+
+  const cta = block.ctaUrl && block.ctaLabel
+    ? `<p style="text-align: center; margin: 18px 0 6px;"><a href="${block.ctaUrl}" style="display: inline-block; background-color: #8B9A7B; color: #ffffff; padding: 12px 28px; text-decoration: none; border-radius: 6px; font-weight: 600;">${escapeHtml(block.ctaLabel)}</a></p>`
+    : ''
+
+  const footnote = block.footnote
+    ? `<p style="margin: 12px 0 0; font-size: 13px; color: #555;">${escapeHtml(block.footnote)}</p>`
+    : ''
+
+  return `<div style="background: #F2EDE4; border-radius: 8px; padding: 20px; margin: 24px 0;">
+    <h3 style="margin: 0 0 12px; font-size: 16px; color: #2E2B26;">${escapeHtml(block.title)}</h3>
+    ${rows}
+    ${qr}
+    ${cta}
+    ${footnote}
+  </div>`
 }
 
 export function buildOrderCreatedEmail(order: OrderEmailData, payment: PaymentInstructions): string {

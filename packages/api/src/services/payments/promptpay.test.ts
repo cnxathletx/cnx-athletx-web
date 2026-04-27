@@ -46,4 +46,38 @@ describe('promptpayProvider', () => {
       })
     ).rejects.toThrow(/promptpay_number/)
   })
+
+  it('requiredSettingKeys lists promptpay_number', () => {
+    expect(promptpayProvider.requiredSettingKeys).toEqual(['promptpay_number'])
+  })
+
+  it('renderInstructions returns null when promptpay_number missing', () => {
+    expect(
+      promptpayProvider.renderInstructions({
+        order: { id: 'O1', total_thb: 100, customer_email: 'a@b.co' },
+        settings: {},
+      })
+    ).toBeNull()
+    expect(
+      promptpayProvider.renderInstructions({
+        order: { id: 'O1', total_thb: 100, customer_email: 'a@b.co' },
+        settings: { promptpay_number: '   ' },
+      })
+    ).toBeNull()
+  })
+
+  it('renderInstructions returns block with rows, qrImageUrl, footnote', () => {
+    const block = promptpayProvider.renderInstructions({
+      order: { id: 'O1', total_thb: 169900, customer_email: 'a@b.co' },
+      settings: { promptpay_number: '0812345678' },
+    })
+    expect(block).not.toBeNull()
+    expect(block!.title).toBe('Payment Details')
+    expect(block!.rows).toEqual([
+      { label: 'Amount', value: '฿1,699.00' },
+      { label: 'PromptPay', value: '0812345678' },
+    ])
+    expect(block!.qrImageUrl).toBe('https://promptpay.io/0812345678/1699.00.png')
+    expect(block!.footnote).toMatch(/order ID/i)
+  })
 })

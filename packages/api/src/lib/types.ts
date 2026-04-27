@@ -125,11 +125,6 @@ export interface ProductRow {
 export interface SiteSettings {
   shipping_flat_rate: number
   shipping_free_threshold: number
-  promptpay_number: string
-  bank_name: string
-  bank_account_name: string
-  bank_account_number: string
-  payment_methods_enabled: string[]
 }
 
 export interface DiscountCodeRow {

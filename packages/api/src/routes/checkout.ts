@@ -153,11 +153,7 @@ export function registerCheckoutRoutes(router: RouterType) {
     let settingsMap: SiteSettingsMap
     try {
       const { results } = await env.DB.prepare(
-        `SELECT key, value FROM site_settings WHERE key IN (
-          'shipping_flat_rate', 'shipping_free_threshold',
-          'promptpay_number', 'bank_name', 'bank_account_name', 'bank_account_number',
-          'payment_methods_enabled'
-        )`
+        `SELECT key, value FROM site_settings`
       ).all<{ key: string; value: string }>()
 
       settingsMap = {}
@@ -168,11 +164,6 @@ export function registerCheckoutRoutes(router: RouterType) {
       settings = {
         shipping_flat_rate: parseInt(settingsMap.shipping_flat_rate ?? '10000', 10),
         shipping_free_threshold: parseInt(settingsMap.shipping_free_threshold ?? '0', 10),
-        promptpay_number: settingsMap.promptpay_number ?? '',
-        bank_name: settingsMap.bank_name ?? '',
-        bank_account_name: settingsMap.bank_account_name ?? '',
-        bank_account_number: settingsMap.bank_account_number ?? '',
-        payment_methods_enabled: [],
       }
     } catch {
       return Response.json({ error: 'Database error fetching site settings' }, { status: 500 })
@@ -480,15 +471,15 @@ export function registerCheckoutRoutes(router: RouterType) {
       total_thb: total,
     }
 
+    const instructions = provider.renderInstructions({
+      order: { id: orderId, total_thb: total, customer_email: data.customer.email.toLowerCase().trim() },
+      settings: settingsMap,
+    })
+
     ctx.waitUntil(
-      sendOrderEmail(env, 'order_created', orderEmailData, {
-        payment: {
-          promptpay_number: settings.promptpay_number,
-          bank_name: settings.bank_name,
-          bank_account_name: settings.bank_account_name,
-          bank_account_number: settings.bank_account_number,
-        },
-      }).catch((err) => console.error('order_created email failed:', err))
+      sendOrderEmail(env, 'order_created', orderEmailData, { instructions }).catch((err) =>
+        console.error('order_created email failed:', err)
+      )
     )
 
     // --- Notify admin (fire-and-forget) ---

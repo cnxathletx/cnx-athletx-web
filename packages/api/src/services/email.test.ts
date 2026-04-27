@@ -14,7 +14,8 @@ import {
   buildReviewPromptEmail,
   renderInstructionsHtml,
 } from './email'
-import type { OrderEmailData, PaymentInstructions, ShipmentData, EmailItem } from './email'
+import type { OrderEmailData, ShipmentData, EmailItem } from './email'
+import type { InstructionsBlock } from './payments/types'
 
 // --- Helpers ---
 
@@ -35,12 +36,29 @@ function makeOrderData(overrides: Partial<OrderEmailData> = {}): OrderEmailData 
   }
 }
 
-function makePayment(overrides: Partial<PaymentInstructions> = {}): PaymentInstructions {
+function makePromptPayBlock(overrides: Partial<InstructionsBlock> = {}): InstructionsBlock {
   return {
-    promptpay_number: '0812345678',
-    bank_name: 'Bangkok Bank',
-    bank_account_name: 'CNX AthletX Co Ltd',
-    bank_account_number: '123-456-7890',
+    title: 'Payment Details',
+    rows: [
+      { label: 'Amount', value: '฿3,347.00' },
+      { label: 'PromptPay', value: '0812345678' },
+    ],
+    qrImageUrl: 'https://promptpay.io/0812345678/3347.00.png',
+    footnote: 'Please use your order ID as the transfer reference.',
+    ...overrides,
+  }
+}
+
+function makeBankBlock(overrides: Partial<InstructionsBlock> = {}): InstructionsBlock {
+  return {
+    title: 'Payment Details',
+    rows: [
+      { label: 'Amount', value: '฿3,347.00' },
+      { label: 'Bank', value: 'Bangkok Bank' },
+      { label: 'Account Name', value: 'CNX AthletX Co Ltd' },
+      { label: 'Account Number', value: '123-456-7890' },
+    ],
+    footnote: 'Please use your order ID as the transfer reference.',
     ...overrides,
   }
 }
@@ -155,46 +173,43 @@ describe('orderTotalsHtml', () => {
 
 describe('buildOrderCreatedEmail', () => {
   it('contains order ID and customer name', () => {
-    const html = buildOrderCreatedEmail(makeOrderData(), makePayment())
+    const html = buildOrderCreatedEmail(makeOrderData(), makePromptPayBlock())
     expect(html).toContain('ORD-TEST-001')
     expect(html).toContain('John Doe')
     expect(html).toContain('Order Confirmed')
   })
 
-  it('includes PromptPay number', () => {
-    const html = buildOrderCreatedEmail(makeOrderData(), makePayment())
+  it('includes PromptPay row from instructions block', () => {
+    const html = buildOrderCreatedEmail(makeOrderData(), makePromptPayBlock())
     expect(html).toContain('PromptPay')
     expect(html).toContain('0812345678')
   })
 
-  it('includes bank details', () => {
-    const html = buildOrderCreatedEmail(makeOrderData(), makePayment())
+  it('includes bank rows from instructions block', () => {
+    const html = buildOrderCreatedEmail(makeOrderData(), makeBankBlock())
     expect(html).toContain('Bangkok Bank')
     expect(html).toContain('CNX AthletX Co Ltd')
     expect(html).toContain('123-456-7890')
   })
 
-  it('omits PromptPay section when empty', () => {
-    const html = buildOrderCreatedEmail(makeOrderData(), makePayment({ promptpay_number: '' }))
+  it('omits payment block entirely when instructions is null', () => {
+    const html = buildOrderCreatedEmail(makeOrderData(), null)
     expect(html).not.toContain('PromptPay')
-  })
-
-  it('omits bank section when empty', () => {
-    const html = buildOrderCreatedEmail(makeOrderData(), makePayment({ bank_name: '' }))
-    expect(html).not.toContain('Account Number')
+    expect(html).not.toContain('Bangkok Bank')
+    expect(html).not.toContain('Payment Details')
   })
 
   it('escapes HTML in customer name', () => {
     const html = buildOrderCreatedEmail(
       makeOrderData({ customer_name: '<img src=x onerror=alert(1)>' }),
-      makePayment()
+      makePromptPayBlock()
     )
     expect(html).not.toContain('<img src=x')
     expect(html).toContain('&lt;img src=x onerror=alert(1)&gt;')
   })
 
   it('includes items table and totals', () => {
-    const html = buildOrderCreatedEmail(makeOrderData(), makePayment())
+    const html = buildOrderCreatedEmail(makeOrderData(), makePromptPayBlock())
     expect(html).toContain('Protein 500g')
     expect(html).toContain('Subtotal')
   })

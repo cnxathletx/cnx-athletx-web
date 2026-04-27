@@ -52,4 +52,40 @@ describe('bankTransferProvider', () => {
       })
     ).rejects.toThrow(/bank/i)
   })
+
+  it('requiredSettingKeys lists the three bank fields', () => {
+    expect(bankTransferProvider.requiredSettingKeys).toEqual([
+      'bank_name', 'bank_account_name', 'bank_account_number',
+    ])
+  })
+
+  it('renderInstructions returns null when any field missing', () => {
+    expect(
+      bankTransferProvider.renderInstructions({
+        order: { id: 'O1', total_thb: 100, customer_email: 'a@b.co' },
+        settings: { bank_name: 'Kasikorn', bank_account_name: 'CNX' },
+      })
+    ).toBeNull()
+  })
+
+  it('renderInstructions returns block with all bank rows and footnote', () => {
+    const block = bankTransferProvider.renderInstructions({
+      order: { id: 'O1', total_thb: 169900, customer_email: 'a@b.co' },
+      settings: {
+        bank_name: 'Kasikorn',
+        bank_account_name: 'CNX AthletX Co., Ltd.',
+        bank_account_number: '123-4-56789-0',
+      },
+    })
+    expect(block).not.toBeNull()
+    expect(block!.title).toBe('Payment Details')
+    expect(block!.rows).toEqual([
+      { label: 'Amount', value: '฿1,699.00' },
+      { label: 'Bank', value: 'Kasikorn' },
+      { label: 'Account Name', value: 'CNX AthletX Co., Ltd.' },
+      { label: 'Account Number', value: '123-4-56789-0' },
+    ])
+    expect(block!.qrImageUrl).toBeUndefined()
+    expect(block!.footnote).toMatch(/order ID/i)
+  })
 })

@@ -1,12 +1,18 @@
 import type { PaymentProvider } from './types'
 
+const REQUIRED = ['promptpay_number'] as const
+
+function formatThbAmount(satang: number): string {
+  return `฿${(satang / 100).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
+}
+
 export const promptpayProvider: PaymentProvider = {
   id: 'promptpay',
   displayName: { en: 'PromptPay', th: 'พร้อมเพย์' },
+  requiredSettingKeys: REQUIRED,
 
   isEnabled(settings) {
-    const num = settings.promptpay_number
-    return typeof num === 'string' && num.trim() !== ''
+    return REQUIRED.every((k) => typeof settings[k] === 'string' && settings[k].trim() !== '')
   },
 
   async createIntent({ order, settings }) {
@@ -23,6 +29,21 @@ export const promptpayProvider: PaymentProvider = {
         amount_thb: amountThb,
         qr_url: `https://promptpay.io/${num}/${amountThb}.png`,
       },
+    }
+  },
+
+  renderInstructions({ order, settings }) {
+    const num = settings.promptpay_number
+    if (!num || num.trim() === '') return null
+    const amountThb = (order.total_thb / 100).toFixed(2)
+    return {
+      title: 'Payment Details',
+      rows: [
+        { label: 'Amount', value: formatThbAmount(order.total_thb) },
+        { label: 'PromptPay', value: num },
+      ],
+      qrImageUrl: `https://promptpay.io/${num}/${amountThb}.png`,
+      footnote: 'Please use your order ID as the transfer reference.',
     }
   },
 }

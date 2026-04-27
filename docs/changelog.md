@@ -24,6 +24,7 @@ Everything below is in-flight on `main` and has not been cut into a versioned re
 - **Payments schema**: new `provider`, `provider_txn_id`, `status`, `payload_json` columns. `payments.method` CHECK constraint dropped (registry handles validation).
 - **`POST /api/checkout`** now requires `payment_method` and returns a discriminated `intent` object instead of the fixed `payment_instructions` shape.
 - **Migration `0009_payment_providers.sql`**: backfills `orders.payment_method` from existing `payments.method` rows; seeds `payment_methods_enabled = '["promptpay","bank_transfer"]'`.
+- **API**: payment provider abstraction now owns email-instruction rendering. Each `PaymentProvider` declares `requiredSettingKeys` and a `renderInstructions(order, settings)` method; checkout no longer reads PromptPay/bank settings directly and the order-confirmed email no longer hardcodes payment HTML. Adding a new gateway no longer requires touching `routes/checkout.ts` or `services/email.ts`.
 
 ### Storefront
 - **Storefront**: product catalog, product detail with image lightbox, cart, checkout, order tracking pages.

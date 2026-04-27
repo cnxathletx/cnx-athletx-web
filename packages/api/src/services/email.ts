@@ -1,5 +1,6 @@
 import type { Env } from '../lib/types'
 import { nowIso, escapeHtml } from '../lib/utils'
+import type { InstructionsBlock } from './payments/types'
 
 const RESEND_TIMEOUT_MS = 5000
 
@@ -28,13 +29,6 @@ export interface OrderEmailData {
   shipping_thb: number
   discount_thb: number
   total_thb: number
-}
-
-export interface PaymentInstructions {
-  promptpay_number: string
-  bank_name: string
-  bank_account_name: string
-  bank_account_number: string
 }
 
 export interface ShipmentData {
@@ -169,23 +163,37 @@ export function orderTotalsHtml(order: OrderEmailData): string {
   return html
 }
 
-export function buildOrderCreatedEmail(order: OrderEmailData, payment: PaymentInstructions): string {
-  let paymentHtml = `<div style="background: #F2EDE4; border-radius: 8px; padding: 20px; margin: 24px 0;">
-    <h3 style="margin: 0 0 12px; font-size: 16px; color: #2E2B26;">Payment Details</h3>
-    <p style="margin: 0 0 4px; font-size: 14px;"><strong>Amount:</strong> ${formatThb(order.total_thb)}</p>`
+export function renderInstructionsHtml(block: InstructionsBlock): string {
+  const rows = block.rows
+    .map((r) => {
+      const valueStyle = r.mono ? ' style="font-family: monospace;"' : ''
+      return `<p style="margin: 8px 0 4px; font-size: 14px;"><strong>${escapeHtml(r.label)}:</strong> <span${valueStyle}>${escapeHtml(r.value)}</span></p>`
+    })
+    .join('')
 
-  if (payment.promptpay_number) {
-    paymentHtml += `<p style="margin: 8px 0 4px; font-size: 14px;"><strong>PromptPay:</strong> ${escapeHtml(payment.promptpay_number)}</p>`
-  }
+  const qr = block.qrImageUrl
+    ? `<p style="margin: 12px 0; text-align: center;"><img src="${block.qrImageUrl}" alt="PromptPay QR" style="display: inline-block; max-width: 220px; height: auto; border: 0;"></p>`
+    : ''
 
-  if (payment.bank_name) {
-    paymentHtml += `<p style="margin: 8px 0 4px; font-size: 14px;"><strong>Bank:</strong> ${escapeHtml(payment.bank_name)}</p>
-    <p style="margin: 0 0 4px; font-size: 14px;"><strong>Account Name:</strong> ${escapeHtml(payment.bank_account_name)}</p>
-    <p style="margin: 0 0 4px; font-size: 14px;"><strong>Account Number:</strong> ${escapeHtml(payment.bank_account_number)}</p>`
-  }
+  const cta = block.ctaUrl && block.ctaLabel
+    ? `<p style="text-align: center; margin: 18px 0 6px;"><a href="${block.ctaUrl}" style="display: inline-block; background-color: #8B9A7B; color: #ffffff; padding: 12px 28px; text-decoration: none; border-radius: 6px; font-weight: 600;">${escapeHtml(block.ctaLabel)}</a></p>`
+    : ''
 
-  paymentHtml += `<p style="margin: 12px 0 0; font-size: 13px; color: #555;">Please use your order ID as the transfer reference.</p>
+  const footnote = block.footnote
+    ? `<p style="margin: 12px 0 0; font-size: 13px; color: #555;">${escapeHtml(block.footnote)}</p>`
+    : ''
+
+  return `<div style="background: #F2EDE4; border-radius: 8px; padding: 20px; margin: 24px 0;">
+    <h3 style="margin: 0 0 12px; font-size: 16px; color: #2E2B26;">${escapeHtml(block.title)}</h3>
+    ${rows}
+    ${qr}
+    ${cta}
+    ${footnote}
   </div>`
+}
+
+export function buildOrderCreatedEmail(order: OrderEmailData, instructions: InstructionsBlock | null): string {
+  const paymentHtml = instructions ? renderInstructionsHtml(instructions) : ''
 
   const body = `<h2 style="margin: 0 0 8px; font-size: 20px; color: #2E2B26;">Order Confirmed</h2>
     <p style="margin: 0 0 20px; font-size: 15px; color: #555;">Hi ${escapeHtml(order.customer_name)}, thank you for your order.</p>
@@ -380,7 +388,7 @@ export async function sendOrderEmail(
   env: Env,
   event: 'order_created' | 'payment_confirmed' | 'order_shipped' | 'order_cancelled' | 'payment_failed' | 'payment_refunded',
   order: OrderEmailData,
-  extra?: { payment?: PaymentInstructions; shipment?: ShipmentData }
+  extra?: { instructions?: InstructionsBlock | null; shipment?: ShipmentData }
 ): Promise<void> {
   try {
     let subject: string
@@ -389,7 +397,7 @@ export async function sendOrderEmail(
     switch (event) {
       case 'order_created':
         subject = `Order Confirmed — ${order.order_id}`
-        html = buildOrderCreatedEmail(order, extra!.payment!)
+        html = buildOrderCreatedEmail(order, extra?.instructions ?? null)
         break
       case 'payment_confirmed':
         subject = `Payment Confirmed — ${order.order_id}`

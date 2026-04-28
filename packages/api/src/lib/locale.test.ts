@@ -39,6 +39,10 @@ describe('parseAcceptLanguage', () => {
   it('treats malformed q values as default 1.0', () => {
     expect(parseAcceptLanguage('th;q=garbage,en')).toBe('th')
   })
+
+  it('treats q=0 as not-acceptable', () => {
+    expect(parseAcceptLanguage('th;q=0')).toBe('en')
+  })
 })
 
 describe('resolveQueryLocale', () => {

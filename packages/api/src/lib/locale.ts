@@ -39,7 +39,8 @@ export function parseAcceptLanguage(header: string | null | undefined): Locale {
 
   ranked.sort((a, b) => b.q - a.q)
 
-  for (const { tag } of ranked) {
+  for (const { tag, q } of ranked) {
+    if (q <= 0) continue
     const primary = tag.split('-')[0]
     if (SUPPORTED_SET.has(primary)) return primary as Locale
   }

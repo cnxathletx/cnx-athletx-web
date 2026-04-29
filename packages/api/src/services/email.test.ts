@@ -32,6 +32,7 @@ function makeOrderData(overrides: Partial<OrderEmailData> = {}): OrderEmailData 
     shipping_thb: 5000,
     discount_thb: 0,
     total_thb: 334700,
+    locale: 'en',
     ...overrides,
   }
 }

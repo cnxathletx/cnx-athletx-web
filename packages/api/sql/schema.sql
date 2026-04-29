@@ -159,6 +159,7 @@ CREATE TABLE IF NOT EXISTS orders (
     discount_thb INTEGER NOT NULL DEFAULT 0,
     total_thb INTEGER NOT NULL,
     status TEXT NOT NULL DEFAULT 'pending_payment',
+    locale TEXT NOT NULL DEFAULT 'en' CHECK (locale IN ('en','th')),
     idempotency_key TEXT NOT NULL UNIQUE,
     discount_code TEXT,
     payment_method TEXT,

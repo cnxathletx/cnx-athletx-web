@@ -14,7 +14,7 @@ export function registerOrderRoutes(router: RouterType) {
 
     try {
       const order = await env.DB.prepare(
-        `SELECT id, status, subtotal_thb, shipping_thb, discount_thb, total_thb, created_at
+        `SELECT id, status, subtotal_thb, shipping_thb, discount_thb, total_thb, locale, created_at
          FROM orders WHERE id = ? LIMIT 1`
       )
         .bind(id.toUpperCase())
@@ -59,6 +59,7 @@ export function registerOrderRoutes(router: RouterType) {
           shipping_thb: order.shipping_thb,
           discount_thb: order.discount_thb,
           total_thb: order.total_thb,
+          locale: order.locale,
           created_at: order.created_at,
           items: items.map((item) => ({
             product_name: item.product_name,

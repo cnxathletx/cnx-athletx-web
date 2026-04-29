@@ -305,6 +305,7 @@ export function registerCheckoutRoutes(router: RouterType) {
     // --- Generate order ID ---
     const orderId = generateULID()
     const now = new Date().toISOString()
+    const orderLocale: 'en' | 'th' = data.locale === 'th' ? 'th' : 'en'
 
     // --- Phase 1: Reserve inventory with conditional updates ---
     const reserveStatements: D1PreparedStatement[] = []
@@ -386,9 +387,9 @@ export function registerCheckoutRoutes(router: RouterType) {
           shipping_address_line1, shipping_address_line2,
           district, province, postal_code,
           subtotal_thb, shipping_thb, discount_thb, total_thb,
-          status, idempotency_key, discount_code, payment_method,
+          status, locale, idempotency_key, discount_code, payment_method,
           created_at, updated_at
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'pending_payment', ?, ?, ?, ?, ?)`
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'pending_payment', ?, ?, ?, ?, ?, ?)`
       ).bind(
         orderId,
         sessionUser?.id ?? null,
@@ -404,6 +405,7 @@ export function registerCheckoutRoutes(router: RouterType) {
         shipping,
         discountThb,
         total,
+        orderLocale,
         data.idempotency_key,
         discountCodeRow ? discountCodeRow.code : null,
         provider.id,
@@ -469,6 +471,7 @@ export function registerCheckoutRoutes(router: RouterType) {
       shipping_thb: shipping,
       discount_thb: discountThb,
       total_thb: total,
+      locale: orderLocale,
     }
 
     const instructions = provider.renderInstructions({

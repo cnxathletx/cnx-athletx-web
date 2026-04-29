@@ -1,5 +1,6 @@
 import type { RouterType } from 'itty-router'
 import type { Env, ProductImageRow, PriceTierRow, LabTestFileRow, LabTestContentType } from '../lib/types'
+import { resolveQueryLocale, type Locale } from '../lib/locale'
 
 interface PublicProductRow {
   id: number
@@ -37,16 +38,6 @@ interface RelatedProductRow {
   image_url: string
   available_stock: number
   product_translations_json: string | null
-}
-
-const SUPPORTED_LOCALES = ['en', 'th'] as const
-type Locale = (typeof SUPPORTED_LOCALES)[number]
-
-function resolveLocale(request: Request): Locale {
-  const url = new URL(request.url)
-  const raw = (url.searchParams.get('locale') || '').toLowerCase()
-  if ((SUPPORTED_LOCALES as readonly string[]).includes(raw)) return raw as Locale
-  return 'en'
 }
 
 function pickLocaleEntry(raw: string | null, locale: Locale): Record<string, string> | null {
@@ -184,7 +175,7 @@ async function loadScreenshotsByProductIds(env: Env, productIds: number[]) {
 export function registerProductRoutes(router: RouterType) {
   router.get('/api/products', async (request: Request, env: Env) => {
     try {
-      const locale = resolveLocale(request)
+      const locale = resolveQueryLocale(new URL(request.url).searchParams.get('locale'))
       const { results } = await env.DB.prepare(
         `SELECT p.id, p.slug, p.name, p.description, p.price_thb, p.weight_g, p.image_url,
                 (i.stock_count - i.reserved_count) AS available_stock,
@@ -233,7 +224,7 @@ export function registerProductRoutes(router: RouterType) {
       return Response.json({ error: 'Invalid slug format' }, { status: 400 })
     }
 
-    const locale = resolveLocale(request)
+    const locale = resolveQueryLocale(new URL(request.url).searchParams.get('locale'))
 
     try {
       const product = await env.DB.prepare(

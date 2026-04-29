@@ -219,6 +219,38 @@ describe('POST /api/checkout', () => {
     const orderJson = await orderRes.json() as { order: { payment_method?: string } }
     expect(orderJson.order.payment_method).toBe('bank_transfer')
   })
+
+  it('persists locale=th when present in body', async () => {
+    const res = await workerFetch('/api/checkout', {
+      body: checkoutBody({ locale: 'th' }),
+    })
+    expect(res.status).toBe(201)
+
+    const data = await res.json() as { order_id: string }
+    const orderRes = await workerFetch(`/api/admin/orders/${data.order_id}`, { admin: true })
+    const orderJson = await orderRes.json() as { order: { locale?: string } }
+    expect(orderJson.order.locale).toBe('th')
+  })
+
+  it('defaults locale to en when omitted', async () => {
+    const res = await workerFetch('/api/checkout', { body: checkoutBody() })
+    expect(res.status).toBe(201)
+
+    const data = await res.json() as { order_id: string }
+    const orderRes = await workerFetch(`/api/admin/orders/${data.order_id}`, { admin: true })
+    const orderJson = await orderRes.json() as { order: { locale?: string } }
+    expect(orderJson.order.locale).toBe('en')
+  })
+
+  it('rejects invalid locale value', async () => {
+    const res = await workerFetch('/api/checkout', {
+      body: checkoutBody({ locale: 'fr' }),
+    })
+    expect(res.status).toBe(400)
+
+    const data = await res.json() as { details: Array<{ field: string }> }
+    expect(data.details).toContainEqual(expect.objectContaining({ field: 'locale' }))
+  })
 })
 
 describe('POST /api/orders/:id/payment-proof', () => {

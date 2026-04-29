@@ -221,6 +221,17 @@ describe('validateCheckoutBody', () => {
     const { errors } = validateCheckoutBody(validCheckoutBody({ payment_method: 123 }))
     expect(errors.some((e) => e.field === 'payment_method')).toBe(true)
   })
+
+  it('accepts optional locale=th', () => {
+    const { errors, data } = validateCheckoutBody(validCheckoutBody({ locale: 'th' }))
+    expect(errors).toEqual([])
+    expect(data?.locale).toBe('th')
+  })
+
+  it('rejects unsupported locale', () => {
+    const { errors } = validateCheckoutBody(validCheckoutBody({ locale: 'fr' }))
+    expect(errors).toContainEqual(expect.objectContaining({ field: 'locale' }))
+  })
 })
 
 // --- validatePaymentProofBody ---

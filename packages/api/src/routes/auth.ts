@@ -6,6 +6,7 @@ import { getSessionUser, buildSessionCookie, clearSessionCookie, parseCookie, pa
 import { enforceLimit, enforceGlobalLimit, getClientIp, rateLimitedResponse } from '../middleware/rate-limit'
 import { sendMagicLinkEmail } from '../services/email'
 import { generateULID } from '../lib/ulid'
+import { parseAcceptLanguage } from '../lib/locale'
 
 const MAGIC_LINK_EXPIRY_MINUTES = 15
 const MAGIC_LINK_RATE_LIMIT_MAX = 3
@@ -74,7 +75,8 @@ export function registerAuthRoutes(router: RouterType) {
       const appOrigin = callerOrigin && allowedOrigins.includes(callerOrigin) ? callerOrigin : fallbackOrigin
       const magicLinkUrl = `${appOrigin}/auth/verify?token=${token}`
 
-      await sendMagicLinkEmail(env, data.email, magicLinkUrl, MAGIC_LINK_EXPIRY_MINUTES)
+      const locale = parseAcceptLanguage(request.headers.get('Accept-Language'))
+      await sendMagicLinkEmail(env, data.email, magicLinkUrl, MAGIC_LINK_EXPIRY_MINUTES, locale)
 
       const responseBody: { success: boolean; message: string; dev_magic_link?: string } = {
         success: true,

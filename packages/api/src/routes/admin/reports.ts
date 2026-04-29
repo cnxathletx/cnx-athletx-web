@@ -1,5 +1,6 @@
 import type { RouterType } from 'itty-router'
 import type { Env } from '../../lib/types'
+import { REVENUE_ORDER_STATUSES, orderStatusSqlList } from '../../lib/orderStatus'
 import { requireAdmin } from '../../middleware/auth'
 
 interface IncomeRow {
@@ -31,6 +32,8 @@ export function registerAdminReportRoutes(router: RouterType) {
     const endDate = `${nextYear}-${nextMonthStr}-01T00:00:00.000Z`
 
     try {
+      const revenueStatusesSql = orderStatusSqlList(REVENUE_ORDER_STATUSES)
+
       // Revenue by product (only completed orders: paid, packed, shipped, delivered)
       const { results: productRows } = await env.DB.prepare(
         `SELECT p.name AS product_name,
@@ -40,7 +43,7 @@ export function registerAdminReportRoutes(router: RouterType) {
          JOIN order_items oi ON oi.order_id = o.id
          JOIN products p ON p.id = oi.product_id
          WHERE o.created_at >= ? AND o.created_at < ?
-           AND o.status IN ('paid', 'packed', 'shipped', 'delivered')
+           AND o.status IN ${revenueStatusesSql}
          GROUP BY p.id, p.name
          ORDER BY total_revenue DESC`
       )
@@ -53,7 +56,7 @@ export function registerAdminReportRoutes(router: RouterType) {
                 COUNT(*) AS total_orders
          FROM orders
          WHERE created_at >= ? AND created_at < ?
-           AND status IN ('paid', 'packed', 'shipped', 'delivered')`
+           AND status IN ${revenueStatusesSql}`
       )
         .bind(startDate, endDate)
         .first<MonthlyTotalRow>()

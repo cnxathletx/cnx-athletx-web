@@ -1,3 +1,5 @@
+import type { OrderStatus, WebhookOrderOutcome } from './orderStatus'
+
 export interface Env {
   DB: D1Database
   PRODUCT_IMAGES: R2Bucket
@@ -68,7 +70,7 @@ export interface UpdateProfileBody {
 
 export interface AccountOrderRow {
   id: string
-  status: string
+  status: OrderStatus
   total_thb: number
   created_at: string
   items_count: number
@@ -153,14 +155,14 @@ export interface PaymentProofBody {
 }
 
 export interface OrderStatusOnlyRow {
-  status: string
+  status: OrderStatus
 }
 
 // --- Order detail types ---
 
 export interface OrderRow {
   id: string
-  status: string
+  status: OrderStatus
   subtotal_thb: number
   shipping_thb: number
   discount_thb: number
@@ -191,7 +193,7 @@ export interface PaymentProofRow {
 
 export interface AdminOrderDetailRow {
   id: string
-  status: string
+  status: OrderStatus
   customer_name: string
   customer_email: string
   customer_phone: string
@@ -216,7 +218,7 @@ export interface AdminPaymentProofRow extends PaymentProofRow {
 
 export interface AdminOrderListRow {
   id: string
-  status: string
+  status: OrderStatus
   customer_name: string
   total_thb: number
   created_at: string
@@ -615,7 +617,7 @@ export type PaymentIntent =
   | { kind: 'redirect'; provider: ProviderId; url: string; expires_at?: string }
   | { kind: 'sdk'; provider: ProviderId; client_token: string; provider_data: unknown }
 
-export type WebhookOutcome = 'paid' | 'failed' | 'refunded'
+export type WebhookOutcome = WebhookOrderOutcome
 
 export type WebhookResult =
   | { ok: true; order_id: string; provider_txn_id: string; status: WebhookOutcome; raw: unknown }

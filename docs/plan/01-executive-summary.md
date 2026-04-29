@@ -1,6 +1,6 @@
 # CNX AthletX — Executive Summary
 
-Last updated: 2026-04-17
+Last updated: 2026-04-29
 
 ## Current Status
 
@@ -15,6 +15,7 @@ The current product supports:
 - Passwordless customer accounts with magic links, order history, and saved address support
 - Admin operations for orders, inventory, products, product lines, discounts, site settings, support chat, and income reporting
 - Transactional email flows through Resend
+- Centralized order status rules for admin transitions, payment webhooks, reporting, review eligibility, and payment-proof eligibility
 
 The main gap is no longer basic product implementation. The remaining work for v1 release is launch hardening: production validation, browser/device QA, SEO/performance verification, deployment/config review, and final operational readiness.
 

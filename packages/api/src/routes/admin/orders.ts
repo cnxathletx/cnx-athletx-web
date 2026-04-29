@@ -11,6 +11,8 @@ import type {
   ShipmentRow,
 } from '../../lib/types'
 import { nowIso, isValidOrderId } from '../../lib/utils'
+import type { OrderStatus } from '../../lib/orderStatus'
+import { ORDER_STATUS, canTransition, isOrderStatus } from '../../lib/orderStatus'
 import { parseAdminPagination, validateShipmentBody } from '../../lib/validation'
 import { requireAdmin, parseJsonBody } from '../../middleware/auth'
 import { sendOrderEmail, fetchOrderEmailData, sendReviewPromptEmail } from '../../services/email'
@@ -22,8 +24,7 @@ export function registerAdminOrderRoutes(router: RouterType) {
     const q = (url.searchParams.get('q') ?? '').trim()
     const { page, limit, offset } = parseAdminPagination(url)
 
-    const allowedStatuses = new Set(['pending_payment', 'paid', 'packed', 'shipped', 'delivered', 'cancelled'])
-    if (status && !allowedStatuses.has(status)) {
+    if (status && !isOrderStatus(status)) {
       return Response.json({ error: 'Invalid status filter' }, { status: 400 })
     }
 
@@ -205,9 +206,9 @@ export function registerAdminOrderRoutes(router: RouterType) {
     try {
       const order = await env.DB.prepare(`SELECT status, total_thb FROM orders WHERE id = ? LIMIT 1`)
         .bind(orderId)
-        .first<{ status: string; total_thb: number }>()
+        .first<{ status: OrderStatus; total_thb: number }>()
       if (!order) return Response.json({ error: 'Order not found' }, { status: 404 })
-      if (order.status !== 'pending_payment') {
+      if (!canTransition(order.status, ORDER_STATUS.paid)) {
         return Response.json({ error: 'Invalid status transition', current_status: order.status }, { status: 409 })
       }
 
@@ -219,7 +220,10 @@ export function registerAdminOrderRoutes(router: RouterType) {
 
       const now = nowIso()
       const statements: D1PreparedStatement[] = []
-      statements.push(env.DB.prepare(`UPDATE orders SET status = 'paid', updated_at = ? WHERE id = ?`).bind(now, orderId))
+      statements.push(
+        env.DB.prepare(`UPDATE orders SET status = ?, updated_at = ? WHERE id = ?`)
+          .bind(ORDER_STATUS.paid, now, orderId)
+      )
       statements.push(
         env.DB.prepare(
           `INSERT INTO payments (order_id, method, reference, amount_thb, verified_at, verified_by, created_at)
@@ -243,7 +247,7 @@ export function registerAdminOrderRoutes(router: RouterType) {
         env.DB.prepare(
           `INSERT INTO admin_audit_log (admin_email, action, order_id, details_json, created_at)
            VALUES (?, 'mark_paid', ?, ?, ?)`
-        ).bind(adminUser.email, orderId, JSON.stringify({ from: 'pending_payment', to: 'paid' }), now)
+        ).bind(adminUser.email, orderId, JSON.stringify({ from: order.status, to: ORDER_STATUS.paid }), now)
       )
 
       await env.DB.batch(statements)
@@ -271,19 +275,20 @@ export function registerAdminOrderRoutes(router: RouterType) {
     try {
       const order = await env.DB.prepare(`SELECT status FROM orders WHERE id = ? LIMIT 1`)
         .bind(orderId)
-        .first<{ status: string }>()
+        .first<{ status: OrderStatus }>()
       if (!order) return Response.json({ error: 'Order not found' }, { status: 404 })
-      if (order.status !== 'paid') {
+      if (!canTransition(order.status, ORDER_STATUS.packed)) {
         return Response.json({ error: 'Invalid status transition', current_status: order.status }, { status: 409 })
       }
 
       const now = nowIso()
       await env.DB.batch([
-        env.DB.prepare(`UPDATE orders SET status = 'packed', updated_at = ? WHERE id = ?`).bind(now, orderId),
+        env.DB.prepare(`UPDATE orders SET status = ?, updated_at = ? WHERE id = ?`)
+          .bind(ORDER_STATUS.packed, now, orderId),
         env.DB.prepare(
           `INSERT INTO admin_audit_log (admin_email, action, order_id, details_json, created_at)
            VALUES (?, 'pack', ?, ?, ?)`
-        ).bind(adminUser.email, orderId, JSON.stringify({ from: 'paid', to: 'packed' }), now),
+        ).bind(adminUser.email, orderId, JSON.stringify({ from: order.status, to: ORDER_STATUS.packed }), now),
       ])
 
       return Response.json({ success: true })
@@ -311,15 +316,16 @@ export function registerAdminOrderRoutes(router: RouterType) {
     try {
       const order = await env.DB.prepare(`SELECT status FROM orders WHERE id = ? LIMIT 1`)
         .bind(orderId)
-        .first<{ status: string }>()
+        .first<{ status: OrderStatus }>()
       if (!order) return Response.json({ error: 'Order not found' }, { status: 404 })
-      if (order.status !== 'packed') {
+      if (!canTransition(order.status, ORDER_STATUS.shipped)) {
         return Response.json({ error: 'Invalid status transition', current_status: order.status }, { status: 409 })
       }
 
       const now = nowIso()
       await env.DB.batch([
-        env.DB.prepare(`UPDATE orders SET status = 'shipped', updated_at = ? WHERE id = ?`).bind(now, orderId),
+        env.DB.prepare(`UPDATE orders SET status = ?, updated_at = ? WHERE id = ?`)
+          .bind(ORDER_STATUS.shipped, now, orderId),
         env.DB.prepare(
           `INSERT INTO shipments (order_id, carrier, tracking_number, shipped_at, created_at)
            VALUES (?, ?, ?, ?, ?)`
@@ -330,7 +336,7 @@ export function registerAdminOrderRoutes(router: RouterType) {
         ).bind(
           adminUser.email,
           orderId,
-          JSON.stringify({ from: 'packed', to: 'shipped', carrier: data.carrier, tracking_number: data.tracking_number }),
+          JSON.stringify({ from: order.status, to: ORDER_STATUS.shipped, carrier: data.carrier, tracking_number: data.tracking_number }),
           now
         ),
       ])
@@ -390,11 +396,10 @@ export function registerAdminOrderRoutes(router: RouterType) {
     try {
       const order = await env.DB.prepare(`SELECT status FROM orders WHERE id = ? LIMIT 1`)
         .bind(orderId)
-        .first<{ status: string }>()
+        .first<{ status: OrderStatus }>()
       if (!order) return Response.json({ error: 'Order not found' }, { status: 404 })
 
-      const allowedFrom = new Set(['pending_payment', 'paid', 'packed'])
-      if (!allowedFrom.has(order.status)) {
+      if (!canTransition(order.status, ORDER_STATUS.cancelled)) {
         return Response.json({ error: 'Invalid status transition', current_status: order.status }, { status: 409 })
       }
 
@@ -406,10 +411,13 @@ export function registerAdminOrderRoutes(router: RouterType) {
 
       const now = nowIso()
       const statements: D1PreparedStatement[] = []
-      statements.push(env.DB.prepare(`UPDATE orders SET status = 'cancelled', updated_at = ? WHERE id = ?`).bind(now, orderId))
+      statements.push(
+        env.DB.prepare(`UPDATE orders SET status = ?, updated_at = ? WHERE id = ?`)
+          .bind(ORDER_STATUS.cancelled, now, orderId)
+      )
 
       for (const item of items) {
-        if (order.status === 'pending_payment') {
+        if (order.status === ORDER_STATUS.pendingPayment) {
           statements.push(
             env.DB.prepare(
               `UPDATE inventory
@@ -434,7 +442,7 @@ export function registerAdminOrderRoutes(router: RouterType) {
         env.DB.prepare(
           `INSERT INTO admin_audit_log (admin_email, action, order_id, details_json, created_at)
            VALUES (?, 'cancel', ?, ?, ?)`
-        ).bind(adminUser.email, orderId, JSON.stringify({ from: order.status, to: 'cancelled' }), now)
+        ).bind(adminUser.email, orderId, JSON.stringify({ from: order.status, to: ORDER_STATUS.cancelled }), now)
       )
 
       await env.DB.batch(statements)

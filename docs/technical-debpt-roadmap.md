@@ -8,14 +8,6 @@ Last updated: 2026-04-29
 
 ## Critical
 
-### 1. Order state machine is implicit
-- **Where:** Status strings (`pending_payment`, `paid`, `shipped`, `cancelled`, `delivered`) scattered across `routes/checkout.ts`, `routes/admin/orders.ts`, `services/email.ts`, frontend pages.
-- **Problem:** v1.5 auto-expiry and 2C2P webhooks will add new transitions. No central rule for what's allowed or what side effects fire.
-- **Fix:**
-  - Single `lib/orderStatus.ts` exporting the `Status` union, a `transitions` map, and `canTransition(from, to)`.
-  - Side-effect hooks (email send, inventory release, audit log) registered per transition.
-  - Admin and webhook handlers go through the same dispatcher.
-
 ### 2. Inventory reserve/rollback hand-rolled in checkout
 - **Where:** `packages/api/src/routes/checkout.ts:319-463`.
 - **Problem:** Cascading rollback logic is inline and impossible to reuse for cart-side reservation, expiry release, or admin manual adjustments.
@@ -68,5 +60,6 @@ Last updated: 2026-04-29
 ---
 
 ## Done
+- **2026-04-29 — Order status rules centralized (was Critical #1).** `packages/api/src/lib/orderStatus.ts` now exports the canonical order status union, named constants, transition map, `canTransition(from, to)`, parser helpers, and reusable status groups for revenue, reviews, payment proof, and webhooks. Admin and webhook transition checks now go through the central rules while side effects remain in their existing route handlers. Spec: `docs/superpowers/specs/2026-04-29-order-state-machine-design.md`. Plan: `docs/superpowers/plans/2026-04-29-order-state-machine.md`.
 - **2026-04-29 — Email templates moved to brand config + locale registry (was Critical #1).** `packages/api/src/services/email.ts` was replaced by `services/email/` modules for brand identity, shared layout helpers, template registry, and Resend dispatch. Transactional templates are keyed by `(event, locale)`, Thai stubs fall back to English where copy is not ready, Thai review-prompt copy is preserved, customer locale is persisted on `orders.locale`, checkout sends the current web locale, and magic-link email selection follows `Accept-Language`. Spec: `docs/superpowers/specs/2026-04-27-email-templates-i18n-design.md`. Plan: `docs/superpowers/plans/2026-04-27-email-templates-i18n.md`.
 - **2026-04-27 — Payment provider plumbing extracted (was Critical #1).** `PaymentProvider` interface gained `requiredSettingKeys` + `renderInstructions(order, settings) → InstructionsBlock | null`. Checkout no longer reads PromptPay/bank settings directly; email layer renders the provider's structured block via a generic `renderInstructionsHtml` helper. `PaymentInstructions` retired; `SiteSettings` slimmed to shipping fields. Adding a new gateway is now a self-contained provider file. Spec: `docs/superpowers/specs/2026-04-27-payment-provider-abstraction-design.md`. Plan: `docs/superpowers/plans/2026-04-27-payment-provider-abstraction.md`.

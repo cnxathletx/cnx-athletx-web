@@ -136,6 +136,7 @@
 
 6. Admin verifies payment in bank app → clicks "Mark Paid"
    - POST /api/admin/orders/:id/mark-paid {verified_by: admin_email}
+   - Transition is validated by `packages/api/src/lib/orderStatus.ts` (`canTransition(current, 'paid')`)
    - Workers → D1 transaction:
      a. UPDATE orders SET status = 'paid'
      b. INSERT INTO payments (verified_at, verified_by)
@@ -146,11 +147,13 @@
    - Response: {success: true, new_status: 'paid'}
 
 7. Admin packs order → POST /api/admin/orders/:id/pack
+   - Transition is validated by `canTransition(current, 'packed')`
    - UPDATE orders SET status = 'packed'
    - Log audit
 
 8. Admin ships → POST /api/admin/orders/:id/ship
    Body: {carrier: "Thailand Post", tracking_number: "RN123456789TH"}
+   - Transition is validated by `canTransition(current, 'shipped')`
    - INSERT INTO shipments
    - UPDATE orders SET status = 'shipped'
    - Resend order_shipped email
@@ -886,7 +889,7 @@ All admin endpoints require:
 
 **Validation:**
 - Order must exist
-- Current status must be `pending_payment`
+- Current status transition must be allowed by `canTransition(current, 'paid')` in `packages/api/src/lib/orderStatus.ts`.
 
 **Errors:**
 - `403 Forbidden`

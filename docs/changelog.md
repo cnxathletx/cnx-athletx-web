@@ -21,6 +21,7 @@ Everything below is in-flight on `main` and has not been cut into a versioned re
 - **Email templates**: `payment_failed` and `payment_refunded` events wired into `sendOrderEmail`.
 
 ### Changed
+- **Order status rules**: API order statuses now flow through `lib/orderStatus.ts` with a canonical status union, transition map, `canTransition`, parser helpers, and shared status groups for admin routes, payment webhooks, reports, reviews, and payment-proof eligibility.
 - **Order schema**: new `orders.payment_method` column. Status enum expanded with `awaiting_gateway`, `failed`, `refunded`.
 - **Payments schema**: new `provider`, `provider_txn_id`, `status`, `payload_json` columns. `payments.method` CHECK constraint dropped (registry handles validation).
 - **`POST /api/checkout`** now requires `payment_method` and returns a discriminated `intent` object instead of the fixed `payment_instructions` shape.

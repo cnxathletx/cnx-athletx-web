@@ -1,9 +1,10 @@
 import type { RouterType } from 'itty-router'
 import type { Env, ReviewableProductRow, ReviewRow, SubmitReviewBody, ValidationError } from '../lib/types'
+import { REVIEW_ELIGIBLE_ORDER_STATUSES, orderStatusSqlList } from '../lib/orderStatus'
 import { nowIso } from '../lib/utils'
 import { getSessionUser, parseJsonBody } from '../middleware/auth'
 
-const SHIPPED_STATUSES = "('shipped','delivered')"
+const SHIPPED_STATUSES = orderStatusSqlList(REVIEW_ELIGIBLE_ORDER_STATUSES)
 
 function validateSubmitBody(raw: unknown): { errors: ValidationError[]; data: SubmitReviewBody | null } {
   const errors: ValidationError[] = []

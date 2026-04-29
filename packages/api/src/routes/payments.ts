@@ -2,16 +2,18 @@ import type { RouterType } from 'itty-router'
 import type { Env, WebhookOutcome } from '../lib/types'
 import { getProvider } from '../services/payments/registry'
 import { nowIso } from '../lib/utils'
+import {
+  allowedWebhookTransitionSources,
+  mapWebhookOutcomeToOrderStatus,
+  orderStatusSqlList,
+} from '../lib/orderStatus'
 
 export function mapWebhookToOrderStatus(outcome: WebhookOutcome): 'paid' | 'failed' | 'refunded' {
-  return outcome
+  return mapWebhookOutcomeToOrderStatus(outcome)
 }
 
-export function allowedFromStates(outcome: WebhookOutcome): string[] {
-  if (outcome === 'paid' || outcome === 'failed') {
-    return ['pending_payment', 'awaiting_gateway']
-  }
-  return ['paid', 'packed', 'shipped', 'delivered']
+export function allowedFromStates(outcome: WebhookOutcome) {
+  return allowedWebhookTransitionSources(outcome)
 }
 
 function isUniqueViolation(err: unknown): boolean {
@@ -35,7 +37,6 @@ export function registerPaymentsRoutes(router: RouterType) {
 
     const newStatus = mapWebhookToOrderStatus(result.status)
     const allowed = allowedFromStates(result.status)
-    const placeholders = allowed.map(() => '?').join(',')
     const now = nowIso()
 
     try {
@@ -55,8 +56,8 @@ export function registerPaymentsRoutes(router: RouterType) {
         ),
         env.DB.prepare(
           `UPDATE orders SET status = ?, updated_at = ?
-           WHERE id = ? AND status IN (${placeholders})`
-        ).bind(newStatus, now, result.order_id, ...allowed),
+           WHERE id = ? AND status IN ${orderStatusSqlList(allowed)}`
+        ).bind(newStatus, now, result.order_id),
       ])
     } catch (e) {
       if (isUniqueViolation(e)) {

@@ -17,6 +17,7 @@ import { enforceLimit, enforceGlobalLimit, getClientIp, rateLimitedResponse } fr
 import { sendOrderEmail, sendAdminNewOrderEmail } from '../services/email'
 import type { EmailItem } from '../services/email'
 import { generateULID } from '../lib/ulid'
+import { ORDER_STATUS, isPaymentProofOrderStatus } from '../lib/orderStatus'
 import { pickUnitPrice, type PriceTier } from '../lib/pricing'
 import { getProvider, listEnabledProviders } from '../services/payments/registry'
 import type { PaymentIntent, SiteSettingsMap } from '../lib/types'
@@ -389,7 +390,7 @@ export function registerCheckoutRoutes(router: RouterType) {
           subtotal_thb, shipping_thb, discount_thb, total_thb,
           status, locale, idempotency_key, discount_code, payment_method,
           created_at, updated_at
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'pending_payment', ?, ?, ?, ?, ?, ?)`
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
       ).bind(
         orderId,
         sessionUser?.id ?? null,
@@ -405,6 +406,7 @@ export function registerCheckoutRoutes(router: RouterType) {
         shipping,
         discountThb,
         total,
+        ORDER_STATUS.pendingPayment,
         orderLocale,
         data.idempotency_key,
         discountCodeRow ? discountCodeRow.code : null,
@@ -558,7 +560,7 @@ export function registerCheckoutRoutes(router: RouterType) {
       return Response.json({ error: 'Order not found' }, { status: 404 })
     }
 
-    if (order.status !== 'pending_payment') {
+    if (!isPaymentProofOrderStatus(order.status)) {
       return Response.json(
         { error: 'Payment proof can only be submitted for orders awaiting payment', current_status: order.status },
         { status: 409 }

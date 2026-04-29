@@ -112,6 +112,7 @@ export interface CheckoutBody {
   idempotency_key: string
   discount_code?: string
   payment_method: ProviderId
+  locale?: 'en' | 'th'
 }
 
 export interface ProductRow {
@@ -165,6 +166,7 @@ export interface OrderRow {
   discount_thb: number
   total_thb: number
   created_at: string
+  locale: 'en' | 'th'
 }
 
 export interface OrderItemRow {
@@ -203,6 +205,7 @@ export interface AdminOrderDetailRow {
   discount_thb: number
   total_thb: number
   payment_method: string | null
+  locale: 'en' | 'th'
   created_at: string
   updated_at: string
 }

@@ -226,6 +226,12 @@ export function validateCheckoutBody(body: unknown): { errors: ValidationError[]
     errors.push({ field: 'payment_method', message: `payment_method "${b.payment_method}" is not supported` })
   }
 
+  if (b.locale !== undefined && b.locale !== null) {
+    if (b.locale !== 'en' && b.locale !== 'th') {
+      errors.push({ field: 'locale', message: 'locale must be "en" or "th"' })
+    }
+  }
+
   if (errors.length > 0) {
     return { errors, data: null }
   }

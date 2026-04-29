@@ -432,16 +432,18 @@ async function handleSubmit() {
 
           <!-- Discount Code -->
           <div class="space-y-2">
-            <label class="block text-sm font-medium text-foreground">{{ t('checkout.discountCode') }}</label>
+            <label for="discount-code" class="block text-sm font-medium text-foreground">{{
+              t('checkout.discountCode')
+            }}</label>
             <div class="flex gap-2 max-w-sm">
               <input
+                id="discount-code"
                 v-model="form.discount_code"
                 type="text"
                 :class="[
-                  'flex-1 rounded-md border px-4 py-3 text-sm bg-surface-alt text-foreground placeholder:text-muted uppercase transition-colors focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent',
+                  'flex-1 rounded-md border px-4 py-3 text-sm bg-surface-alt text-foreground uppercase transition-colors focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent',
                   fieldErrors.discount_code ? 'border-error' : 'border-sand',
                 ]"
-                placeholder="SAVE10"
               />
             </div>
             <p v-if="fieldErrors.discount_code" class="text-xs text-error">{{ fieldErrors.discount_code }}</p>

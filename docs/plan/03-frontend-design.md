@@ -1,6 +1,6 @@
 # Frontend Design And Structure
 
-Last updated: 2026-04-29
+Last updated: 2026-04-30
 
 ## Scope
 
@@ -27,6 +27,10 @@ All API modules route HTTP through `src/api/client.ts`:
 ## Domain Types
 
 Domain interfaces live in `src/types/` and are re-exported from existing API modules for compatibility. New page/component code should prefer importing types from `src/types/*` when it does not also need the API function.
+
+## Checkout UX
+
+Discount code inputs are label-addressable and intentionally avoid example-code placeholders. Showing a fake code can imply an active promotion exists when no customer-facing discount has been published.
 
 ## Admin Resource Pattern
 

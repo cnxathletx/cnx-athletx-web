@@ -12,6 +12,7 @@ binding = "DB"
 database_name = "cnx-athletx-dev"
 database_id = "805d023a-2d77-4aef-95eb-164a82201962"
 preview_database_id = "805d023a-2d77-4aef-95eb-164a82201962"
+migrations_dir = "sql/migrations"
 
 [[r2_buckets]]
 binding = "PRODUCT_IMAGES"
@@ -38,6 +39,7 @@ binding = "DB"
 database_name = "cnx-athletx-prod"
 database_id = "63f96854-8d6f-49c5-a9c3-b5e8b90f2cae"
 preview_database_id = "63f96854-8d6f-49c5-a9c3-b5e8b90f2cae"
+migrations_dir = "sql/migrations"
 
 [[env.production.r2_buckets]]
 binding = "PRODUCT_IMAGES"
@@ -56,6 +58,7 @@ binding = "DB"
 database_name = "cnx-athletx-dev"
 database_id = "805d023a-2d77-4aef-95eb-164a82201962"
 preview_database_id = "805d023a-2d77-4aef-95eb-164a82201962"
+migrations_dir = "sql/migrations"
 
 [[env.preview.r2_buckets]]
 binding = "PRODUCT_IMAGES"

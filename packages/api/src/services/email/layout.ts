@@ -1,4 +1,5 @@
 import { escapeHtml } from '../../lib/utils'
+import { formatThb } from '../../lib/money'
 import type { InstructionsBlock } from '../payments/types'
 import { brand } from './brand'
 
@@ -8,12 +9,7 @@ export interface EmailItem {
   line_total_thb: number
 }
 
-export function formatThb(satang: number): string {
-  return `฿${(satang / 100).toLocaleString('en-US', {
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2,
-  })}`
-}
+export { formatThb } from '../../lib/money'
 
 export function emailLayout(title: string, body: string): string {
   const p = brand.palette

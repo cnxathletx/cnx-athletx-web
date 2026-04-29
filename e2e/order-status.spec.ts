@@ -15,6 +15,7 @@ async function createOrderViaApi(): Promise<string> {
     body: JSON.stringify({
       idempotency_key: `e2e-${Date.now()}-${Math.random()}`,
       items: [{ product_id: 1, quantity: 1 }],
+      payment_method: 'promptpay',
       customer: {
         name: 'E2E User',
         email: 'e2e@example.com',
@@ -28,6 +29,9 @@ async function createOrderViaApi(): Promise<string> {
       },
     }),
   })
+  if (!res.ok) {
+    throw new Error(`checkout failed: ${res.status} ${await res.text()}`)
+  }
   const data = await res.json() as { order_id: string }
   return data.order_id
 }

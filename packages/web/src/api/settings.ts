@@ -1,4 +1,4 @@
-import { apiUrl } from './client'
+import { apiFetch } from './client'
 
 export interface PublicSettings {
   shipping_flat_rate: number
@@ -13,9 +13,9 @@ export async function fetchPublicSettings(): Promise<PublicSettings> {
   if (inflight) return inflight
 
   inflight = (async () => {
-    const res = await fetch(apiUrl('/api/settings'))
-    if (!res.ok) throw new Error('Failed to fetch settings')
-    const data = (await res.json()) as { settings: PublicSettings }
+    const data = await apiFetch<{ settings: PublicSettings }>('/api/settings', {
+      parseError: () => new Error('Failed to fetch settings'),
+    })
     cache = data.settings
     return data.settings
   })()

@@ -1,272 +1,117 @@
-import { apiUrl } from './client'
+import { ApiClientError, apiFetch, type ApiErrorDetails, type ApiErrorPayload } from './client'
+import type {
+  AdminChatConversation,
+  AdminChatConversationDetail,
+  AdminChatStatus,
+  AdminDiscountCode,
+  AdminInventoryItem,
+  AdminLabTestContentType,
+  AdminLabTestFile,
+  AdminOrderDetail,
+  AdminOrderListItem,
+  AdminPriceTier,
+  AdminProduct,
+  AdminProductLine,
+  AdminProductScreenshot,
+  CreateAdminProductPayload,
+  CreateDiscountPayload,
+  CreateProductLinePayload,
+  IncomeReport,
+  R2CleanupDryRunResult,
+  R2CleanupResult,
+  UpdateAdminProductPayload,
+  UpdateDiscountPayload,
+  UpdateProductLinePayload,
+  UpsertPriceTierPayload,
+} from '../types/admin'
 
-export interface AdminOrderListItem {
-  id: string
-  status: string
-  customer_name: string
-  total_thb: number
-  items_count: number
-  created_at: string
-}
+export type {
+  AdminAuditLog,
+  AdminChatConversation,
+  AdminChatConversationDetail,
+  AdminChatMessage,
+  AdminChatSenderType,
+  AdminChatStatus,
+  AdminDiscountCode,
+  AdminInventoryItem,
+  AdminLabTestContentType,
+  AdminLabTestFile,
+  AdminOrderDetail,
+  AdminOrderItem,
+  AdminOrderListItem,
+  AdminPaymentProof,
+  AdminPriceTier,
+  AdminProduct,
+  AdminProductLine,
+  AdminProductScreenshot,
+  CreateAdminProductPayload,
+  CreateDiscountPayload,
+  CreateProductLinePayload,
+  IncomeReport,
+  IncomeReportProduct,
+  R2CleanupDryRunResult,
+  R2CleanupResult,
+  R2CleanupSummary,
+  R2Orphan,
+  UpdateAdminProductPayload,
+  UpdateDiscountPayload,
+  UpdateProductLinePayload,
+  UpsertPriceTierPayload,
+} from '../types/admin'
 
-export interface AdminOrderItem {
-  product_name: string
-  quantity: number
-  line_total_thb: number
-}
-
-export interface AdminPaymentProof {
-  id: number
-  proof_type: 'reference' | 'image_url'
-  proof_value: string
-  submitted_at: string
-}
-
-export interface AdminAuditLog {
-  id: number
-  admin_email: string
-  action: string
-  details_json: string | null
-  created_at: string
-}
-
-export interface AdminOrderDetail {
-  id: string
-  status: string
-  customer: {
-    name: string
-    email: string
-    phone: string
+export class AdminApiErrorResponse extends ApiClientError {
+  constructor(
+    message: string,
+    status: number,
+    details?: ApiErrorDetails[],
+    currentStatus?: string,
+  ) {
+    super(message, status, details, currentStatus)
+    this.name = 'AdminApiErrorResponse'
   }
-  shipping_address: {
-    line1: string
-    line2: string | null
-    district: string
-    province: string
-    postal_code: string
-  }
-  subtotal_thb: number
-  shipping_thb: number
-  discount_thb: number
-  total_thb: number
-  items: AdminOrderItem[]
-  shipment: { carrier: string; tracking_number: string; shipped_at: string } | null
-  payment_proofs: AdminPaymentProof[]
-  audit_logs: AdminAuditLog[]
-  created_at: string
-  updated_at: string
 }
 
-export interface AdminInventoryItem {
-  product_id: number
-  slug: string
-  name: string
-  price_thb: number
-  active: boolean
-  stock_count: number
-  reserved_count: number
-  available_count: number
-}
-
-export interface AdminProductScreenshot {
-  id: number
-  url: string
-  sort_order: number
-}
-
-export interface AdminProduct {
-  id: number
-  product_line_id: number | null
-  slug: string
-  name: string
-  description: string
-  price_thb: number
-  weight_g: number
-  image_url: string
-  active: boolean
-  archived: boolean
-  translations_json: string
-  created_at: string
-  updated_at: string
-  stock_count: number
-  reserved_count: number
-  available_count: number
-  screenshots: AdminProductScreenshot[]
-}
-
-export interface CreateAdminProductPayload {
-  slug: string
-  name: string
-  description: string
-  price_thb: number
-  weight_g: number
-  image_url: string
-  active: boolean
-  stock_count: number
-  product_line_id: number | null
-  translations_json: string
-}
-
-export interface UpdateAdminProductPayload {
-  slug?: string
-  name?: string
-  description?: string
-  price_thb?: number
-  weight_g?: number
-  image_url?: string
-  active?: boolean
-  archived?: boolean
-  product_line_id?: number | null
-  translations_json?: string
-}
-
-// --- Admin Price Tiers ---
-
-export interface AdminPriceTier {
-  id: number
-  product_id: number
-  min_quantity: number
-  unit_price_thb: number
-  created_at: string
-  updated_at: string
-}
-
-export interface UpsertPriceTierPayload {
-  min_quantity: number
-  unit_price_thb: number
+function adminError(payload: ApiErrorPayload, response: Response): AdminApiErrorResponse {
+  return new AdminApiErrorResponse(
+    payload.error || 'Request failed',
+    response.status,
+    payload.details,
+    typeof payload.current_status === 'string' ? payload.current_status : undefined,
+  )
 }
 
 export async function fetchAdminPriceTiers(productId: number): Promise<AdminPriceTier[]> {
-  const res = await fetch(apiUrl(`/api/admin/products/${productId}/price-tiers`), {
-    credentials: 'include',
+  const data = await apiFetch<{ price_tiers: AdminPriceTier[] }>(`/api/admin/products/${productId}/price-tiers`, {
+    parseError: adminError,
   })
-  if (!res.ok) await parseAdminError(res)
-  const data = (await res.json()) as { price_tiers: AdminPriceTier[] }
   return data.price_tiers
 }
 
 export async function createAdminPriceTier(productId: number, payload: UpsertPriceTierPayload): Promise<AdminPriceTier> {
-  const res = await fetch(apiUrl(`/api/admin/products/${productId}/price-tiers`), {
-    method: 'POST',
-    credentials: 'include',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(payload),
-  })
-  if (!res.ok) await parseAdminError(res)
-  const data = (await res.json()) as { success: true; price_tier: AdminPriceTier }
+  const data = await apiFetch<{ success: true; price_tier: AdminPriceTier }>(
+    `/api/admin/products/${productId}/price-tiers`,
+    { method: 'POST', body: payload, parseError: adminError },
+  )
   return data.price_tier
 }
 
 export async function updateAdminPriceTier(
   productId: number,
   tierId: number,
-  payload: UpsertPriceTierPayload
+  payload: UpsertPriceTierPayload,
 ): Promise<AdminPriceTier> {
-  const res = await fetch(apiUrl(`/api/admin/products/${productId}/price-tiers/${tierId}`), {
-    method: 'PATCH',
-    credentials: 'include',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(payload),
-  })
-  if (!res.ok) await parseAdminError(res)
-  const data = (await res.json()) as { success: true; price_tier: AdminPriceTier }
+  const data = await apiFetch<{ success: true; price_tier: AdminPriceTier }>(
+    `/api/admin/products/${productId}/price-tiers/${tierId}`,
+    { method: 'PATCH', body: payload, parseError: adminError },
+  )
   return data.price_tier
 }
 
 export async function deleteAdminPriceTier(productId: number, tierId: number): Promise<void> {
-  const res = await fetch(apiUrl(`/api/admin/products/${productId}/price-tiers/${tierId}`), {
+  await apiFetch<void>(`/api/admin/products/${productId}/price-tiers/${tierId}`, {
     method: 'DELETE',
-    credentials: 'include',
+    parseError: adminError,
   })
-  if (!res.ok) await parseAdminError(res)
-}
-
-// --- Admin Product Lines ---
-
-export type AdminLabTestContentType =
-  | 'application/pdf'
-  | 'image/jpeg'
-  | 'image/png'
-  | 'image/webp'
-
-export interface AdminLabTestFile {
-  id: number
-  url: string
-  content_type: AdminLabTestContentType
-  label: string
-  sort_order: number
-  size_bytes: number
-}
-
-export interface AdminProductLine {
-  id: number
-  name: string
-  slug: string
-  nutrition_json: string
-  ingredients: string
-  how_to_use: string
-  who_is_for: string
-  regulatory_info: string
-  translations_json: string
-  created_at: string
-  updated_at: string
-  lab_test_files: AdminLabTestFile[]
-}
-
-export interface CreateProductLinePayload {
-  name: string
-  slug: string
-  nutrition_json: string
-  ingredients: string
-  how_to_use: string
-  who_is_for: string
-  regulatory_info: string
-  translations_json: string
-}
-
-export interface UpdateProductLinePayload {
-  name?: string
-  slug?: string
-  nutrition_json?: string
-  ingredients?: string
-  how_to_use?: string
-  who_is_for?: string
-  regulatory_info?: string
-  translations_json?: string
-}
-
-interface AdminApiError {
-  error: string
-  details?: { field: string; message: string }[]
-  current_status?: string
-}
-
-export class AdminApiErrorResponse extends Error {
-  status: number
-  details?: { field: string; message: string }[]
-  currentStatus?: string
-
-  constructor(
-    message: string,
-    status: number,
-    details?: { field: string; message: string }[],
-    currentStatus?: string
-  ) {
-    super(message)
-    this.status = status
-    this.details = details
-    this.currentStatus = currentStatus
-  }
-}
-
-async function parseAdminError(res: Response): Promise<never> {
-  let payload: AdminApiError = { error: 'Request failed' }
-  try {
-    payload = (await res.json()) as AdminApiError
-  } catch {
-    // ignore JSON parse error
-  }
-  throw new AdminApiErrorResponse(payload.error || 'Request failed', res.status, payload.details, payload.current_status)
 }
 
 export async function fetchAdminOrders(params?: {
@@ -281,80 +126,23 @@ export async function fetchAdminOrders(params?: {
   if (params?.page) search.set('page', String(params.page))
   if (params?.limit) search.set('limit', String(params.limit))
 
-  const res = await fetch(apiUrl(`/api/admin/orders${search.toString() ? `?${search.toString()}` : ''}`), {
-    credentials: 'include',
+  return apiFetch(`/api/admin/orders${search.toString() ? `?${search.toString()}` : ''}`, {
+    parseError: adminError,
   })
-
-  if (!res.ok) {
-    await parseAdminError(res)
-  }
-
-  return (await res.json()) as { orders: AdminOrderListItem[]; pagination: { page: number; limit: number; total: number } }
 }
 
 export async function fetchAdminOrder(orderId: string): Promise<AdminOrderDetail> {
-  const res = await fetch(apiUrl(`/api/admin/orders/${encodeURIComponent(orderId)}`), {
-    credentials: 'include',
+  const data = await apiFetch<{ order: AdminOrderDetail }>(`/api/admin/orders/${encodeURIComponent(orderId)}`, {
+    parseError: adminError,
   })
-
-  if (!res.ok) {
-    await parseAdminError(res)
-  }
-
-  const data = (await res.json()) as { order: AdminOrderDetail }
   return data.order
 }
 
 export async function markOrderPaid(orderId: string): Promise<void> {
-  const res = await fetch(apiUrl(`/api/admin/orders/${encodeURIComponent(orderId)}/mark-paid`), {
+  await apiFetch<void>(`/api/admin/orders/${encodeURIComponent(orderId)}/mark-paid`, {
     method: 'POST',
-    credentials: 'include',
+    parseError: adminError,
   })
-  if (!res.ok) await parseAdminError(res)
-}
-
-// --- Admin Chat ---
-
-export type AdminChatSenderType = 'customer' | 'admin' | 'system'
-export type AdminChatStatus = 'open' | 'closed'
-
-export interface AdminChatConversation {
-  id: string
-  visitor_id: string
-  user_id: string | null
-  guest_name: string | null
-  guest_email: string | null
-  status: AdminChatStatus
-  last_message_at: string
-  last_admin_read_at: string | null
-  created_at: string
-  message_count: number
-  unread_count: number
-}
-
-export interface AdminChatMessage {
-  id: number
-  conversation_id: string
-  sender_type: AdminChatSenderType
-  sender_email: string | null
-  body: string
-  created_at: string
-}
-
-export interface AdminChatConversationDetail {
-  id: string
-  visitor_id: string
-  user_id: string | null
-  guest_name: string | null
-  guest_email: string | null
-  status: AdminChatStatus
-  last_message_at: string
-  last_admin_read_at: string | null
-  last_customer_read_at: string | null
-  created_at: string
-  updated_at: string
-  messages: AdminChatMessage[]
-  unread_count: number
 }
 
 export async function fetchAdminChatConversations(params?: {
@@ -372,297 +160,201 @@ export async function fetchAdminChatConversations(params?: {
   if (params?.page) search.set('page', String(params.page))
   if (params?.limit) search.set('limit', String(params.limit))
 
-  const res = await fetch(
-    apiUrl(`/api/admin/chat/conversations${search.toString() ? `?${search.toString()}` : ''}`),
-    { credentials: 'include' },
-  )
-  if (!res.ok) await parseAdminError(res)
-  return (await res.json()) as {
-    conversations: AdminChatConversation[]
-    pagination: { page: number; limit: number; total: number }
-  }
+  return apiFetch(`/api/admin/chat/conversations${search.toString() ? `?${search.toString()}` : ''}`, {
+    parseError: adminError,
+  })
 }
 
 export async function fetchAdminChatConversation(id: string): Promise<AdminChatConversationDetail> {
-  const res = await fetch(apiUrl(`/api/admin/chat/conversations/${encodeURIComponent(id)}`), {
-    credentials: 'include',
-  })
-  if (!res.ok) await parseAdminError(res)
-  const data = (await res.json()) as { conversation: AdminChatConversationDetail }
+  const data = await apiFetch<{ conversation: AdminChatConversationDetail }>(
+    `/api/admin/chat/conversations/${encodeURIComponent(id)}`,
+    { parseError: adminError },
+  )
   return data.conversation
 }
 
 export async function postAdminChatMessage(id: string, body: string): Promise<void> {
-  const res = await fetch(apiUrl(`/api/admin/chat/conversations/${encodeURIComponent(id)}/messages`), {
+  await apiFetch<void>(`/api/admin/chat/conversations/${encodeURIComponent(id)}/messages`, {
     method: 'POST',
-    credentials: 'include',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ body }),
+    body: { body },
+    parseError: adminError,
   })
-  if (!res.ok) await parseAdminError(res)
 }
 
 export async function markAdminChatRead(id: string): Promise<void> {
-  const res = await fetch(apiUrl(`/api/admin/chat/conversations/${encodeURIComponent(id)}/read`), {
+  await apiFetch<void>(`/api/admin/chat/conversations/${encodeURIComponent(id)}/read`, {
     method: 'POST',
-    credentials: 'include',
+    parseError: adminError,
   })
-  if (!res.ok) await parseAdminError(res)
 }
 
 export async function updateAdminChatStatus(id: string, status: AdminChatStatus): Promise<void> {
-  const res = await fetch(apiUrl(`/api/admin/chat/conversations/${encodeURIComponent(id)}`), {
+  await apiFetch<void>(`/api/admin/chat/conversations/${encodeURIComponent(id)}`, {
     method: 'PATCH',
-    credentials: 'include',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ status }),
+    body: { status },
+    parseError: adminError,
   })
-  if (!res.ok) await parseAdminError(res)
 }
 
 export async function fetchAdminChatUnreadCount(): Promise<number> {
-  const res = await fetch(apiUrl('/api/admin/chat/unread-count'), { credentials: 'include' })
-  if (!res.ok) await parseAdminError(res)
-  const data = (await res.json()) as { unread_count: number }
+  const data = await apiFetch<{ unread_count: number }>('/api/admin/chat/unread-count', {
+    parseError: adminError,
+  })
   return data.unread_count
 }
 
 export async function packOrder(orderId: string): Promise<void> {
-  const res = await fetch(apiUrl(`/api/admin/orders/${encodeURIComponent(orderId)}/pack`), {
+  await apiFetch<void>(`/api/admin/orders/${encodeURIComponent(orderId)}/pack`, {
     method: 'POST',
-    credentials: 'include',
+    parseError: adminError,
   })
-  if (!res.ok) await parseAdminError(res)
 }
 
 export async function shipOrder(orderId: string, payload: { carrier: string; tracking_number: string }): Promise<void> {
-  const res = await fetch(apiUrl(`/api/admin/orders/${encodeURIComponent(orderId)}/ship`), {
+  await apiFetch<void>(`/api/admin/orders/${encodeURIComponent(orderId)}/ship`, {
     method: 'POST',
-    credentials: 'include',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(payload),
+    body: payload,
+    parseError: adminError,
   })
-  if (!res.ok) await parseAdminError(res)
 }
 
 export async function cancelOrder(orderId: string): Promise<void> {
-  const res = await fetch(apiUrl(`/api/admin/orders/${encodeURIComponent(orderId)}/cancel`), {
+  await apiFetch<void>(`/api/admin/orders/${encodeURIComponent(orderId)}/cancel`, {
     method: 'POST',
-    credentials: 'include',
+    parseError: adminError,
   })
-  if (!res.ok) await parseAdminError(res)
 }
 
 export async function fetchInventory(): Promise<AdminInventoryItem[]> {
-  const res = await fetch(apiUrl('/api/admin/inventory'), {
-    credentials: 'include',
+  const data = await apiFetch<{ inventory: AdminInventoryItem[] }>('/api/admin/inventory', {
+    parseError: adminError,
   })
-  if (!res.ok) await parseAdminError(res)
-  const data = (await res.json()) as { inventory: AdminInventoryItem[] }
   return data.inventory
 }
 
 export async function adjustInventory(
   productId: number,
-  payload: { adjustment: number; notes?: string }
+  payload: { adjustment: number; notes?: string },
 ): Promise<{ product_id: number; stock_count: number; reserved_count: number; available_count: number }> {
-  const res = await fetch(apiUrl(`/api/admin/inventory/${productId}`), {
-    method: 'PATCH',
-    credentials: 'include',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(payload),
-  })
-  if (!res.ok) await parseAdminError(res)
-  const data = (await res.json()) as {
+  const data = await apiFetch<{
     success: true
     inventory: { product_id: number; stock_count: number; reserved_count: number; available_count: number }
-  }
+  }>(`/api/admin/inventory/${productId}`, {
+    method: 'PATCH',
+    body: payload,
+    parseError: adminError,
+  })
   return data.inventory
 }
 
 export async function fetchAdminProducts(): Promise<AdminProduct[]> {
-  const res = await fetch(apiUrl('/api/admin/products'), {
-    credentials: 'include',
+  const data = await apiFetch<{ products: AdminProduct[] }>('/api/admin/products', {
+    parseError: adminError,
   })
-  if (!res.ok) await parseAdminError(res)
-  const data = (await res.json()) as { products: AdminProduct[] }
   return data.products
 }
 
 export async function createAdminProduct(payload: CreateAdminProductPayload): Promise<AdminProduct> {
-  const res = await fetch(apiUrl('/api/admin/products'), {
+  const data = await apiFetch<{ success: true; product: AdminProduct }>('/api/admin/products', {
     method: 'POST',
-    credentials: 'include',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(payload),
+    body: payload,
+    parseError: adminError,
   })
-  if (!res.ok) await parseAdminError(res)
-  const data = (await res.json()) as { success: true; product: AdminProduct }
   return data.product
 }
 
 export async function updateAdminProduct(productId: number, payload: UpdateAdminProductPayload): Promise<AdminProduct> {
-  const res = await fetch(apiUrl(`/api/admin/products/${productId}`), {
+  const data = await apiFetch<{ success: true; product: AdminProduct }>(`/api/admin/products/${productId}`, {
     method: 'PATCH',
-    credentials: 'include',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(payload),
+    body: payload,
+    parseError: adminError,
   })
-  if (!res.ok) await parseAdminError(res)
-  const data = (await res.json()) as { success: true; product: AdminProduct }
   return data.product
 }
 
 export async function addAdminProductImage(productId: number, url: string): Promise<AdminProductScreenshot[]> {
-  const res = await fetch(apiUrl(`/api/admin/products/${productId}/images`), {
-    method: 'POST',
-    credentials: 'include',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ url }),
-  })
-  if (!res.ok) await parseAdminError(res)
-  const data = (await res.json()) as { success: true; screenshots: AdminProductScreenshot[] }
+  const data = await apiFetch<{ success: true; screenshots: AdminProductScreenshot[] }>(
+    `/api/admin/products/${productId}/images`,
+    { method: 'POST', body: { url }, parseError: adminError },
+  )
   return data.screenshots
 }
 
 export async function deleteAdminProductImage(productId: number, imageId: number): Promise<AdminProductScreenshot[]> {
-  const res = await fetch(apiUrl(`/api/admin/products/${productId}/images/${imageId}`), {
-    method: 'DELETE',
-    credentials: 'include',
-  })
-  if (!res.ok) await parseAdminError(res)
-  const data = (await res.json()) as { success: true; screenshots: AdminProductScreenshot[] }
+  const data = await apiFetch<{ success: true; screenshots: AdminProductScreenshot[] }>(
+    `/api/admin/products/${productId}/images/${imageId}`,
+    { method: 'DELETE', parseError: adminError },
+  )
   return data.screenshots
 }
 
 export async function uploadAdminProductImage(file: File): Promise<{ url: string; key: string }> {
-  const res = await fetch(apiUrl('/api/admin/upload/product-image'), {
+  return apiFetch('/api/admin/upload/product-image', {
     method: 'POST',
-    credentials: 'include',
     headers: { 'Content-Type': file.type },
     body: file,
+    parseError: adminError,
   })
-  if (!res.ok) await parseAdminError(res)
-  return (await res.json()) as { url: string; key: string }
 }
 
 export async function reorderAdminProductImages(productId: number, imageIds: number[]): Promise<AdminProductScreenshot[]> {
-  const res = await fetch(apiUrl(`/api/admin/products/${productId}/images/reorder`), {
-    method: 'PATCH',
-    credentials: 'include',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ image_ids: imageIds }),
-  })
-  if (!res.ok) await parseAdminError(res)
-  const data = (await res.json()) as { success: true; screenshots: AdminProductScreenshot[] }
+  const data = await apiFetch<{ success: true; screenshots: AdminProductScreenshot[] }>(
+    `/api/admin/products/${productId}/images/reorder`,
+    { method: 'PATCH', body: { image_ids: imageIds }, parseError: adminError },
+  )
   return data.screenshots
-}
-
-// --- Admin Discount Codes ---
-
-export interface AdminDiscountCode {
-  id: number
-  code: string
-  type: 'fixed' | 'percent'
-  value: number
-  min_order_thb: number
-  max_uses: number | null
-  used_count: number
-  active: boolean
-  archived: boolean
-  expires_at: string | null
-  created_at: string
-}
-
-export interface CreateDiscountPayload {
-  code: string
-  type: 'fixed' | 'percent'
-  value: number
-  min_order_thb: number
-  max_uses: number | null
-  active: boolean
-  expires_at: string | null
-}
-
-export interface UpdateDiscountPayload {
-  code?: string
-  type?: 'fixed' | 'percent'
-  value?: number
-  min_order_thb?: number
-  max_uses?: number | null
-  active?: boolean
-  archived?: boolean
-  expires_at?: string | null
 }
 
 export async function fetchAdminDiscountCodes(options: { includeArchived?: boolean } = {}): Promise<AdminDiscountCode[]> {
   const path = options.includeArchived
     ? '/api/admin/discount-codes?include_archived=1'
     : '/api/admin/discount-codes'
-  const res = await fetch(apiUrl(path), { credentials: 'include' })
-  if (!res.ok) await parseAdminError(res)
-  const data = (await res.json()) as { discount_codes: AdminDiscountCode[] }
+  const data = await apiFetch<{ discount_codes: AdminDiscountCode[] }>(path, { parseError: adminError })
   return data.discount_codes
 }
 
 export async function createAdminDiscountCode(payload: CreateDiscountPayload): Promise<AdminDiscountCode> {
-  const res = await fetch(apiUrl('/api/admin/discount-codes'), {
+  const data = await apiFetch<{ success: true; discount_code: AdminDiscountCode }>('/api/admin/discount-codes', {
     method: 'POST',
-    credentials: 'include',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(payload),
+    body: payload,
+    parseError: adminError,
   })
-  if (!res.ok) await parseAdminError(res)
-  const data = (await res.json()) as { success: true; discount_code: AdminDiscountCode }
   return data.discount_code
 }
 
 export async function updateAdminDiscountCode(id: number, payload: UpdateDiscountPayload): Promise<AdminDiscountCode> {
-  const res = await fetch(apiUrl(`/api/admin/discount-codes/${id}`), {
+  const data = await apiFetch<{ success: true; discount_code: AdminDiscountCode }>(`/api/admin/discount-codes/${id}`, {
     method: 'PATCH',
-    credentials: 'include',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(payload),
+    body: payload,
+    parseError: adminError,
   })
-  if (!res.ok) await parseAdminError(res)
-  const data = (await res.json()) as { success: true; discount_code: AdminDiscountCode }
   return data.discount_code
 }
 
-// --- Admin Product Lines ---
-
 export async function fetchAdminProductLines(): Promise<AdminProductLine[]> {
-  const res = await fetch(apiUrl('/api/admin/product-lines'), { credentials: 'include' })
-  if (!res.ok) await parseAdminError(res)
-  const data = (await res.json()) as { product_lines: AdminProductLine[] }
+  const data = await apiFetch<{ product_lines: AdminProductLine[] }>('/api/admin/product-lines', {
+    parseError: adminError,
+  })
   return data.product_lines
 }
 
 export async function createAdminProductLine(payload: CreateProductLinePayload): Promise<AdminProductLine> {
-  const res = await fetch(apiUrl('/api/admin/product-lines'), {
+  const data = await apiFetch<{ success: true; product_line: AdminProductLine }>('/api/admin/product-lines', {
     method: 'POST',
-    credentials: 'include',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(payload),
+    body: payload,
+    parseError: adminError,
   })
-  if (!res.ok) await parseAdminError(res)
-  const data = (await res.json()) as { success: true; product_line: AdminProductLine }
   return data.product_line
 }
 
 export async function updateAdminProductLine(id: number, payload: UpdateProductLinePayload): Promise<AdminProductLine> {
-  const res = await fetch(apiUrl(`/api/admin/product-lines/${id}`), {
+  const data = await apiFetch<{ success: true; product_line: AdminProductLine }>(`/api/admin/product-lines/${id}`, {
     method: 'PATCH',
-    credentials: 'include',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(payload),
+    body: payload,
+    parseError: adminError,
   })
-  if (!res.ok) await parseAdminError(res)
-  const data = (await res.json()) as { success: true; product_line: AdminProductLine }
   return data.product_line
 }
-
-// --- Admin Lab Test Files (on product lines) ---
 
 export async function uploadAdminLabTestFile(file: File): Promise<{
   url: string
@@ -670,165 +362,90 @@ export async function uploadAdminLabTestFile(file: File): Promise<{
   content_type: AdminLabTestContentType
   size_bytes: number
 }> {
-  const res = await fetch(apiUrl('/api/admin/upload/lab-test-file'), {
+  return apiFetch('/api/admin/upload/lab-test-file', {
     method: 'POST',
-    credentials: 'include',
     headers: { 'Content-Type': file.type },
     body: file,
+    parseError: adminError,
   })
-  if (!res.ok) await parseAdminError(res)
-  return (await res.json()) as {
-    url: string
-    key: string
-    content_type: AdminLabTestContentType
-    size_bytes: number
-  }
 }
 
 export async function addAdminLabTestFile(
   productLineId: number,
-  payload: { url: string; r2_key: string; content_type: AdminLabTestContentType; size_bytes: number; label?: string }
+  payload: { url: string; r2_key: string; content_type: AdminLabTestContentType; size_bytes: number; label?: string },
 ): Promise<AdminLabTestFile[]> {
-  const res = await fetch(apiUrl(`/api/admin/product-lines/${productLineId}/lab-test-files`), {
-    method: 'POST',
-    credentials: 'include',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(payload),
-  })
-  if (!res.ok) await parseAdminError(res)
-  const data = (await res.json()) as { success: true; lab_test_files: AdminLabTestFile[] }
+  const data = await apiFetch<{ success: true; lab_test_files: AdminLabTestFile[] }>(
+    `/api/admin/product-lines/${productLineId}/lab-test-files`,
+    { method: 'POST', body: payload, parseError: adminError },
+  )
   return data.lab_test_files
 }
 
 export async function updateAdminLabTestFile(
   productLineId: number,
   fileId: number,
-  label: string
+  label: string,
 ): Promise<AdminLabTestFile[]> {
-  const res = await fetch(apiUrl(`/api/admin/product-lines/${productLineId}/lab-test-files/${fileId}`), {
-    method: 'PATCH',
-    credentials: 'include',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ label }),
-  })
-  if (!res.ok) await parseAdminError(res)
-  const data = (await res.json()) as { success: true; lab_test_files: AdminLabTestFile[] }
+  const data = await apiFetch<{ success: true; lab_test_files: AdminLabTestFile[] }>(
+    `/api/admin/product-lines/${productLineId}/lab-test-files/${fileId}`,
+    { method: 'PATCH', body: { label }, parseError: adminError },
+  )
   return data.lab_test_files
 }
 
 export async function deleteAdminLabTestFile(productLineId: number, fileId: number): Promise<AdminLabTestFile[]> {
-  const res = await fetch(apiUrl(`/api/admin/product-lines/${productLineId}/lab-test-files/${fileId}`), {
-    method: 'DELETE',
-    credentials: 'include',
-  })
-  if (!res.ok) await parseAdminError(res)
-  const data = (await res.json()) as { success: true; lab_test_files: AdminLabTestFile[] }
+  const data = await apiFetch<{ success: true; lab_test_files: AdminLabTestFile[] }>(
+    `/api/admin/product-lines/${productLineId}/lab-test-files/${fileId}`,
+    { method: 'DELETE', parseError: adminError },
+  )
   return data.lab_test_files
 }
 
 export async function reorderAdminLabTestFiles(productLineId: number, fileIds: number[]): Promise<AdminLabTestFile[]> {
-  const res = await fetch(apiUrl(`/api/admin/product-lines/${productLineId}/lab-test-files/reorder`), {
-    method: 'PATCH',
-    credentials: 'include',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ file_ids: fileIds }),
-  })
-  if (!res.ok) await parseAdminError(res)
-  const data = (await res.json()) as { success: true; lab_test_files: AdminLabTestFile[] }
+  const data = await apiFetch<{ success: true; lab_test_files: AdminLabTestFile[] }>(
+    `/api/admin/product-lines/${productLineId}/lab-test-files/reorder`,
+    { method: 'PATCH', body: { file_ids: fileIds }, parseError: adminError },
+  )
   return data.lab_test_files
-}
-
-// --- Admin R2 Cleanup ---
-
-export interface R2Orphan {
-  key: string
-  uploaded: string
-  size: number
-}
-
-export interface R2CleanupSummary {
-  scanned: number
-  referenced_count: number
-  orphan_count: number
-  min_age_seconds: number
-  truncated: boolean
-}
-
-export interface R2CleanupDryRunResult extends R2CleanupSummary {
-  dry_run: true
-  orphans: R2Orphan[]
-}
-
-export interface R2CleanupResult extends R2CleanupSummary {
-  dry_run: false
-  deleted: string[]
-  errors: { key: string; error: string }[]
 }
 
 export async function previewR2Orphans(minAgeSeconds?: number): Promise<R2CleanupDryRunResult> {
   const params = new URLSearchParams({ dry_run: '1' })
   if (typeof minAgeSeconds === 'number') params.set('min_age_seconds', String(minAgeSeconds))
-  const res = await fetch(apiUrl(`/api/admin/cleanup/r2-orphans?${params.toString()}`), {
+  return apiFetch(`/api/admin/cleanup/r2-orphans?${params.toString()}`, {
     method: 'POST',
-    credentials: 'include',
+    parseError: adminError,
   })
-  if (!res.ok) await parseAdminError(res)
-  return (await res.json()) as R2CleanupDryRunResult
 }
 
 export async function deleteR2Orphans(minAgeSeconds?: number): Promise<R2CleanupResult> {
   const params = new URLSearchParams()
   if (typeof minAgeSeconds === 'number') params.set('min_age_seconds', String(minAgeSeconds))
   const qs = params.toString()
-  const res = await fetch(apiUrl(`/api/admin/cleanup/r2-orphans${qs ? `?${qs}` : ''}`), {
+  return apiFetch(`/api/admin/cleanup/r2-orphans${qs ? `?${qs}` : ''}`, {
     method: 'POST',
-    credentials: 'include',
+    parseError: adminError,
   })
-  if (!res.ok) await parseAdminError(res)
-  return (await res.json()) as R2CleanupResult
-}
-
-// --- Admin Income Reports ---
-
-export interface IncomeReportProduct {
-  product_name: string
-  total_revenue: number
-  total_quantity: number
-}
-
-export interface IncomeReport {
-  year: number
-  month: number
-  total_revenue: number
-  total_orders: number
-  products: IncomeReportProduct[]
 }
 
 export async function fetchAdminIncomeReport(year: number, month: number): Promise<IncomeReport> {
-  const res = await fetch(apiUrl(`/api/admin/reports/income?year=${year}&month=${month}`), {
-    credentials: 'include',
+  return apiFetch(`/api/admin/reports/income?year=${year}&month=${month}`, {
+    parseError: adminError,
   })
-  if (!res.ok) await parseAdminError(res)
-  return (await res.json()) as IncomeReport
 }
 
-// --- Admin Site Settings ---
-
 export async function fetchAdminSettings(): Promise<Record<string, string>> {
-  const res = await fetch(apiUrl('/api/admin/settings'), { credentials: 'include' })
-  if (!res.ok) await parseAdminError(res)
-  const data = (await res.json()) as { settings: Record<string, string> }
+  const data = await apiFetch<{ settings: Record<string, string> }>('/api/admin/settings', {
+    parseError: adminError,
+  })
   return data.settings
 }
 
 export async function updateAdminSettings(settings: Record<string, string>): Promise<Record<string, string>> {
-  const res = await fetch(apiUrl('/api/admin/settings'), {
+  const data = await apiFetch<{ success: true; settings: Record<string, string> }>('/api/admin/settings', {
     method: 'PATCH',
-    credentials: 'include',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ settings }),
+    body: { settings },
+    parseError: adminError,
   })
-  if (!res.ok) await parseAdminError(res)
-  const data = (await res.json()) as { success: true; settings: Record<string, string> }
   return data.settings
 }

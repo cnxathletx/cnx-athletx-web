@@ -1,4 +1,5 @@
 import type { SiteSettingsMap } from '../../lib/types'
+import { parseEnabledPaymentMethods } from '../settings'
 import type { PaymentProvider } from './types'
 import { promptpayProvider } from './promptpay'
 import { bankTransferProvider } from './bank-transfer'
@@ -10,14 +11,7 @@ export function getProvider(id: string): PaymentProvider | null {
 }
 
 export function parseEnabledMethods(raw: string | undefined): string[] {
-  if (!raw) return []
-  try {
-    const parsed = JSON.parse(raw)
-    if (!Array.isArray(parsed)) return []
-    return parsed.filter((x): x is string => typeof x === 'string')
-  } catch {
-    return []
-  }
+  return parseEnabledPaymentMethods(raw)
 }
 
 export function listEnabledProviders(settings: SiteSettingsMap): PaymentProvider[] {

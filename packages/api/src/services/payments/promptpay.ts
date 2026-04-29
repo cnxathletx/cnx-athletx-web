@@ -1,10 +1,7 @@
 import type { PaymentProvider } from './types'
+import { formatThb } from '../../lib/money'
 
 const REQUIRED = ['promptpay_number'] as const
-
-function formatThbAmount(satang: number): string {
-  return `฿${(satang / 100).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
-}
 
 export const promptpayProvider: PaymentProvider = {
   id: 'promptpay',
@@ -39,7 +36,7 @@ export const promptpayProvider: PaymentProvider = {
     return {
       title: 'Payment Details',
       rows: [
-        { label: 'Amount', value: formatThbAmount(order.total_thb) },
+        { label: 'Amount', value: formatThb(order.total_thb) },
         { label: 'PromptPay', value: num },
       ],
       qrImageUrl: `https://promptpay.io/${num}/${amountThb}.png`,

@@ -13,6 +13,7 @@ import { RouterLink } from 'vue-router'
 import PrimaryButton from '../components/ui/PrimaryButton.vue'
 import SecondaryButton from '../components/ui/SecondaryButton.vue'
 import AdminNav from '../components/admin/AdminNav.vue'
+import { formatMoney } from '../utils/money'
 
 const loading = ref(true)
 const error = ref('')
@@ -49,9 +50,7 @@ const editForm = reactive<Required<UpdateDiscountPayload>>({
   expires_at: null,
 })
 
-function formatThb(satang: number): string {
-  return `฿${(satang / 100).toLocaleString('en-US', { minimumFractionDigits: 0 })}`
-}
+const formatThb = formatMoney
 
 function formatDate(iso: string | null): string {
   if (!iso) return '—'

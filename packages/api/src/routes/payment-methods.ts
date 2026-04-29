@@ -1,18 +1,13 @@
 import type { RouterType } from 'itty-router'
-import type { Env, SiteSettingsMap } from '../lib/types'
+import type { Env } from '../lib/types'
 import { listEnabledProviders } from '../services/payments/registry'
+import { loadSettingsMap } from '../services/settings'
 
 export function registerPaymentMethodsRoutes(router: RouterType) {
   router.get('/api/payment-methods', async (_request: Request, env: Env) => {
-    const settingsMap: SiteSettingsMap = {}
+    let settingsMap
     try {
-      const { results } = await env.DB.prepare(`SELECT key, value FROM site_settings`).all<{
-        key: string
-        value: string
-      }>()
-      for (const row of results) {
-        settingsMap[row.key] = row.value
-      }
+      settingsMap = await loadSettingsMap(env)
     } catch {
       return Response.json({ error: 'Database error' }, { status: 500 })
     }

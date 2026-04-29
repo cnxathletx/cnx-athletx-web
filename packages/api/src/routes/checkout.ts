@@ -2,8 +2,6 @@ import type { RouterType } from 'itty-router'
 import type {
   Env,
   ProductRow,
-  SiteSettings,
-  DiscountCodeRow,
   ExistingOrderRow,
   ValidationError,
   OrderStatusOnlyRow,
@@ -13,7 +11,8 @@ import type {
 import { isValidOrderId } from '../lib/utils'
 import { validateCheckoutBody, validatePaymentProofBody } from '../lib/validation'
 import { getSessionUser, parseJsonBody } from '../middleware/auth'
-import { enforceLimit, enforceGlobalLimit, getClientIp, rateLimitedResponse } from '../middleware/rate-limit'
+import { getClientIp, rateLimitedResponse } from '../middleware/rate-limit'
+import { enforcePolicyGlobalLimit, enforcePolicyLimit } from '../middleware/rate-limit-registry'
 import { sendOrderEmail, sendAdminNewOrderEmail } from '../services/email'
 import type { EmailItem } from '../services/email'
 import { generateULID } from '../lib/ulid'
@@ -21,11 +20,15 @@ import { ORDER_STATUS, isPaymentProofOrderStatus } from '../lib/orderStatus'
 import { pickUnitPrice, type PriceTier } from '../lib/pricing'
 import { getProvider, listEnabledProviders } from '../services/payments/registry'
 import type { PaymentIntent, SiteSettingsMap } from '../lib/types'
-
-const CHECKOUT_PER_IP_MAX = 30
-const CHECKOUT_PER_IP_WINDOW_SEC = 60 * 60
-const CHECKOUT_GLOBAL_MAX = 1000
-const CHECKOUT_GLOBAL_WINDOW_SEC = 60 * 60
+import { loadSettingsMap, parseSettings, type TypedSettings } from '../services/settings'
+import { applyDiscountCode, type AppliedDiscount } from '../services/discounts'
+import {
+  inventoryFailureDetail,
+  inventoryReservationFailure,
+  releaseInventory,
+  reserveInventory,
+  rollbackReservedInventory,
+} from '../services/inventory'
 
 export function registerCheckoutRoutes(router: RouterType) {
   router.post('/api/checkout', async (request: Request, env: Env, ctx: ExecutionContext) => {
@@ -40,20 +43,10 @@ export function registerCheckoutRoutes(router: RouterType) {
     }
 
     const ip = getClientIp(request)
-    const ipLimit = await enforceLimit(env, {
-      scope: 'checkout',
-      key: ip,
-      max: CHECKOUT_PER_IP_MAX,
-      windowSec: CHECKOUT_PER_IP_WINDOW_SEC,
-    })
+    const ipLimit = await enforcePolicyLimit(env, 'checkout', ip)
     if (!ipLimit.ok) return rateLimitedResponse(ipLimit.retryAfterSec)
 
-    const globalLimit = await enforceGlobalLimit(
-      env,
-      'checkout',
-      CHECKOUT_GLOBAL_MAX,
-      CHECKOUT_GLOBAL_WINDOW_SEC,
-    )
+    const globalLimit = await enforcePolicyGlobalLimit(env, 'checkout')
     if (!globalLimit.ok) return rateLimitedResponse(globalLimit.retryAfterSec)
 
     if (sessionUser && data.customer.email.trim().toLowerCase() !== sessionUser.email.toLowerCase()) {
@@ -150,22 +143,11 @@ export function registerCheckoutRoutes(router: RouterType) {
     }
 
     // --- Fetch site settings ---
-    let settings: SiteSettings
+    let settings: TypedSettings
     let settingsMap: SiteSettingsMap
     try {
-      const { results } = await env.DB.prepare(
-        `SELECT key, value FROM site_settings`
-      ).all<{ key: string; value: string }>()
-
-      settingsMap = {}
-      for (const row of results) {
-        settingsMap[row.key] = row.value
-      }
-
-      settings = {
-        shipping_flat_rate: parseInt(settingsMap.shipping_flat_rate ?? '10000', 10),
-        shipping_free_threshold: parseInt(settingsMap.shipping_free_threshold ?? '0', 10),
-      }
+      settingsMap = await loadSettingsMap(env)
+      settings = parseSettings(settingsMap)
     } catch {
       return Response.json({ error: 'Database error fetching site settings' }, { status: 500 })
     }
@@ -228,79 +210,22 @@ export function registerCheckoutRoutes(router: RouterType) {
         : settings.shipping_flat_rate
 
     // --- Discount code ---
-    let discountThb = 0
-    let discountCodeRow: DiscountCodeRow | null = null
-
-    if (data.discount_code && data.discount_code.trim() !== '') {
-      const code = data.discount_code.trim().toUpperCase()
-
-      try {
-        discountCodeRow = await env.DB.prepare(
-          `SELECT id, code, type, value, min_order_thb, max_uses, used_count, active, expires_at
-           FROM discount_codes WHERE code = ? AND archived = 0 LIMIT 1`
-        )
-          .bind(code)
-          .first<DiscountCodeRow>()
-      } catch {
-        return Response.json({ error: 'Database error validating discount code' }, { status: 500 })
-      }
-
-      if (!discountCodeRow) {
+    let discount: AppliedDiscount
+    try {
+      const appliedDiscount = await applyDiscountCode(env, data.discount_code, subtotal)
+      if (!appliedDiscount.ok) {
         return Response.json(
-          { error: 'Validation failed', details: [{ field: 'discount_code', message: 'Discount code not found' }] },
-          { status: 400 }
+          { error: 'Validation failed', details: [appliedDiscount.detail] },
+          { status: appliedDiscount.status },
         )
       }
-
-      if (!discountCodeRow.active) {
-        return Response.json(
-          { error: 'Validation failed', details: [{ field: 'discount_code', message: 'Discount code is not active' }] },
-          { status: 400 }
-        )
-      }
-
-      if (discountCodeRow.expires_at && new Date(discountCodeRow.expires_at) < new Date()) {
-        return Response.json(
-          { error: 'Validation failed', details: [{ field: 'discount_code', message: 'Discount code has expired' }] },
-          { status: 400 }
-        )
-      }
-
-      if (discountCodeRow.max_uses !== null && discountCodeRow.used_count >= discountCodeRow.max_uses) {
-        return Response.json(
-          {
-            error: 'Validation failed',
-            details: [{ field: 'discount_code', message: 'Discount code has reached its maximum usage limit' }],
-          },
-          { status: 400 }
-        )
-      }
-
-      if (subtotal < discountCodeRow.min_order_thb) {
-        return Response.json(
-          {
-            error: 'Validation failed',
-            details: [
-              {
-                field: 'discount_code',
-                message: `Discount code requires a minimum order of ${discountCodeRow.min_order_thb / 100} THB`,
-              },
-            ],
-          },
-          { status: 400 }
-        )
-      }
-
-      if (discountCodeRow.type === 'fixed') {
-        discountThb = discountCodeRow.value
-      } else {
-        discountThb = Math.floor((subtotal * discountCodeRow.value) / 100)
-      }
-
-      discountThb = Math.min(discountThb, subtotal)
+      discount = appliedDiscount
+    } catch {
+      return Response.json({ error: 'Database error validating discount code' }, { status: 500 })
     }
 
     // --- Final total ---
+    const discountThb = discount.discountThb
     const total = subtotal + shipping - discountThb
 
     // --- Generate order ID ---
@@ -309,60 +234,29 @@ export function registerCheckoutRoutes(router: RouterType) {
     const orderLocale: 'en' | 'th' = data.locale === 'th' ? 'th' : 'en'
 
     // --- Phase 1: Reserve inventory with conditional updates ---
-    const reserveStatements: D1PreparedStatement[] = []
-    for (const item of mergedItems) {
-      reserveStatements.push(
-        env.DB.prepare(
-          `UPDATE inventory SET reserved_count = reserved_count + ?, updated_at = ?
-           WHERE product_id = ? AND (stock_count - reserved_count) >= ?`
-        ).bind(item.quantity, now, item.product_id, item.quantity)
-      )
-    }
-
-    if (discountCodeRow) {
-      reserveStatements.push(
-        env.DB.prepare(
-          `UPDATE discount_codes SET used_count = used_count + 1
-           WHERE id = ? AND (max_uses IS NULL OR used_count < max_uses)`
-        ).bind(discountCodeRow.id)
-      )
-    }
+    const inventoryStatements = reserveInventory(env, mergedItems, now)
+    const reserveStatements: D1PreparedStatement[] = [...inventoryStatements, ...discount.commit]
 
     try {
       const reserveResults = await env.DB.batch(reserveStatements)
+      const inventoryFailure = inventoryReservationFailure(mergedItems, reserveResults)
+      if (inventoryFailure) {
+        const rollbacks = rollbackReservedInventory(env, mergedItems, now, reserveResults, inventoryFailure.index)
+        if (rollbacks.length > 0) await env.DB.batch(rollbacks).catch(() => {})
 
-      for (let i = 0; i < mergedItems.length; i++) {
-        if (reserveResults[i]?.meta?.changes === 0) {
-          const rollbacks: D1PreparedStatement[] = []
-          for (let j = 0; j < i; j++) {
-            if (reserveResults[j]?.meta?.changes && reserveResults[j].meta.changes > 0) {
-              rollbacks.push(
-                env.DB.prepare(
-                  `UPDATE inventory SET reserved_count = reserved_count - ?, updated_at = ? WHERE product_id = ?`
-                ).bind(mergedItems[j].quantity, now, mergedItems[j].product_id)
-              )
-            }
-          }
-          if (rollbacks.length > 0) await env.DB.batch(rollbacks).catch(() => {})
-
-          return Response.json(
-            {
-              error: 'Insufficient stock',
-              details: [{ field: 'items', message: `Product ${mergedItems[i].product_id} is no longer available in the requested quantity` }],
-            },
-            { status: 422 }
-          )
-        }
+        return Response.json(
+          {
+            error: 'Insufficient stock',
+            details: [inventoryFailureDetail(inventoryFailure)],
+          },
+          { status: 422 }
+        )
       }
 
-      if (discountCodeRow) {
+      if (discount.discountCodeRow) {
         const discountResult = reserveResults[mergedItems.length]
         if (discountResult?.meta?.changes === 0) {
-          const rollbacks = mergedItems.map((item) =>
-            env.DB.prepare(
-              `UPDATE inventory SET reserved_count = reserved_count - ?, updated_at = ? WHERE product_id = ?`
-            ).bind(item.quantity, now, item.product_id)
-          )
+          const rollbacks = releaseInventory(env, mergedItems, now)
           await env.DB.batch(rollbacks).catch(() => {})
 
           return Response.json(
@@ -409,7 +303,7 @@ export function registerCheckoutRoutes(router: RouterType) {
         ORDER_STATUS.pendingPayment,
         orderLocale,
         data.idempotency_key,
-        discountCodeRow ? discountCodeRow.code : null,
+        discount.discountCodeRow ? discount.discountCodeRow.code : null,
         provider.id,
         now,
         now
@@ -441,18 +335,10 @@ export function registerCheckoutRoutes(router: RouterType) {
     try {
       await env.DB.batch(orderStatements)
     } catch {
-      const rollbacks: D1PreparedStatement[] = mergedItems.map((item) =>
-        env.DB.prepare(
-          `UPDATE inventory SET reserved_count = reserved_count - ?, updated_at = ? WHERE product_id = ?`
-        ).bind(item.quantity, now, item.product_id)
-      )
-      if (discountCodeRow) {
-        rollbacks.push(
-          env.DB.prepare(`UPDATE discount_codes SET used_count = used_count - 1 WHERE id = ? AND used_count > 0`).bind(
-            discountCodeRow.id
-          )
-        )
-      }
+      const rollbacks: D1PreparedStatement[] = [
+        ...releaseInventory(env, mergedItems, now),
+        ...discount.rollback,
+      ]
       await env.DB.batch(rollbacks).catch(() => {})
       return Response.json({ error: 'Database error creating order' }, { status: 500 })
     }
@@ -499,7 +385,7 @@ export function registerCheckoutRoutes(router: RouterType) {
           province: data.customer.address.province.trim(),
           postal_code: data.customer.address.postal_code,
         },
-        discountCodeRow?.code
+        discount.discountCodeRow?.code
       ).catch((err) => console.error('admin new order email failed:', err))
     )
 

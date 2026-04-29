@@ -14,7 +14,7 @@ import { useHead } from '../composables/useHead'
 import { useThaiAddress } from '../composables/useThaiAddress'
 import { useI18n } from 'vue-i18n'
 
-const { t } = useI18n({ useScope: 'global' })
+const { t, locale } = useI18n({ useScope: 'global' })
 
 useHead({ title: 'Checkout', description: 'Complete your order with CNX AthletX.' })
 
@@ -222,6 +222,7 @@ async function handleSubmit() {
       idempotency_key: idempotencyKey,
       discount_code: form.value.discount_code.trim() || undefined,
       payment_method: selectedMethod.value,
+      locale: locale.value === 'th' ? 'th' : 'en',
     })
 
     // Store checkout result for payment page (intent included)

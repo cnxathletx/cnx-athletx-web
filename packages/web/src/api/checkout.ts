@@ -17,6 +17,7 @@ export interface CheckoutPayload {
   idempotency_key: string
   discount_code?: string
   payment_method: string
+  locale?: 'en' | 'th'
 }
 
 export type PaymentIntent =
@@ -80,6 +81,7 @@ export interface ApiOrder {
   shipping_thb: number
   discount_thb: number
   total_thb: number
+  locale: 'en' | 'th'
   created_at: string
   items: ApiOrderItem[]
   shipment: { carrier: string; tracking_number: string; shipped_at: string } | null

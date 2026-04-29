@@ -11,6 +11,7 @@ Update this file with every user-visible or operationally-relevant change. Group
 Everything below is in-flight on `main` and has not been cut into a versioned release.
 
 ### Added
+- **Email template i18n registry**: transactional emails now render through `services/email/` modules with shared brand config, layout helpers, and a `(event, locale)` registry. Customer locale is captured at checkout, persisted on `orders.locale`, and used for order/review/magic-link email selection. English copy is unchanged; Thai order templates intentionally fall back to English until content lands.
 - **Payment provider abstraction**: `PaymentProvider` registry in `packages/api/src/services/payments/`. PromptPay and bank transfer become independent providers; future 2C2P / NowPayments slot in by adding a file and registering it. Discriminated `PaymentIntent` union (`instructions` | `redirect` | `sdk`) replaces the hard-coded `payment_instructions` shape.
 - **Public `GET /api/payment-methods`** lists enabled providers with localized display names; powers the new checkout method picker.
 - **`GET /api/orders/:id/intent`** rebuilds the payment intent from `payment_method` + current settings so `PaymentInstructionsPage` survives reloads and device switches.

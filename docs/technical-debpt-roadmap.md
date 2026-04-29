@@ -2,21 +2,13 @@
 
 Prioritized list of abstractions to introduce so the product can evolve without large rewrites. Scope: critical and high items only.
 
-Last updated: 2026-04-27
+Last updated: 2026-04-29
 
 ---
 
 ## Critical
 
-### 1. Email templates hardcode brand, domain, locale
-- **Where:** `packages/api/src/services/email.ts` (~607 lines), strings like `CNX AthletX`, `orders@cnxnature.com`, EN-only copy, inline styles.
-- **Problem:** TH localization, white-label, theming all require touching every template.
-- **Fix:**
-  - Extract a `brand` config (name, domain, contact email, logo URL, palette) consumed by `emailLayout`.
-  - Template registry keyed by `(event, locale)`, simple string interpolation (no Handlebars per project decision).
-  - Move `formatThb` to a shared money helper (see High #7).
-
-### 2. Order state machine is implicit
+### 1. Order state machine is implicit
 - **Where:** Status strings (`pending_payment`, `paid`, `shipped`, `cancelled`, `delivered`) scattered across `routes/checkout.ts`, `routes/admin/orders.ts`, `services/email.ts`, frontend pages.
 - **Problem:** v1.5 auto-expiry and 2C2P webhooks will add new transitions. No central rule for what's allowed or what side effects fire.
 - **Fix:**
@@ -24,7 +16,7 @@ Last updated: 2026-04-27
   - Side-effect hooks (email send, inventory release, audit log) registered per transition.
   - Admin and webhook handlers go through the same dispatcher.
 
-### 3. Inventory reserve/rollback hand-rolled in checkout
+### 2. Inventory reserve/rollback hand-rolled in checkout
 - **Where:** `packages/api/src/routes/checkout.ts:319-463`.
 - **Problem:** Cascading rollback logic is inline and impossible to reuse for cart-side reservation, expiry release, or admin manual adjustments.
 - **Fix:** `inventoryService.reserve(items, ctx)` and `release(items, ctx)` returning result + rollback statements. Checkout composes with discount apply, then commits in one batch.
@@ -76,4 +68,5 @@ Last updated: 2026-04-27
 ---
 
 ## Done
+- **2026-04-29 — Email templates moved to brand config + locale registry (was Critical #1).** `packages/api/src/services/email.ts` was replaced by `services/email/` modules for brand identity, shared layout helpers, template registry, and Resend dispatch. Transactional templates are keyed by `(event, locale)`, Thai stubs fall back to English where copy is not ready, Thai review-prompt copy is preserved, customer locale is persisted on `orders.locale`, checkout sends the current web locale, and magic-link email selection follows `Accept-Language`. Spec: `docs/superpowers/specs/2026-04-27-email-templates-i18n-design.md`. Plan: `docs/superpowers/plans/2026-04-27-email-templates-i18n.md`.
 - **2026-04-27 — Payment provider plumbing extracted (was Critical #1).** `PaymentProvider` interface gained `requiredSettingKeys` + `renderInstructions(order, settings) → InstructionsBlock | null`. Checkout no longer reads PromptPay/bank settings directly; email layer renders the provider's structured block via a generic `renderInstructionsHtml` helper. `PaymentInstructions` retired; `SiteSettings` slimmed to shipping fields. Adding a new gateway is now a self-contained provider file. Spec: `docs/superpowers/specs/2026-04-27-payment-provider-abstraction-design.md`. Plan: `docs/superpowers/plans/2026-04-27-payment-provider-abstraction.md`.

@@ -1,4 +1,4 @@
--- Dev DB only: create product_lines table (missing). Includes translations_json.
+-- Dev DB only: create product_lines table (missing).
 CREATE TABLE IF NOT EXISTS product_lines (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     name TEXT NOT NULL,
@@ -8,7 +8,6 @@ CREATE TABLE IF NOT EXISTS product_lines (
     how_to_use TEXT NOT NULL DEFAULT '',
     who_is_for TEXT NOT NULL DEFAULT '',
     regulatory_info TEXT NOT NULL DEFAULT '',
-    translations_json TEXT NOT NULL DEFAULT '{}',
     created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
 );

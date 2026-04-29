@@ -11,6 +11,7 @@ Update this file with every user-visible or operationally-relevant change. Group
 Everything below is in-flight on `main` and has not been cut into a versioned release.
 
 ### Added
+- **Payment webhook dispatcher**: `/api/payments/webhook/:providerId` is now the canonical webhook URL, with the previous `/api/payments/:provider/webhook` path retained as a compatibility alias.
 - **Email template i18n registry**: transactional emails now render through `services/email/` modules with shared brand config, layout helpers, and a `(event, locale)` registry. Customer locale is captured at checkout, persisted on `orders.locale`, and used for order/review/magic-link email selection. English copy is unchanged; Thai order templates intentionally fall back to English until content lands.
 - **Payment provider abstraction**: `PaymentProvider` registry in `packages/api/src/services/payments/`. PromptPay and bank transfer become independent providers; future 2C2P / NowPayments slot in by adding a file and registering it. Discriminated `PaymentIntent` union (`instructions` | `redirect` | `sdk`) replaces the hard-coded `payment_instructions` shape.
 - **Public `GET /api/payment-methods`** lists enabled providers with localized display names; powers the new checkout method picker.
@@ -21,6 +22,7 @@ Everything below is in-flight on `main` and has not been cut into a versioned re
 - **Email templates**: `payment_failed` and `payment_refunded` events wired into `sendOrderEmail`.
 
 ### Changed
+- **Technical-debt refactors**: checkout inventory reservation, discount application, typed settings, money formatting, rate-limit policy selection, web API transport, frontend domain types, and admin resource loading now flow through dedicated shared modules instead of route/page-local implementations.
 - **Order status rules**: API order statuses now flow through `lib/orderStatus.ts` with a canonical status union, transition map, `canTransition`, parser helpers, and shared status groups for admin routes, payment webhooks, reports, reviews, and payment-proof eligibility.
 - **Order schema**: new `orders.payment_method` column. Status enum expanded with `awaiting_gateway`, `failed`, `refunded`.
 - **Payments schema**: new `provider`, `provider_txn_id`, `status`, `payload_json` columns. `payments.method` CHECK constraint dropped (registry handles validation).
@@ -45,6 +47,7 @@ Everything below is in-flight on `main` and has not been cut into a versioned re
 - **Rate limiting**: per-IP and global limits on public write endpoints (checkout, payment-proof, magic-link, chat, reviews) (`3482e70`).
 
 ### Fixed
+- Checkout discount code input no longer shows a sample code placeholder, avoiding the impression that a discount is already available.
 - D1 migration chain no longer creates `product_lines.translations_json` before the dedicated translation migration, preventing duplicate-column failures when bootstrapping dev DBs missing `product_lines`.
 - Cart link (and other lazy-route navigations) silently no-oped after a deploy on Safari: stale `index.html` from cache referenced removed chunk hashes, the auto-reload re-served the same cached HTML, and the one-shot session flag suppressed all further attempts. `_headers` now sends `Cache-Control: no-cache` for `/` and `/index.html`, the chunk-reload regex catches Firefox's wording too, the recovery uses a 10s timestamp throttle (instead of a one-shot flag) and appends `?_r=<ts>` to bypass the HTML cache.
 - Roll back inventory reservations and discount usage counter when order insert batch fails, preventing inflated `reserved_count` / `used_count` after concurrent idempotency-key collisions (`62c5f01`).

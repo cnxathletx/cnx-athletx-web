@@ -2,51 +2,12 @@ import type { RouterType } from 'itty-router'
 import type { Env } from '../../lib/types'
 import { nowIso } from '../../lib/utils'
 import { requireAdmin, parseJsonBody } from '../../middleware/auth'
-
-interface SettingRow {
-  key: string
-  value: string
-}
-
-const ALLOWED_KEYS = new Set([
-  'shipping_flat_rate',
-  'shipping_free_threshold',
-  'promptpay_number',
-  'bank_name',
-  'bank_account_name',
-  'bank_account_number',
-  'payment_deadline_hours',
-  'payment_methods_enabled',
-])
-
-function validateSettingValue(key: string, value: string): string | null {
-  if (key === 'payment_methods_enabled') {
-    let parsed: unknown
-    try {
-      parsed = JSON.parse(value)
-    } catch {
-      return 'payment_methods_enabled must be a JSON array of strings'
-    }
-    if (!Array.isArray(parsed) || !parsed.every((x) => typeof x === 'string')) {
-      return 'payment_methods_enabled must be a JSON array of strings'
-    }
-  }
-  return null
-}
+import { loadSettingsMap, validateSettingUpdate } from '../../services/settings'
 
 export function registerAdminSettingsRoutes(router: RouterType) {
   router.get('/api/admin/settings', requireAdmin(async (_request, env) => {
     try {
-      const { results } = await env.DB.prepare(
-        `SELECT key, value FROM site_settings ORDER BY key ASC`
-      ).all<SettingRow>()
-
-      const settings: Record<string, string> = {}
-      for (const row of results) {
-        settings[row.key] = row.value
-      }
-
-      return Response.json({ settings })
+      return Response.json({ settings: await loadSettingsMap(env) })
     } catch {
       return Response.json({ error: 'Database error' }, { status: 500 })
     }
@@ -65,13 +26,10 @@ export function registerAdminSettingsRoutes(router: RouterType) {
     const entries: [string, string][] = []
 
     for (const [key, value] of Object.entries(updates)) {
-      if (!ALLOWED_KEYS.has(key)) {
-        return Response.json({ error: `Unknown setting: ${key}` }, { status: 400 })
-      }
       if (typeof value !== 'string') {
         return Response.json({ error: `Value for ${key} must be a string` }, { status: 400 })
       }
-      const valErr = validateSettingValue(key, value)
+      const valErr = validateSettingUpdate(key, value)
       if (valErr) {
         return Response.json({ error: valErr }, { status: 400 })
       }
@@ -101,17 +59,7 @@ export function registerAdminSettingsRoutes(router: RouterType) {
 
       await env.DB.batch(statements)
 
-      // Return fresh settings
-      const { results } = await env.DB.prepare(
-        `SELECT key, value FROM site_settings ORDER BY key ASC`
-      ).all<SettingRow>()
-
-      const settings: Record<string, string> = {}
-      for (const row of results) {
-        settings[row.key] = row.value
-      }
-
-      return Response.json({ success: true, settings })
+      return Response.json({ success: true, settings: await loadSettingsMap(env) })
     } catch {
       return Response.json({ error: 'Database error' }, { status: 500 })
     }

@@ -1,99 +1,45 @@
-import { apiUrl } from './client'
+import { ApiClientError, apiFetch, type ApiErrorDetails, type ApiErrorPayload } from './client'
+import type { AccountOrder, AuthUser, SavedAddress } from '../types/auth'
 
-export interface AuthUser {
-  id: string
-  email: string
-  name: string | null
-  phone: string | null
-}
+export type { AccountOrder, AuthUser, SavedAddress } from '../types/auth'
 
-export interface AccountOrder {
-  id: string
-  status: string
-  total_thb: number
-  items_count: number
-  created_at: string
-  shipment: { carrier: string; tracking_number: string } | null
-}
-
-export interface AuthApiError {
-  error: string
-  details?: { field: string; message: string }[]
-}
-
-export class AuthApiErrorResponse extends Error {
-  status: number
-  details?: { field: string; message: string }[]
-
-  constructor(message: string, status: number, details?: { field: string; message: string }[]) {
-    super(message)
-    this.status = status
-    this.details = details
+export class AuthApiErrorResponse extends ApiClientError {
+  constructor(message: string, status: number, details?: ApiErrorDetails[]) {
+    super(message, status, details)
+    this.name = 'AuthApiErrorResponse'
   }
 }
 
-async function parseAuthError(res: Response): Promise<never> {
-  let payload: AuthApiError = { error: 'Request failed' }
-  try {
-    payload = (await res.json()) as AuthApiError
-  } catch {
-    // Ignore parsing failures.
-  }
-  throw new AuthApiErrorResponse(payload.error || 'Request failed', res.status, payload.details)
+function authError(payload: ApiErrorPayload, response: Response): AuthApiErrorResponse {
+  return new AuthApiErrorResponse(payload.error || 'Request failed', response.status, payload.details)
 }
 
 export async function requestMagicLink(email: string): Promise<{ success: boolean; message: string; dev_magic_link?: string }> {
-  const res = await fetch(apiUrl('/api/auth/request-link'), {
+  return apiFetch('/api/auth/request-link', {
     method: 'POST',
-    credentials: 'include',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ email }),
+    body: { email },
+    parseError: authError,
   })
-
-  if (!res.ok) {
-    await parseAuthError(res)
-  }
-
-  return (await res.json()) as { success: boolean; message: string; dev_magic_link?: string }
 }
 
 export async function verifyMagicLink(token: string): Promise<AuthUser> {
-  const res = await fetch(apiUrl('/api/auth/verify'), {
+  const data = await apiFetch<{ user: AuthUser }>('/api/auth/verify', {
     method: 'POST',
-    credentials: 'include',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ token }),
+    body: { token },
+    parseError: authError,
   })
-
-  if (!res.ok) {
-    await parseAuthError(res)
-  }
-
-  const data = (await res.json()) as { user: AuthUser }
   return data.user
 }
 
 export async function logoutApi(): Promise<void> {
-  const res = await fetch(apiUrl('/api/auth/logout'), {
+  await apiFetch<void>('/api/auth/logout', {
     method: 'POST',
-    credentials: 'include',
+    parseError: authError,
   })
-
-  if (!res.ok) {
-    await parseAuthError(res)
-  }
 }
 
 export async function fetchMe(): Promise<AuthUser | null> {
-  const res = await fetch(apiUrl('/api/auth/me'), {
-    credentials: 'include',
-  })
-
-  if (!res.ok) {
-    await parseAuthError(res)
-  }
-
-  const data = (await res.json()) as { user: AuthUser | null }
+  const data = await apiFetch<{ user: AuthUser | null }>('/api/auth/me', { parseError: authError })
   return data.user
 }
 
@@ -101,18 +47,7 @@ export async function fetchAccountOrders(page = 1, limit = 10): Promise<{
   orders: AccountOrder[]
   pagination: { page: number; limit: number; total: number }
 }> {
-  const res = await fetch(apiUrl(`/api/account/orders?page=${page}&limit=${limit}`), {
-    credentials: 'include',
-  })
-
-  if (!res.ok) {
-    await parseAuthError(res)
-  }
-
-  return (await res.json()) as {
-    orders: AccountOrder[]
-    pagination: { page: number; limit: number; total: number }
-  }
+  return apiFetch(`/api/account/orders?page=${page}&limit=${limit}`, { parseError: authError })
 }
 
 export async function fetchLastAddress(): Promise<{
@@ -123,15 +58,7 @@ export async function fetchLastAddress(): Promise<{
   province: string
   postal_code: string
 } | null> {
-  const res = await fetch(apiUrl('/api/account/last-address'), {
-    credentials: 'include',
-  })
-
-  if (!res.ok) {
-    await parseAuthError(res)
-  }
-
-  const data = (await res.json()) as {
+  const data = await apiFetch<{
     address: {
       line1: string
       line2: string | null
@@ -139,56 +66,29 @@ export async function fetchLastAddress(): Promise<{
       province: string
       postal_code: string
     } | null
-  }
+  }>('/api/account/last-address', { parseError: authError })
   return data.address
 }
 
-export interface SavedAddress {
-  line1: string
-  line2: string | null
-  subdistrict: string
-  district: string
-  province: string
-  postal_code: string
-}
-
 export async function fetchSavedAddress(): Promise<SavedAddress | null> {
-  const res = await fetch(apiUrl('/api/account/address'), {
-    credentials: 'include',
-  })
-  if (!res.ok) {
-    await parseAuthError(res)
-  }
-  const data = (await res.json()) as { address: SavedAddress | null }
+  const data = await apiFetch<{ address: SavedAddress | null }>('/api/account/address', { parseError: authError })
   return data.address
 }
 
 export async function updateAddress(payload: SavedAddress): Promise<SavedAddress> {
-  const res = await fetch(apiUrl('/api/account/address'), {
+  const data = await apiFetch<{ success: true; address: SavedAddress }>('/api/account/address', {
     method: 'PATCH',
-    credentials: 'include',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(payload),
+    body: payload,
+    parseError: authError,
   })
-  if (!res.ok) {
-    await parseAuthError(res)
-  }
-  const data = (await res.json()) as { success: true; address: SavedAddress }
   return data.address
 }
 
 export async function updateProfile(payload: { name?: string; phone?: string }): Promise<AuthUser> {
-  const res = await fetch(apiUrl('/api/account/profile'), {
+  const data = await apiFetch<{ user: AuthUser }>('/api/account/profile', {
     method: 'PATCH',
-    credentials: 'include',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(payload),
+    body: payload,
+    parseError: authError,
   })
-
-  if (!res.ok) {
-    await parseAuthError(res)
-  }
-
-  const data = (await res.json()) as { user: AuthUser }
   return data.user
 }

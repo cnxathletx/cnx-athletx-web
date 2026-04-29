@@ -88,6 +88,9 @@ test.describe('Guest checkout flow', () => {
   test('checkout with discount code', async ({ page }) => {
     await addProductToCart(page, 'plant-protein-500g')
     await page.goto('/checkout')
+    const discountCodeInput = page.getByLabel(/discount code/i)
+    await expect(discountCodeInput).toBeVisible()
+    await expect(discountCodeInput).not.toHaveAttribute('placeholder', /.+/)
     await fillCheckoutForm(page, { discount_code: 'SAVE100' })
     await page.getByRole('button', { name: /place order/i }).click()
 

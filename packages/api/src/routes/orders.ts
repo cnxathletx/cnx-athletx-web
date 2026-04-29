@@ -1,7 +1,8 @@
 import type { RouterType } from 'itty-router'
-import type { Env, OrderRow, OrderItemRow, ShipmentRow, PaymentProofRow, PaymentIntent, SiteSettingsMap } from '../lib/types'
+import type { Env, OrderRow, OrderItemRow, ShipmentRow, PaymentProofRow, PaymentIntent } from '../lib/types'
 import { isValidOrderId } from '../lib/utils'
 import { getProvider } from '../services/payments/registry'
+import { loadSettingsMap } from '../services/settings'
 
 export function registerOrderRoutes(router: RouterType) {
   router.get('/api/orders/:id', async (request: Request, env: Env) => {
@@ -116,13 +117,9 @@ export function registerOrderRoutes(router: RouterType) {
       return Response.json({ error: 'Payment method no longer supported' }, { status: 410 })
     }
 
-    const settingsMap: SiteSettingsMap = {}
+    let settingsMap
     try {
-      const { results } = await env.DB.prepare(`SELECT key, value FROM site_settings`).all<{
-        key: string
-        value: string
-      }>()
-      for (const r of results) settingsMap[r.key] = r.value
+      settingsMap = await loadSettingsMap(env)
     } catch {
       return Response.json({ error: 'Database error' }, { status: 500 })
     }

@@ -16,6 +16,7 @@ The current product supports:
 - Admin operations for orders, inventory, products, product lines, discounts, site settings, support chat, and income reporting
 - Transactional email flows through Resend
 - Centralized order status rules for admin transitions, payment webhooks, reporting, review eligibility, and payment-proof eligibility
+- Shared internal abstractions for checkout inventory reservation, discount application, typed settings, money formatting, rate-limit policies, frontend API transport, and frontend domain types
 
 The main gap is no longer basic product implementation. The remaining work for v1 release is launch hardening: production validation, browser/device QA, SEO/performance verification, deployment/config review, and final operational readiness.
 
@@ -98,6 +99,7 @@ Compared with the original v1 planning assumptions, the codebase now also includ
 5. **Manual payment operations for v1**: reduces launch complexity and external dependencies.
 6. **Passwordless auth**: avoids password storage and lowers account friction.
 7. **Best-effort email delivery**: email failures are logged and do not block order state changes.
+8. **Typed shared policy modules**: settings, money, inventory reservation, discounts, rate limits, order statuses, and payment providers are centralized so route handlers stay orchestration-focused.
 
 ---
 
@@ -133,9 +135,8 @@ Compared with the original v1 planning assumptions, the codebase now also includ
 | Document | Contents |
 |----------|----------|
 | [02-backend-architecture.md](./02-backend-architecture.md) | Schema, API surface, admin workflow, Resend integration, testing |
-| [03-frontend-design.md](./03-frontend-design.md) | UX structure, design system, page behavior, responsive rules |
-| [04-milestones.md](./04-milestones.md) | Phase-by-phase implementation tracking and acceptance criteria |
-| [05-user-management.md](./05-user-management.md) | Customer auth, sessions, account behavior, checkout pre-fill |
+| [03-frontend-design.md](./03-frontend-design.md) | Frontend structure, API transport conventions, page/composable responsibilities |
+| [03-milestones.md](./03-milestones.md) | Phase-by-phase implementation tracking and acceptance criteria |
 
 ---
 

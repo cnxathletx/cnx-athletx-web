@@ -1,6 +1,17 @@
-import { apiUrl } from './client'
+import { apiFetch } from './client'
 import { formatMoney } from '../utils/money'
 import i18n from '../i18n'
+import type { ApiProduct, ProductDetailResponse } from '../types/products'
+
+export type {
+  ApiLabTestContentType,
+  ApiLabTestFile,
+  ApiPriceTier,
+  ApiProduct,
+  ApiProductScreenshot,
+  ApiRelatedProduct,
+  ProductDetailResponse,
+} from '../types/products'
 
 function currentLocale(): string {
   try {
@@ -12,78 +23,22 @@ function currentLocale(): string {
   }
 }
 
-export interface ApiProductScreenshot {
-  id: number
-  url: string
-  sort_order: number
-}
-
-export interface ApiPriceTier {
-  min_quantity: number
-  unit_price_thb: number
-}
-
-export type ApiLabTestContentType =
-  | 'application/pdf'
-  | 'image/jpeg'
-  | 'image/png'
-  | 'image/webp'
-
-export interface ApiLabTestFile {
-  id: number
-  url: string
-  content_type: ApiLabTestContentType
-  label: string
-}
-
-export interface ApiProduct {
-  id: number
-  slug: string
-  name: string
-  description: string
-  price_thb: number
-  weight_g: number
-  image_url: string
-  available_stock: number
-  nutrition_json: string | null
-  ingredients: string | null
-  how_to_use: string | null
-  who_is_for: string | null
-  regulatory_info: string | null
-  product_line_name: string | null
-  screenshots: ApiProductScreenshot[]
-  price_tiers: ApiPriceTier[]
-  lab_test_files: ApiLabTestFile[]
-}
-
-export interface ApiRelatedProduct {
-  id: number
-  slug: string
-  name: string
-  price_thb: number
-  weight_g: number
-  image_url: string
-  available_stock: number
-}
-
-export interface ProductDetailResponse {
-  product: ApiProduct
-  related: ApiRelatedProduct | null
-}
-
 export async function fetchProducts(): Promise<ApiProduct[]> {
-  const res = await fetch(apiUrl(`/api/products?locale=${encodeURIComponent(currentLocale())}`))
-  if (!res.ok) throw new Error('Failed to fetch products')
-  const data = (await res.json()) as { products: ApiProduct[] }
+  const data = await apiFetch<{ products: ApiProduct[] }>(
+    `/api/products?locale=${encodeURIComponent(currentLocale())}`,
+    { parseError: () => new Error('Failed to fetch products') },
+  )
   return data.products
 }
 
 export async function fetchProductBySlug(slug: string): Promise<ProductDetailResponse> {
-  const res = await fetch(apiUrl(`/api/products/${encodeURIComponent(slug)}?locale=${encodeURIComponent(currentLocale())}`))
-  if (res.status === 404) throw new Error('Product not found')
-  if (!res.ok) throw new Error('Failed to fetch product')
-  const data = (await res.json()) as ProductDetailResponse
-  return data
+  return apiFetch<ProductDetailResponse>(
+    `/api/products/${encodeURIComponent(slug)}?locale=${encodeURIComponent(currentLocale())}`,
+    {
+      parseError: (_payload, response) =>
+        response.status === 404 ? new Error('Product not found') : new Error('Failed to fetch product'),
+    },
+  )
 }
 
 const prefetched = new Set<string>()
@@ -92,8 +47,8 @@ export function prefetchProductBySlug(slug: string): void {
   const key = `${slug}|${currentLocale()}`
   if (prefetched.has(key)) return
   prefetched.add(key)
-  void fetch(
-    apiUrl(`/api/products/${encodeURIComponent(slug)}?locale=${encodeURIComponent(currentLocale())}`),
+  void apiFetch<ProductDetailResponse>(
+    `/api/products/${encodeURIComponent(slug)}?locale=${encodeURIComponent(currentLocale())}`,
   ).catch(() => {
     prefetched.delete(key)
   })

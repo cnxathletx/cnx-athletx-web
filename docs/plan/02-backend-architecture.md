@@ -77,13 +77,13 @@
      idempotency_key: crypto.randomUUID()
    }
 
-4. Workers → D1 transaction:
-   a. SELECT stock_count FROM inventory WHERE product_id IN (...)
-   b. Validate stock >= requested quantity
-   c. UPDATE inventory SET reserved_count += quantity
-   d. INSERT INTO orders (...)
-   e. INSERT INTO order_items (...)
-   f. COMMIT
+4. Workers → checkout orchestration:
+   a. Load typed settings through `services/settings.ts`
+   b. Validate stock and calculate prices
+   c. Apply discount through `services/discounts.ts`
+   d. Reserve inventory through `services/inventory.ts`
+   e. INSERT INTO orders + order_items
+   f. Roll back inventory/discount reservations on insert failure
 
 5. Workers → Resend.emails.send({
      to: customer_email,
@@ -159,6 +159,15 @@
    - Resend order_shipped email
    - Log audit
 ```
+
+### Shared Backend Abstractions
+
+- `packages/api/src/services/settings.ts` owns typed settings defaults/parsers, raw `SiteSettingsMap` loading, enabled payment method parsing, and admin setting validation.
+- `packages/api/src/lib/money.ts` owns satang conversion and currency formatting for emails and payment instructions.
+- `packages/api/src/services/inventory.ts` builds inventory reserve/release statements and maps conditional update failures back to checkout validation details.
+- `packages/api/src/services/discounts.ts` owns discount lookup, validation, amount calculation, use-count commit statements, and rollback statements.
+- `packages/api/src/middleware/rate-limit-registry.ts` defines named rate-limit policies for checkout, magic-link, and chat-create scopes, with optional `site_settings` overrides.
+- `packages/api/src/routes/payments.ts` exposes canonical webhook dispatch at `/api/payments/webhook/:providerId` and keeps `/api/payments/:provider/webhook` as a compatibility alias.
 
 ### Cloudflare Access Protection
 

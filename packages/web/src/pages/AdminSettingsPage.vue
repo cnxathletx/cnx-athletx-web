@@ -11,6 +11,7 @@ import {
 import PrimaryButton from '../components/ui/PrimaryButton.vue'
 import SecondaryButton from '../components/ui/SecondaryButton.vue'
 import AdminNav from '../components/admin/AdminNav.vue'
+import { fromSatang, toSatang } from '../utils/money'
 
 const loading = ref(true)
 const error = ref('')
@@ -49,13 +50,13 @@ function parseEnabledMethods(raw: string | undefined): string[] {
 function satangToThb(val: string): string {
   const n = parseInt(val, 10)
   if (isNaN(n)) return ''
-  return String(n / 100)
+  return String(fromSatang(n))
 }
 
 function thbToSatang(val: string): string {
   const n = parseFloat(val)
   if (isNaN(n)) return '0'
-  return String(Math.round(n * 100))
+  return String(toSatang(n))
 }
 
 async function loadSettings() {

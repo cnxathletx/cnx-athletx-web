@@ -55,6 +55,6 @@ export async function fillCheckoutForm(page: Page, overrides: Partial<{
   await page.locator('select').nth(3).selectOption({ label: subdistrict })
 
   if (overrides.discount_code) {
-    await page.locator('input[placeholder="SAVE10"]').fill(overrides.discount_code)
+    await page.getByLabel(/discount code/i).fill(overrides.discount_code)
   }
 }

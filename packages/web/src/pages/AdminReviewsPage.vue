@@ -1,46 +1,46 @@
 <script setup lang="ts">
-import { onMounted, ref } from 'vue'
+import { computed, onMounted, ref } from 'vue'
 import { fetchAdminReviews, approveReview, rejectReview, deleteAdminReview, type AdminReview, type AdminReviewStatus } from '../api/adminReviews'
 import AdminNav from '../components/admin/AdminNav.vue'
 import { useHead } from '../composables/useHead'
+import { useAdminResource } from '../composables/useAdminResource'
 
 useHead({ title: 'Reviews — Admin', description: 'Moderate customer reviews.' })
 
 const status = ref<AdminReviewStatus>('pending')
-const reviews = ref<AdminReview[]>([])
-const total = ref(0)
-const loading = ref(false)
-const error = ref<string | null>(null)
 const rejectReasonFor = ref<number | null>(null)
 const rejectReasonText = ref('')
 
-async function load() {
-  loading.value = true
-  error.value = null
-  try {
+const reviewsResource = useAdminResource<{ reviews: AdminReview[]; total: number }>({
+  initial: { reviews: [], total: 0 },
+  fallbackError: 'Failed to load reviews',
+  async load() {
     const data = await fetchAdminReviews(status.value, 1)
-    reviews.value = data.reviews
-    total.value = data.pagination.total
-  } catch (e) {
-    error.value = e instanceof Error ? e.message : 'Failed to load reviews'
-  } finally {
-    loading.value = false
-  }
+    return { reviews: data.reviews, total: data.pagination.total }
+  },
+})
+
+const reviews = computed(() => reviewsResource.data.value.reviews)
+const loading = reviewsResource.loading
+const error = reviewsResource.error
+
+async function load() { await reviewsResource.reload() }
+
+async function onApprove(id: number) {
+  await reviewsResource.runAction(() => approveReview(id))
 }
 
-async function onApprove(id: number) { await approveReview(id); await load() }
-
 async function onReject(id: number) {
-  await rejectReview(id, rejectReasonText.value || undefined)
-  rejectReasonFor.value = null
-  rejectReasonText.value = ''
-  await load()
+  await reviewsResource.runAction(() => rejectReview(id, rejectReasonText.value || undefined))
+  if (!error.value) {
+    rejectReasonFor.value = null
+    rejectReasonText.value = ''
+  }
 }
 
 async function onDelete(id: number) {
   if (!window.confirm('Delete this review permanently?')) return
-  await deleteAdminReview(id)
-  await load()
+  await reviewsResource.runAction(() => deleteAdminReview(id))
 }
 
 onMounted(() => { void load() })

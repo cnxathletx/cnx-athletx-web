@@ -6,10 +6,21 @@ beforeAll(async () => { await startWorker() })
 afterAll(async () => { await stopWorker() })
 beforeEach(async () => { await resetDb() })
 
+describe('POST /api/payments/webhook/:providerId', () => {
+  it('routes canonical provider webhooks through the provider dispatcher', async () => {
+    const res = await workerFetch('/api/payments/webhook/promptpay', { body: {} })
+    expect(res.status).toBe(404)
+    const data = await res.json() as { error: string }
+    expect(data.error).toBe('Provider has no webhook')
+  })
+})
+
 describe('POST /api/payments/:provider/webhook', () => {
   it('returns 404 when provider has no verifyWebhook (manual)', async () => {
     const res = await workerFetch('/api/payments/promptpay/webhook', { body: {} })
     expect(res.status).toBe(404)
+    const data = await res.json() as { error: string }
+    expect(data.error).toBe('Provider has no webhook')
   })
 
   it('returns 404 when provider unknown', async () => {

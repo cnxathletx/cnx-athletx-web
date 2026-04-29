@@ -31,6 +31,7 @@ async function placeOrderViaApi(page: Page, email: string): Promise<string> {
     data: {
       idempotency_key: `e2e-${Date.now()}-${Math.random()}`,
       items: [{ product_id: 1, quantity: 1 }],
+      payment_method: 'promptpay',
       customer: {
         name: 'E2E Reviewer',
         email,

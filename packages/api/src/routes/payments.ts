@@ -16,15 +16,34 @@ export function allowedFromStates(outcome: WebhookOutcome) {
   return allowedWebhookTransitionSources(outcome)
 }
 
+export interface WebhookEnvelope {
+  orderId: string
+  status: WebhookOutcome
+  idempotencyKey: string
+  raw: unknown
+}
+
+export function webhookEnvelopeFromResult(result: {
+  order_id: string
+  provider_txn_id: string
+  status: WebhookOutcome
+  raw: unknown
+}): WebhookEnvelope {
+  return {
+    orderId: result.order_id,
+    status: result.status,
+    idempotencyKey: result.provider_txn_id,
+    raw: result.raw,
+  }
+}
+
 function isUniqueViolation(err: unknown): boolean {
   const msg = String(err instanceof Error ? err.message : err).toLowerCase()
   return msg.includes('unique') || msg.includes('constraint failed')
 }
 
 export function registerPaymentsRoutes(router: RouterType) {
-  router.post('/api/payments/:provider/webhook', async (request: Request, env: Env) => {
-    const url = new URL(request.url)
-    const providerId = url.pathname.split('/')[3] || ''
+  async function dispatchWebhook(request: Request, env: Env, providerId: string): Promise<Response> {
     const provider = getProvider(providerId)
     if (!provider || !provider.verifyWebhook) {
       return Response.json({ error: 'Provider has no webhook' }, { status: 404 })
@@ -35,8 +54,9 @@ export function registerPaymentsRoutes(router: RouterType) {
       return Response.json({ error: result.reason }, { status: 400 })
     }
 
-    const newStatus = mapWebhookToOrderStatus(result.status)
-    const allowed = allowedFromStates(result.status)
+    const envelope = webhookEnvelopeFromResult(result)
+    const newStatus = mapWebhookToOrderStatus(envelope.status)
+    const allowed = allowedFromStates(envelope.status)
     const now = nowIso()
 
     try {
@@ -45,19 +65,19 @@ export function registerPaymentsRoutes(router: RouterType) {
           `INSERT INTO payments (order_id, method, provider, provider_txn_id, status, payload_json, amount_thb, created_at)
            VALUES (?, ?, ?, ?, ?, ?, (SELECT total_thb FROM orders WHERE id = ?), ?)`
         ).bind(
-          result.order_id,
+          envelope.orderId,
           provider.id,
           provider.id,
-          result.provider_txn_id,
-          result.status,
-          JSON.stringify(result.raw),
-          result.order_id,
+          envelope.idempotencyKey,
+          envelope.status,
+          JSON.stringify(envelope.raw),
+          envelope.orderId,
           now,
         ),
         env.DB.prepare(
           `UPDATE orders SET status = ?, updated_at = ?
            WHERE id = ? AND status IN ${orderStatusSqlList(allowed)}`
-        ).bind(newStatus, now, result.order_id),
+        ).bind(newStatus, now, envelope.orderId),
       ])
     } catch (e) {
       if (isUniqueViolation(e)) {
@@ -68,5 +88,17 @@ export function registerPaymentsRoutes(router: RouterType) {
     }
 
     return Response.json({ ok: true })
+  }
+
+  router.post('/api/payments/webhook/:providerId', async (request: Request, env: Env) => {
+    const url = new URL(request.url)
+    const providerId = url.pathname.split('/')[4] || ''
+    return dispatchWebhook(request, env, providerId)
+  })
+
+  router.post('/api/payments/:provider/webhook', async (request: Request, env: Env) => {
+    const url = new URL(request.url)
+    const providerId = url.pathname.split('/')[3] || ''
+    return dispatchWebhook(request, env, providerId)
   })
 }

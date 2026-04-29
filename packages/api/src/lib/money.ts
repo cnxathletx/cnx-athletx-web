@@ -1,7 +1,3 @@
-// Monetary values are stored as satang (THB * 100) across the API.
-// Always route display through formatMoney so we never render a raw satang int
-// like "124,000" when the user expects "฿1,240".
-
 export interface MoneyFormatOptions {
   locale?: string
   currency?: string
@@ -33,4 +29,11 @@ export function formatMoney(satang: number, options: MoneyFormatOptions = {}): s
   return `${CURRENCY_SYMBOLS[currency] ?? `${currency} `}${formatted}`
 }
 
-export const satangToThb = fromSatang
+export function formatThb(satang: number): string {
+  return formatMoney(satang, {
+    locale: 'en-US',
+    currency: 'THB',
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  })
+}

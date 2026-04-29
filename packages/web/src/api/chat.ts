@@ -1,67 +1,31 @@
-import { apiUrl } from './client'
+import { ApiClientError, apiFetch, type ApiErrorDetails, type ApiErrorPayload } from './client'
+import type { ChatConversation, CreateConversationInput } from '../types/chat'
 
-export type ChatSenderType = 'customer' | 'admin' | 'system'
-export type ChatConversationStatus = 'open' | 'closed'
+export type {
+  ChatConversation,
+  ChatConversationStatus,
+  ChatMessage,
+  ChatSenderType,
+  CreateConversationInput,
+} from '../types/chat'
 
-export interface ChatMessage {
-  id: number
-  sender_type: ChatSenderType
-  body: string
-  created_at: string
-}
-
-export interface ChatConversation {
-  id: string
-  status: ChatConversationStatus
-  guest_name: string | null
-  guest_email: string | null
-  last_message_at: string
-  unread_count: number
-  messages: ChatMessage[]
-}
-
-interface ChatApiError {
-  error: string
-  details?: { field: string; message: string }[]
-}
-
-export class ChatApiErrorResponse extends Error {
-  status: number
-  details?: { field: string; message: string }[]
-
-  constructor(message: string, status: number, details?: { field: string; message: string }[]) {
-    super(message)
-    this.status = status
-    this.details = details
+export class ChatApiErrorResponse extends ApiClientError {
+  constructor(message: string, status: number, details?: ApiErrorDetails[]) {
+    super(message, status, details)
+    this.name = 'ChatApiErrorResponse'
   }
 }
 
-async function parseChatError(res: Response): Promise<never> {
-  let payload: ChatApiError = { error: 'Request failed' }
-  try {
-    payload = (await res.json()) as ChatApiError
-  } catch {
-    // ignore
-  }
-  throw new ChatApiErrorResponse(payload.error || 'Request failed', res.status, payload.details)
-}
-
-export interface CreateConversationInput {
-  visitor_id: string
-  guest_name?: string
-  guest_email?: string
-  initial_message: string
+function chatError(payload: ApiErrorPayload, response: Response): ChatApiErrorResponse {
+  return new ChatApiErrorResponse(payload.error || 'Request failed', response.status, payload.details)
 }
 
 export async function createConversation(input: CreateConversationInput): Promise<ChatConversation> {
-  const res = await fetch(apiUrl('/api/chat/conversations'), {
+  const data = await apiFetch<{ conversation: ChatConversation }>('/api/chat/conversations', {
     method: 'POST',
-    credentials: 'include',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(input),
+    body: input,
+    parseError: chatError,
   })
-  if (!res.ok) await parseChatError(res)
-  const data = (await res.json()) as { conversation: ChatConversation }
   return data.conversation
 }
 
@@ -74,12 +38,10 @@ export async function fetchConversation(
   if (typeof sinceMessageId === 'number' && sinceMessageId > 0) {
     params.set('since_message_id', String(sinceMessageId))
   }
-  const res = await fetch(
-    apiUrl(`/api/chat/conversations/${encodeURIComponent(id)}?${params.toString()}`),
-    { credentials: 'include' },
+  const data = await apiFetch<{ conversation: ChatConversation }>(
+    `/api/chat/conversations/${encodeURIComponent(id)}?${params.toString()}`,
+    { parseError: chatError },
   )
-  if (!res.ok) await parseChatError(res)
-  const data = (await res.json()) as { conversation: ChatConversation }
   return data.conversation
 }
 
@@ -93,23 +55,21 @@ export async function sendMessage(
   if (typeof sinceMessageId === 'number' && sinceMessageId > 0) {
     payload.since_message_id = sinceMessageId
   }
-  const res = await fetch(apiUrl(`/api/chat/conversations/${encodeURIComponent(id)}/messages`), {
-    method: 'POST',
-    credentials: 'include',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(payload),
-  })
-  if (!res.ok) await parseChatError(res)
-  const data = (await res.json()) as { conversation: ChatConversation }
+  const data = await apiFetch<{ conversation: ChatConversation }>(
+    `/api/chat/conversations/${encodeURIComponent(id)}/messages`,
+    {
+      method: 'POST',
+      body: payload,
+      parseError: chatError,
+    },
+  )
   return data.conversation
 }
 
 export async function markRead(id: string, visitorId: string): Promise<void> {
-  const res = await fetch(apiUrl(`/api/chat/conversations/${encodeURIComponent(id)}/read`), {
+  await apiFetch<void>(`/api/chat/conversations/${encodeURIComponent(id)}/read`, {
     method: 'POST',
-    credentials: 'include',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ visitor_id: visitorId }),
+    body: { visitor_id: visitorId },
+    parseError: chatError,
   })
-  if (!res.ok) await parseChatError(res)
 }

@@ -7,7 +7,8 @@ import type {
   ChatMessagePublicView,
 } from '../lib/types'
 import { parseJsonBody, getSessionUser } from '../middleware/auth'
-import { enforceLimit, enforceGlobalLimit, getClientIp, rateLimitedResponse } from '../middleware/rate-limit'
+import { getClientIp, rateLimitedResponse } from '../middleware/rate-limit'
+import { enforcePolicyGlobalLimit, enforcePolicyLimit } from '../middleware/rate-limit-registry'
 import {
   validateCreateChatConversationBody,
   validatePostChatMessageBody,
@@ -17,10 +18,6 @@ import { sendAdminNewChatEmail } from '../services/email'
 
 const MAX_CONVERSATIONS_PER_VISITOR_PER_DAY = 5
 const MAX_MESSAGES_PER_CONVERSATION = 200
-const CHAT_CREATE_PER_IP_MAX = 10
-const CHAT_CREATE_PER_IP_WINDOW_SEC = 24 * 60 * 60
-const CHAT_CREATE_GLOBAL_MAX = 500
-const CHAT_CREATE_GLOBAL_WINDOW_SEC = 24 * 60 * 60
 
 type AuthContext = {
   userId: string | null
@@ -148,20 +145,10 @@ export function registerChatRoutes(router: RouterType) {
 
     try {
       const ip = getClientIp(request)
-      const ipLimit = await enforceLimit(env, {
-        scope: 'chat_create',
-        key: ip,
-        max: CHAT_CREATE_PER_IP_MAX,
-        windowSec: CHAT_CREATE_PER_IP_WINDOW_SEC,
-      })
+      const ipLimit = await enforcePolicyLimit(env, 'chat_create', ip)
       if (!ipLimit.ok) return rateLimitedResponse(ipLimit.retryAfterSec, 'Too many conversations. Try again later.')
 
-      const globalLimit = await enforceGlobalLimit(
-        env,
-        'chat_create',
-        CHAT_CREATE_GLOBAL_MAX,
-        CHAT_CREATE_GLOBAL_WINDOW_SEC,
-      )
+      const globalLimit = await enforcePolicyGlobalLimit(env, 'chat_create')
       if (!globalLimit.ok) return rateLimitedResponse(globalLimit.retryAfterSec, 'Too many conversations. Try again later.')
 
       const recentCountRow = await env.DB.prepare(

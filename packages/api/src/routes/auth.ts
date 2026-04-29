@@ -3,17 +3,14 @@ import type { Env, CountRow, UserRow, MagicLinkRow } from '../lib/types'
 import { nowIso, randomHex, sha256Hex } from '../lib/utils'
 import { validateRequestLinkBody, validateVerifyBody } from '../lib/validation'
 import { getSessionUser, buildSessionCookie, clearSessionCookie, parseCookie, parseJsonBody, SESSION_MAX_AGE_SECONDS } from '../middleware/auth'
-import { enforceLimit, enforceGlobalLimit, getClientIp, rateLimitedResponse } from '../middleware/rate-limit'
+import { getClientIp, rateLimitedResponse } from '../middleware/rate-limit'
+import { enforcePolicyGlobalLimit, enforcePolicyLimit } from '../middleware/rate-limit-registry'
 import { sendMagicLinkEmail } from '../services/email'
 import { generateULID } from '../lib/ulid'
 import { parseAcceptLanguage } from '../lib/locale'
 
 const MAGIC_LINK_EXPIRY_MINUTES = 15
 const MAGIC_LINK_RATE_LIMIT_MAX = 3
-const MAGIC_LINK_PER_IP_MAX = 20
-const MAGIC_LINK_PER_IP_WINDOW_SEC = 15 * 60
-const MAGIC_LINK_GLOBAL_MAX = 500
-const MAGIC_LINK_GLOBAL_WINDOW_SEC = 15 * 60
 
 export function registerAuthRoutes(router: RouterType) {
   router.post('/api/auth/request-link', async (request: Request, env: Env) => {
@@ -29,20 +26,10 @@ export function registerAuthRoutes(router: RouterType) {
 
     try {
       const ip = getClientIp(request)
-      const ipLimit = await enforceLimit(env, {
-        scope: 'magic_link',
-        key: ip,
-        max: MAGIC_LINK_PER_IP_MAX,
-        windowSec: MAGIC_LINK_PER_IP_WINDOW_SEC,
-      })
+      const ipLimit = await enforcePolicyLimit(env, 'magic_link', ip)
       if (!ipLimit.ok) return rateLimitedResponse(ipLimit.retryAfterSec)
 
-      const globalLimit = await enforceGlobalLimit(
-        env,
-        'magic_link',
-        MAGIC_LINK_GLOBAL_MAX,
-        MAGIC_LINK_GLOBAL_WINDOW_SEC,
-      )
+      const globalLimit = await enforcePolicyGlobalLimit(env, 'magic_link')
       if (!globalLimit.ok) return rateLimitedResponse(globalLimit.retryAfterSec)
 
       const rateLimit = await env.DB.prepare(

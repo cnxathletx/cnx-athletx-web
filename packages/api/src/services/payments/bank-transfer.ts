@@ -1,10 +1,7 @@
 import type { PaymentProvider } from './types'
+import { formatThb } from '../../lib/money'
 
 const REQUIRED = ['bank_name', 'bank_account_name', 'bank_account_number'] as const
-
-function formatThbAmount(satang: number): string {
-  return `฿${(satang / 100).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
-}
 
 export const bankTransferProvider: PaymentProvider = {
   id: 'bank_transfer',
@@ -39,7 +36,7 @@ export const bankTransferProvider: PaymentProvider = {
     return {
       title: 'Payment Details',
       rows: [
-        { label: 'Amount', value: formatThbAmount(order.total_thb) },
+        { label: 'Amount', value: formatThb(order.total_thb) },
         { label: 'Bank', value: settings.bank_name },
         { label: 'Account Name', value: settings.bank_account_name },
         { label: 'Account Number', value: settings.bank_account_number },

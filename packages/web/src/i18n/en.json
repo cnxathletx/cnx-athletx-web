@@ -33,6 +33,11 @@
     "theme": "Theme",
     "cart": "Cart"
   },
+  "partners": {
+    "title": "Our Partners",
+    "subtitle": "Trusted by athletes, gyms, and wellness brands across Thailand.",
+    "placeholder": "Partner {n}"
+  },
   "footer": {
     "tagline": "Powered by Nature. Built for Performance.",
     "quickLinks": "Quick Links",

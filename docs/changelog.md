@@ -11,6 +11,7 @@ Update this file with every user-visible or operationally-relevant change. Group
 Everything below is in-flight on `main` and has not been cut into a versioned release.
 
 ### Added
+- **Partners section** rendered site-wide above the footer (`PartnersSection.vue`) with placeholder logo tiles and EN/TH copy. Logos to be replaced once partner artwork lands.
 - **Payment webhook dispatcher**: `/api/payments/webhook/:providerId` is now the canonical webhook URL, with the previous `/api/payments/:provider/webhook` path retained as a compatibility alias.
 - **Email template i18n registry**: transactional emails now render through `services/email/` modules with shared brand config, layout helpers, and a `(event, locale)` registry. Customer locale is captured at checkout, persisted on `orders.locale`, and used for order/review/magic-link email selection. English copy is unchanged; Thai order templates intentionally fall back to English until content lands.
 - **Payment provider abstraction**: `PaymentProvider` registry in `packages/api/src/services/payments/`. PromptPay and bank transfer become independent providers; future 2C2P / NowPayments slot in by adding a file and registering it. Discriminated `PaymentIntent` union (`instructions` | `redirect` | `sdk`) replaces the hard-coded `payment_instructions` shape.

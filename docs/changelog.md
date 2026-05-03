@@ -11,6 +11,8 @@ Update this file with every user-visible or operationally-relevant change. Group
 Everything below is in-flight on `main` and has not been cut into a versioned release.
 
 ### Added
+- **CNX Sports Recovery partner logo** added to the site-wide partner section with a linked, fitted 3:2 web asset.
+- **CNX partner logo skill** added for adapting supplied partner visuals into the storefront's 3:2 partner tile format with `$imagegen` and wiring generated assets into `PartnersSection.vue`.
 - **Partners section** rendered site-wide above the footer (`PartnersSection.vue`) with placeholder logo tiles and EN/TH copy. Logos to be replaced once partner artwork lands.
 - **Payment webhook dispatcher**: `/api/payments/webhook/:providerId` is now the canonical webhook URL, with the previous `/api/payments/:provider/webhook` path retained as a compatibility alias.
 - **Email template i18n registry**: transactional emails now render through `services/email/` modules with shared brand config, layout helpers, and a `(event, locale)` registry. Customer locale is captured at checkout, persisted on `orders.locale`, and used for order/review/magic-link email selection. English copy is unchanged; Thai order templates intentionally fall back to English until content lands.
@@ -23,6 +25,7 @@ Everything below is in-flight on `main` and has not been cut into a versioned re
 - **Email templates**: `payment_failed` and `payment_refunded` events wired into `sendOrderEmail`.
 
 ### Changed
+- **Partners section** now randomizes partner tile display order on render.
 - **Technical-debt refactors**: checkout inventory reservation, discount application, typed settings, money formatting, rate-limit policy selection, web API transport, frontend domain types, and admin resource loading now flow through dedicated shared modules instead of route/page-local implementations.
 - **Order status rules**: API order statuses now flow through `lib/orderStatus.ts` with a canonical status union, transition map, `canTransition`, parser helpers, and shared status groups for admin routes, payment webhooks, reports, reviews, and payment-proof eligibility.
 - **Order schema**: new `orders.payment_method` column. Status enum expanded with `awaiting_gateway`, `failed`, `refunded`.

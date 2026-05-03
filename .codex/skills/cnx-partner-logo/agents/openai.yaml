@@ -1,0 +1,4 @@
+interface:
+  display_name: "CNX Partner Logo"
+  short_description: "Prepare partner logos for the CNX site"
+  default_prompt: "Use $cnx-partner-logo to turn this partner logo into a website-ready partner tile and add it to the CNX AthletX site."

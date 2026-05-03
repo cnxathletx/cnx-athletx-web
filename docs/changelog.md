@@ -25,7 +25,7 @@ Everything below is in-flight on `main` and has not been cut into a versioned re
 - **Email templates**: `payment_failed` and `payment_refunded` events wired into `sendOrderEmail`.
 
 ### Changed
-- **Partners section** now randomizes partner tile display order on render.
+- **Partners section** now randomizes partner tile display order on render and rotates overflow partners through the six visible slots using the Join the Community photo timing pattern.
 - **Technical-debt refactors**: checkout inventory reservation, discount application, typed settings, money formatting, rate-limit policy selection, web API transport, frontend domain types, and admin resource loading now flow through dedicated shared modules instead of route/page-local implementations.
 - **Order status rules**: API order statuses now flow through `lib/orderStatus.ts` with a canonical status union, transition map, `canTransition`, parser helpers, and shared status groups for admin routes, payment webhooks, reports, reviews, and payment-proof eligibility.
 - **Order schema**: new `orders.payment_method` column. Status enum expanded with `awaiting_gateway`, `failed`, `refunded`.

@@ -27,9 +27,10 @@ Do not invent or redraw a partner logo from memory. Use the supplied source as t
 3. Use `$imagegen` from `/Users/jdelaire/.codex/skills/imagegen/SKILL.md` for the logo adaptation. Prefer an edit from the supplied visual, not a fresh generation.
 4. Save the final web asset as `packages/web/public/images/partners/<partner-slug>.png` unless there is a strong reason to use `.webp`.
 5. Inspect the generated image before editing the component. Reject outputs that distort the logo, misspell text, crop the mark, add watermarks, or introduce unrelated brand elements.
-6. Update `PartnersSection.vue` to render the new image as an external link while preserving the `aspect-[3/2]` tile geometry, responsive grid, existing placeholder behavior for empty slots, and randomized tile display order.
-7. Update `docs/changelog.md` under `[Unreleased]` for the partner logo addition.
-8. Verify with `npm run typecheck` and `npm run build:web`. For visual confidence, run `npm run dev:web` and inspect the partner section in a browser.
+6. Update `PartnersSection.vue` and `partners.ts` to render the new image as an external link while preserving the `aspect-[3/2]` tile geometry, responsive grid, existing placeholder behavior for empty slots, and randomized tile display order.
+7. If there are more than six real partners, keep six visible tiles and rotate overflow partners exactly like the Join the Community photo slots: stagger each visible slot by `slot * 1600`, replace that slot every `5000ms`, choose only from partners not currently visible, and use the same `story-fade` opacity transition.
+8. Update `docs/changelog.md` under `[Unreleased]` for the partner logo addition.
+9. Verify with `npm run typecheck` and `npm run build:web`. For visual confidence, run `npm run dev:web` and inspect the partner section in a browser.
 
 ## Imagegen Prompt
 
@@ -70,36 +71,32 @@ Delete temporary prompt files after the generation run. If `OPENAI_API_KEY` is m
 
 ## Component Pattern
 
-Keep the tile shape and use semantic image alt text. If the component still contains numeric placeholders, convert only as much as needed:
+Keep the tile shape and use semantic image alt text. Store real partners in `partners.ts`, including `name`, `image`, and `href`.
 
-```vue
-<script setup lang="ts">
-import { useI18n } from 'vue-i18n'
-
-const { t } = useI18n({ useScope: 'global' })
-
+```ts
 const partners = [
   {
     name: 'Partner Name',
     image: '/images/partners/partner-name.png',
     href: 'https://partner.example',
   },
-  { placeholderIndex: 2 },
-  { placeholderIndex: 3 },
-  { placeholderIndex: 4 },
-  { placeholderIndex: 5 },
-  { placeholderIndex: 6 },
 ]
+```
 
+When there are fewer than six real partners, fill the remaining slots with localized placeholders and shuffle the displayed tiles once per render. When there are more than six real partners, use the same rotation mechanics and `story-fade` transition as `HomePage.vue`'s Join the Community photos:
+
+```ts
 const displayedPartners = [...partners]
 
-for (let i = displayedPartners.length - 1; i > 0; i -= 1) {
-  const j = Math.floor(Math.random() * (i + 1))
-  const partner = displayedPartners[i]
-  displayedPartners[i] = displayedPartners[j]
-  displayedPartners[j] = partner
+for (let slot = 0; slot < 6; slot += 1) {
+  const startDelay = slot * 1600
+  const timeout = setTimeout(() => {
+    rotatePartnerTile(slot)
+    const timer = setInterval(() => rotatePartnerTile(slot), 5000)
+    partnerTimers.push(timer)
+  }, startDelay)
+  partnerTimeouts.push(timeout)
 }
-</script>
 ```
 
 In the tile, render a linked `img` when `image` exists and fallback localized placeholder text otherwise. Partner links must use `target="_blank"` and `rel="noopener noreferrer"`:
@@ -129,5 +126,6 @@ Keep customer-facing text localized. Partner names in `alt` text may remain lite
 - The logo identity is preserved; generation did not create a lookalike.
 - Each real partner tile has a valid external link.
 - Partner tile order is randomized at render time.
+- If there are more than six real partners, only six render at once and overflow partners rotate through without duplicate visible partners.
 - The component still works when fewer than six real partners exist.
 - No unrelated app copy, layout, theme, or generated `dist` files are changed.

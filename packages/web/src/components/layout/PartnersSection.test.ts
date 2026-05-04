@@ -14,10 +14,10 @@ describe('PartnersSection', () => {
     vi.restoreAllMocks()
   })
 
-  it('renders partner logos and keeps empty slots as placeholders', () => {
+  it('renders six linked partner logos when there are overflow partners', () => {
+    vi.spyOn(Math, 'random').mockReturnValue(0)
+
     const wrapper = mountPartnersSection()
-    const recoveryLogo = wrapper.get('img[alt="CNX Sports Recovery"]')
-    const recoveryLink = wrapper.get('a[href="https://cnxsportsrecovery.com"]')
     const rxCafeLogo = wrapper.get('img[alt="Rx Cafe"]')
     const rxCafeLink = wrapper.get('a[href="https://www.rxcafechiangmai.com"]')
     const bikeZoneLogo = wrapper.get('img[alt="Bike Zone"]')
@@ -26,10 +26,12 @@ describe('PartnersSection', () => {
     const padelCnxLink = wrapper.get('a[href="https://www.instagram.com/padel.cnx"]')
     const greenAthleteLogo = wrapper.get('img[alt="The Green Athlete in Chiang Mai"]')
     const greenAthleteLink = wrapper.get('a[href="https://www.instagram.com/thegreenathletecnx"]')
+    const trainingBoxLogo = wrapper.get('img[alt="Training Box Chiang Mai"]')
+    const trainingBoxLink = wrapper.get('a[href="https://www.instagram.com/trainingboxchiangmai"]')
+    const crossFitLogo = wrapper.get('img[alt="CrossFit Chiang Mai"]')
+    const crossFitLink = wrapper.get('a[href="https://www.cfcnxfitness.com"]')
 
-    expect(recoveryLogo.attributes('src')).toBe('/images/partners/cnx-sports-recovery.png')
-    expect(recoveryLink.attributes('target')).toBe('_blank')
-    expect(recoveryLink.attributes('rel')).toBe('noopener noreferrer')
+    expect(wrapper.findAll('li')).toHaveLength(6)
     expect(rxCafeLogo.attributes('src')).toBe('/images/partners/rx-cafe.png')
     expect(rxCafeLink.attributes('target')).toBe('_blank')
     expect(rxCafeLink.attributes('rel')).toBe('noopener noreferrer')
@@ -42,12 +44,18 @@ describe('PartnersSection', () => {
     expect(greenAthleteLogo.attributes('src')).toBe('/images/partners/the-green-athlete-chiang-mai.png')
     expect(greenAthleteLink.attributes('target')).toBe('_blank')
     expect(greenAthleteLink.attributes('rel')).toBe('noopener noreferrer')
-    expect(wrapper.text()).toContain('Partner 6')
+    expect(trainingBoxLogo.attributes('src')).toBe('/images/partners/training-box-chiang-mai.png')
+    expect(trainingBoxLink.attributes('target')).toBe('_blank')
+    expect(trainingBoxLink.attributes('rel')).toBe('noopener noreferrer')
+    expect(crossFitLogo.attributes('src')).toBe('/images/partners/crossfit-chiang-mai.png')
+    expect(crossFitLink.attributes('target')).toBe('_blank')
+    expect(crossFitLink.attributes('rel')).toBe('noopener noreferrer')
     expect(wrapper.text()).not.toContain('Partner 1')
     expect(wrapper.text()).not.toContain('Partner 2')
     expect(wrapper.text()).not.toContain('Partner 3')
     expect(wrapper.text()).not.toContain('Partner 4')
     expect(wrapper.text()).not.toContain('Partner 5')
+    expect(wrapper.text()).not.toContain('Partner 6')
   })
 
   it('randomizes the rendered partner tile order', () => {
@@ -57,6 +65,6 @@ describe('PartnersSection', () => {
     const tiles = wrapper.findAll('li')
 
     expect(tiles[0].find('img[alt="Rx Cafe"]').exists()).toBe(true)
-    expect(tiles[5].find('img[alt="CNX Sports Recovery"]').exists()).toBe(true)
+    expect(tiles[5].find('img[alt="CrossFit Chiang Mai"]').exists()).toBe(true)
   })
 })

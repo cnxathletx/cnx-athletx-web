@@ -18,6 +18,11 @@ export const partners: Partner[] = [
     image: '/images/partners/cnx-sports-recovery.png',
     href: 'https://cnxsportsrecovery.com',
   },
+  {
+    name: 'Rx Cafe',
+    image: '/images/partners/rx-cafe.png',
+    href: 'https://www.rxcafechiangmai.com',
+  },
 ]
 
 function shuffled<T>(items: T[], random: () => number): T[] {

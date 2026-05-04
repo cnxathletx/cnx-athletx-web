@@ -14,16 +14,22 @@ describe('PartnersSection', () => {
     vi.restoreAllMocks()
   })
 
-  it('renders the CNX Sports Recovery partner logo and keeps empty slots as placeholders', () => {
+  it('renders partner logos and keeps empty slots as placeholders', () => {
     const wrapper = mountPartnersSection()
-    const logo = wrapper.get('img[alt="CNX Sports Recovery"]')
-    const link = wrapper.get('a[href="https://cnxsportsrecovery.com"]')
+    const recoveryLogo = wrapper.get('img[alt="CNX Sports Recovery"]')
+    const recoveryLink = wrapper.get('a[href="https://cnxsportsrecovery.com"]')
+    const rxCafeLogo = wrapper.get('img[alt="Rx Cafe"]')
+    const rxCafeLink = wrapper.get('a[href="https://www.rxcafechiangmai.com"]')
 
-    expect(logo.attributes('src')).toBe('/images/partners/cnx-sports-recovery.png')
-    expect(link.attributes('target')).toBe('_blank')
-    expect(link.attributes('rel')).toBe('noopener noreferrer')
-    expect(wrapper.text()).toContain('Partner 2')
+    expect(recoveryLogo.attributes('src')).toBe('/images/partners/cnx-sports-recovery.png')
+    expect(recoveryLink.attributes('target')).toBe('_blank')
+    expect(recoveryLink.attributes('rel')).toBe('noopener noreferrer')
+    expect(rxCafeLogo.attributes('src')).toBe('/images/partners/rx-cafe.png')
+    expect(rxCafeLink.attributes('target')).toBe('_blank')
+    expect(rxCafeLink.attributes('rel')).toBe('noopener noreferrer')
+    expect(wrapper.text()).toContain('Partner 3')
     expect(wrapper.text()).toContain('Partner 6')
+    expect(wrapper.text()).not.toContain('Partner 2')
     expect(wrapper.text()).not.toContain('Partner 1')
   })
 
@@ -33,7 +39,7 @@ describe('PartnersSection', () => {
     const wrapper = mountPartnersSection()
     const tiles = wrapper.findAll('li')
 
-    expect(tiles[0].text()).toContain('Partner 2')
+    expect(tiles[0].find('img[alt="Rx Cafe"]').exists()).toBe(true)
     expect(tiles[5].find('img[alt="CNX Sports Recovery"]').exists()).toBe(true)
   })
 })

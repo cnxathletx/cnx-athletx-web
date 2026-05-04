@@ -11,6 +11,7 @@ Update this file with every user-visible or operationally-relevant change. Group
 Everything below is in-flight on `main` and has not been cut into a versioned release.
 
 ### Added
+- **Rx Cafe partner logo** added to the site-wide partner section with a linked, fitted 3:2 web asset.
 - **CNX Sports Recovery partner logo** added to the site-wide partner section with a linked, fitted 3:2 web asset.
 - **CNX partner logo skill** added for adapting supplied partner visuals into the storefront's 3:2 partner tile format with `$imagegen` and wiring generated assets into `PartnersSection.vue`.
 - **Partners section** rendered site-wide above the footer (`PartnersSection.vue`) with placeholder logo tiles and EN/TH copy. Logos to be replaced once partner artwork lands.

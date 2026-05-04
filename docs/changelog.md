@@ -11,6 +11,9 @@ Update this file with every user-visible or operationally-relevant change. Group
 Everything below is in-flight on `main` and has not been cut into a versioned release.
 
 ### Added
+- **The Green Athlete in Chiang Mai partner logo** added to the site-wide partner section with a linked, fitted 3:2 web asset.
+- **PADEL.CNX partner logo** added to the site-wide partner section with a linked, fitted 3:2 web asset.
+- **Bike Zone partner logo** added to the site-wide partner section with a linked, fitted 3:2 web asset.
 - **Rx Cafe partner logo** added to the site-wide partner section with a linked, fitted 3:2 web asset.
 - **CNX Sports Recovery partner logo** added to the site-wide partner section with a linked, fitted 3:2 web asset.
 - **CNX partner logo skill** added for adapting supplied partner visuals into the storefront's 3:2 partner tile format with `$imagegen` and wiring generated assets into `PartnersSection.vue`.

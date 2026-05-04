@@ -23,6 +23,21 @@ export const partners: Partner[] = [
     image: '/images/partners/rx-cafe.png',
     href: 'https://www.rxcafechiangmai.com',
   },
+  {
+    name: 'Bike Zone',
+    image: '/images/partners/bike-zone.png',
+    href: 'https://www.facebook.com/bikezonecm/',
+  },
+  {
+    name: 'PADEL.CNX',
+    image: '/images/partners/padel-cnx.png',
+    href: 'https://www.instagram.com/padel.cnx',
+  },
+  {
+    name: 'The Green Athlete in Chiang Mai',
+    image: '/images/partners/the-green-athlete-chiang-mai.png',
+    href: 'https://www.instagram.com/thegreenathletecnx',
+  },
 ]
 
 function shuffled<T>(items: T[], random: () => number): T[] {

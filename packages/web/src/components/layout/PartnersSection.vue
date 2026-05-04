@@ -88,9 +88,9 @@ onBeforeUnmount(() => {
         aria-label="Partners"
       >
         <li
-          v-for="partner in displayedPartners"
-          :key="'image' in partner ? partner.name : partner.placeholderIndex"
-          class="aspect-[3/2] overflow-hidden rounded-lg bg-surface ring-1 ring-[var(--card-ring)] flex items-center justify-center text-xs sm:text-sm text-foreground/50 font-medium"
+          v-for="(partner, slot) in displayedPartners"
+          :key="slot"
+          class="relative aspect-[3/2] overflow-hidden rounded-lg bg-surface ring-1 ring-[var(--card-ring)] text-xs sm:text-sm text-foreground/50 font-medium"
         >
           <transition name="story-fade" mode="default">
             <a
@@ -99,7 +99,7 @@ onBeforeUnmount(() => {
               :href="partner.href"
               target="_blank"
               rel="noopener noreferrer"
-              class="block h-full w-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-surface-alt"
+              class="absolute inset-0 block h-full w-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-surface-alt"
             >
               <img
                 :src="partner.image"
@@ -107,7 +107,11 @@ onBeforeUnmount(() => {
                 class="h-full w-full object-cover transition-opacity hover:opacity-90"
               >
             </a>
-            <span v-else :key="partner.placeholderIndex">
+            <span
+              v-else
+              :key="partner.placeholderIndex"
+              class="absolute inset-0 flex items-center justify-center"
+            >
               {{ t('partners.placeholder', { n: partner.placeholderIndex }) }}
             </span>
           </transition>

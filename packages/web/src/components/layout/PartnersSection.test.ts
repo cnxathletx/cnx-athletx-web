@@ -1,5 +1,6 @@
 import { afterEach, describe, it, expect, vi } from 'vitest'
 import { mount } from '@vue/test-utils'
+import { nextTick } from 'vue'
 import PartnersSection from './PartnersSection.vue'
 import i18n from '../../i18n'
 
@@ -12,6 +13,8 @@ function mountPartnersSection() {
 describe('PartnersSection', () => {
   afterEach(() => {
     vi.restoreAllMocks()
+    vi.unstubAllGlobals()
+    vi.useRealTimers()
   })
 
   it('renders six linked partner logos when there are overflow partners', () => {
@@ -66,5 +69,23 @@ describe('PartnersSection', () => {
 
     expect(tiles[0].find('img[alt="Rx Cafe"]').exists()).toBe(true)
     expect(tiles[5].find('img[alt="CrossFit Chiang Mai"]').exists()).toBe(true)
+  })
+
+  it('rotates a partner logo within a stable visual slot', async () => {
+    vi.useFakeTimers()
+    vi.stubGlobal('IntersectionObserver', undefined)
+    vi.spyOn(Math, 'random').mockReturnValue(0)
+
+    const wrapper = mountPartnersSection()
+    const firstSlot = wrapper.findAll('li')[0].element
+
+    await nextTick()
+    vi.advanceTimersByTime(0)
+    await nextTick()
+
+    const rotatedTiles = wrapper.findAll('li')
+
+    expect(rotatedTiles[0].element).toBe(firstSlot)
+    expect(rotatedTiles[0].find('img[alt="CNX Sports Recovery"]').exists()).toBe(true)
   })
 })

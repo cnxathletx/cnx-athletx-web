@@ -13,9 +13,11 @@ describe('fetchCloudflareVisitors', () => {
         data: {
           viewer: {
             zones: [{
-              today: [{ sum: { visits: 8 } }],
-              week: [{ sum: { visits: 40 } }],
-              month: [{ sum: { visits: 120 } }],
+              httpRequests1dGroups: [
+                { dimensions: { date: '2026-05-01' }, uniq: { uniques: 10 } },
+                { dimensions: { date: '2026-05-04' }, uniq: { uniques: 20 } },
+                { dimensions: { date: '2026-05-07' }, uniq: { uniques: 8 } },
+              ],
             }],
           },
         },
@@ -32,13 +34,17 @@ describe('fetchCloudflareVisitors', () => {
       week: new Date('2026-05-03T17:00:00.000Z'),
       month: new Date('2026-04-30T17:00:00.000Z'),
       nextDay: new Date('2026-05-07T17:00:00.000Z'),
+      todayDate: '2026-05-07',
+      weekDate: '2026-05-04',
+      monthDate: '2026-05-01',
+      nextDayDate: '2026-05-08',
     })
 
     expect(visitors).toEqual({
       status: 'ok',
       today: 8,
-      week: 40,
-      month: 120,
+      week: 28,
+      month: 38,
     })
     expect(fetch).toHaveBeenCalledWith(
       'https://api.cloudflare.com/client/v4/graphql',

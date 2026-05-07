@@ -789,7 +789,7 @@ All admin endpoints require:
 **Notes:**
 - Order counts are read from D1 `orders.created_at`.
 - Period boundaries use Bangkok calendar days and a Monday-start week.
-- Visitor counts use Cloudflare GraphQL Analytics `httpRequestsAdaptiveGroups.sum.visits`.
+- Visitor counts use Cloudflare GraphQL Analytics daily groups (`httpRequests1dGroups.uniq.uniques`) summed for the selected period.
 - Visitor status is `unconfigured` with `null` counts unless `CLOUDFLARE_API_TOKEN` and `CLOUDFLARE_ZONE_ID` are configured.
 - Visitor status is `error` with `null` counts when Cloudflare returns an error; order counts still return.
 

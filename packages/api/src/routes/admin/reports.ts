@@ -23,11 +23,15 @@ interface AnalyticsPeriodStarts {
   week: Date
   month: Date
   nextDay: Date
+  todayDate: string
+  weekDate: string
+  monthDate: string
+  nextDayDate: string
 }
 
 interface CloudflareAnalyticsRow {
-  sum?: {
-    visits?: number | null
+  uniq?: {
+    uniques?: number | null
   } | null
   dimensions?: {
     date?: string | null
@@ -38,9 +42,7 @@ interface CloudflareAnalyticsResponse {
   data?: {
     viewer?: {
       zones?: Array<{
-        today?: CloudflareAnalyticsRow[]
-        week?: CloudflareAnalyticsRow[]
-        month?: CloudflareAnalyticsRow[]
+        httpRequests1dGroups?: CloudflareAnalyticsRow[]
       }>
     }
   }
@@ -70,6 +72,15 @@ function bangkokDateToUtc(year: number, month: number, day: number): Date {
   return new Date(Date.UTC(year, month - 1, day, -7, 0, 0, 0))
 }
 
+function formatBangkokDate(date: Date): string {
+  const parts = getBangkokDateParts(date)
+  return [
+    String(parts.year).padStart(4, '0'),
+    String(parts.month).padStart(2, '0'),
+    String(parts.day).padStart(2, '0'),
+  ].join('-')
+}
+
 function addUtcDays(date: Date, days: number): Date {
   const next = new Date(date)
   next.setUTCDate(next.getUTCDate() + days)
@@ -81,12 +92,19 @@ function getAnalyticsPeriodStarts(now = new Date()): AnalyticsPeriodStarts {
   const today = bangkokDateToUtc(parts.year, parts.month, parts.day)
   const weekdayIndex = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'].indexOf(parts.weekday)
   const daysSinceMonday = weekdayIndex >= 0 ? weekdayIndex : 0
+  const week = addUtcDays(today, -daysSinceMonday)
+  const month = bangkokDateToUtc(parts.year, parts.month, 1)
+  const nextDay = addUtcDays(today, 1)
 
   return {
     today,
-    week: addUtcDays(today, -daysSinceMonday),
-    month: bangkokDateToUtc(parts.year, parts.month, 1),
-    nextDay: addUtcDays(today, 1),
+    week,
+    month,
+    nextDay,
+    todayDate: formatBangkokDate(today),
+    weekDate: formatBangkokDate(week),
+    monthDate: formatBangkokDate(month),
+    nextDayDate: formatBangkokDate(nextDay),
   }
 }
 
@@ -113,43 +131,22 @@ export async function fetchCloudflareVisitors(env: Env, periods: AnalyticsPeriod
   }
 
   const query = `
-    query ZoneTraffic($zoneTag: string, $todayStart: Time, $weekStart: Time, $monthStart: Time, $end: Time) {
+    query ZoneTraffic($zoneTag: string, $start: Date, $end: Date) {
       viewer {
         zones(filter: { zoneTag: $zoneTag }) {
-          today: httpRequestsAdaptiveGroups(
-            limit: 1
+          httpRequests1dGroups(
+            limit: 40
+            orderBy: [date_ASC]
             filter: {
-              datetime_geq: $todayStart
-              datetime_lt: $end
-              requestSource: "eyeball"
+              date_geq: $start
+              date_lt: $end
             }
           ) {
-            sum {
-              visits
+            dimensions {
+              date
             }
-          }
-          week: httpRequestsAdaptiveGroups(
-            limit: 1
-            filter: {
-              datetime_geq: $weekStart
-              datetime_lt: $end
-              requestSource: "eyeball"
-            }
-          ) {
-            sum {
-              visits
-            }
-          }
-          month: httpRequestsAdaptiveGroups(
-            limit: 1
-            filter: {
-              datetime_geq: $monthStart
-              datetime_lt: $end
-              requestSource: "eyeball"
-            }
-          ) {
-            sum {
-              visits
+            uniq {
+              uniques
             }
           }
         }
@@ -168,10 +165,8 @@ export async function fetchCloudflareVisitors(env: Env, periods: AnalyticsPeriod
         query,
         variables: {
           zoneTag: env.CLOUDFLARE_ZONE_ID,
-          todayStart: periods.today.toISOString(),
-          weekStart: periods.week.toISOString(),
-          monthStart: periods.month.toISOString(),
-          end: periods.nextDay.toISOString(),
+          start: periods.monthDate,
+          end: periods.nextDayDate,
         },
       }),
     })
@@ -185,13 +180,25 @@ export async function fetchCloudflareVisitors(env: Env, periods: AnalyticsPeriod
       return { status: 'error', today: null, week: null, month: null }
     }
 
-    const zone = payload.data?.viewer?.zones?.[0]
+    const rows = payload.data?.viewer?.zones?.[0]?.httpRequests1dGroups ?? []
+    let today = 0
+    let week = 0
+    let month = 0
+
+    for (const row of rows) {
+      const date = row.dimensions?.date
+      const uniques = row.uniq?.uniques ?? 0
+      if (!date) continue
+      if (date >= periods.monthDate) month += uniques
+      if (date >= periods.weekDate) week += uniques
+      if (date === periods.todayDate) today += uniques
+    }
 
     return {
       status: 'ok',
-      today: zone?.today?.[0]?.sum?.visits ?? 0,
-      week: zone?.week?.[0]?.sum?.visits ?? 0,
-      month: zone?.month?.[0]?.sum?.visits ?? 0,
+      today,
+      week,
+      month,
     }
   } catch {
     return { status: 'error', today: null, week: null, month: null }

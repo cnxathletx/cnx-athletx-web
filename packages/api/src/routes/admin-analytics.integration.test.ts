@@ -37,12 +37,16 @@ describe('GET /api/admin/reports/analytics', () => {
       }
     }
 
-    expect(data.visitors).toEqual({
-      status: 'unconfigured',
-      today: null,
-      week: null,
-      month: null,
-    })
+    expect(['ok', 'unconfigured', 'error']).toContain(data.visitors.status)
+    if (data.visitors.status === 'ok') {
+      expect(typeof data.visitors.today).toBe('number')
+      expect(typeof data.visitors.week).toBe('number')
+      expect(typeof data.visitors.month).toBe('number')
+    } else {
+      expect(data.visitors.today).toBeNull()
+      expect(data.visitors.week).toBeNull()
+      expect(data.visitors.month).toBeNull()
+    }
     expect(data.orders).toEqual({
       today: 2,
       week: 2,

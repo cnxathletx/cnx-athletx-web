@@ -10,6 +10,8 @@ export interface Env {
   CF_ACCESS_AUD?: string
   ENVIRONMENT?: string
   PUBLIC_IMAGES_BASE_URL?: string
+  CLOUDFLARE_API_TOKEN?: string
+  CLOUDFLARE_ZONE_ID?: string
 }
 
 export interface SessionUser {

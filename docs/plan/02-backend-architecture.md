@@ -761,6 +761,40 @@ All admin endpoints require:
 
 ---
 
+#### GET /api/admin/reports/analytics
+
+**Purpose:** Basic admin analytics card data for visitor and order totals.
+
+**Auth:** Cloudflare Access
+
+**Method:** `GET /api/admin/reports/analytics`
+
+**Response (200 OK):**
+```json
+{
+  "visitors": {
+    "status": "ok",
+    "today": 42,
+    "week": 310,
+    "month": 1204
+  },
+  "orders": {
+    "today": 2,
+    "week": 9,
+    "month": 31
+  }
+}
+```
+
+**Notes:**
+- Order counts are read from D1 `orders.created_at`.
+- Period boundaries use Bangkok calendar days and a Monday-start week.
+- Visitor counts use Cloudflare GraphQL Analytics `httpRequestsAdaptiveGroups.sum.visits`.
+- Visitor status is `unconfigured` with `null` counts unless `CLOUDFLARE_API_TOKEN` and `CLOUDFLARE_ZONE_ID` are configured.
+- Visitor status is `error` with `null` counts when Cloudflare returns an error; order counts still return.
+
+---
+
 #### GET /api/admin/orders
 
 **Purpose:** Paginated order list with filters for admin dashboard.

@@ -300,6 +300,24 @@ export interface IncomeReport {
   products: IncomeReportProduct[]
 }
 
+export interface AnalyticsMetricGroup {
+  today: number
+  week: number
+  month: number
+}
+
+export interface VisitorAnalyticsMetricGroup {
+  status: 'ok' | 'unconfigured' | 'error'
+  today: number | null
+  week: number | null
+  month: number | null
+}
+
+export interface AnalyticsReport {
+  visitors: VisitorAnalyticsMetricGroup
+  orders: AnalyticsMetricGroup
+}
+
 export interface AdminReview {
   id: number
   user_id: string

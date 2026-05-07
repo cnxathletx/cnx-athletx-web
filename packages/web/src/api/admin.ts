@@ -9,6 +9,7 @@ import type {
   AdminLabTestFile,
   AdminOrderDetail,
   AdminOrderListItem,
+  AnalyticsReport,
   AdminPriceTier,
   AdminProduct,
   AdminProductLine,
@@ -44,6 +45,8 @@ export type {
   AdminProduct,
   AdminProductLine,
   AdminProductScreenshot,
+  AnalyticsMetricGroup,
+  AnalyticsReport,
   CreateAdminProductPayload,
   CreateDiscountPayload,
   CreateProductLinePayload,
@@ -57,6 +60,7 @@ export type {
   UpdateDiscountPayload,
   UpdateProductLinePayload,
   UpsertPriceTierPayload,
+  VisitorAnalyticsMetricGroup,
 } from '../types/admin'
 
 export class AdminApiErrorResponse extends ApiClientError {
@@ -430,6 +434,12 @@ export async function deleteR2Orphans(minAgeSeconds?: number): Promise<R2Cleanup
 
 export async function fetchAdminIncomeReport(year: number, month: number): Promise<IncomeReport> {
   return apiFetch(`/api/admin/reports/income?year=${year}&month=${month}`, {
+    parseError: adminError,
+  })
+}
+
+export async function fetchAdminAnalyticsReport(): Promise<AnalyticsReport> {
+  return apiFetch('/api/admin/reports/analytics', {
     parseError: adminError,
   })
 }

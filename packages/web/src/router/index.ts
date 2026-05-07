@@ -113,6 +113,11 @@ const router = createRouter({
       component: () => import('../pages/AdminIncomePage.vue'),
     },
     {
+      path: '/admin/analytics',
+      name: 'admin-analytics',
+      component: () => import('../pages/AdminAnalyticsPage.vue'),
+    },
+    {
       path: '/admin/chat',
       name: 'admin-chat',
       component: () => import('../pages/AdminChatPage.vue'),

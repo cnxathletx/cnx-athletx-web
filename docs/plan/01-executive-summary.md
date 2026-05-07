@@ -13,7 +13,7 @@ The current product supports:
 - Payment proof submission by transfer reference
 - Public order lookup and order status tracking
 - Passwordless customer accounts with magic links, order history, and saved address support
-- Admin operations for orders, inventory, products, product lines, discounts, site settings, support chat, and income reporting
+- Admin operations for orders, inventory, products, product lines, discounts, site settings, support chat, income reporting, and basic analytics
 - Transactional email flows through Resend
 - Centralized order status rules for admin transitions, payment webhooks, reporting, review eligibility, and payment-proof eligibility
 - Shared internal abstractions for checkout inventory reservation, discount application, typed settings, money formatting, rate-limit policies, frontend API transport, and frontend domain types
@@ -24,7 +24,7 @@ The main gap is no longer basic product implementation. The remaining work for v
 
 | Stage | Scope | Status |
 |-------|-------|--------|
-| **Current build** | Core storefront, checkout, manual payment workflow, payment proof, accounts, admin dashboard, discounts, settings, chat, reporting, and email flows | Implemented in repo, not released |
+| **Current build** | Core storefront, checkout, manual payment workflow, payment proof, accounts, admin dashboard, discounts, settings, chat, reporting, analytics, and email flows | Implemented in repo, not released |
 | **v1 release** | Production-ready launch of the existing manual-commerce stack with final QA, config validation, content review, and release checklist completion | Pending |
 | **Post-launch** | Payment proof image upload (R2), unpaid order auto-expiry, deeper analytics, operational polish, and possible payment gateway automation | Future |
 

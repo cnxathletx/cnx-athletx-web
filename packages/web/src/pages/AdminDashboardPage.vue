@@ -91,6 +91,20 @@ import { RouterLink } from 'vue-router'
         </RouterLink>
 
         <RouterLink
+          to="/admin/analytics"
+          class="group block rounded-lg bg-surface p-6 ring-1 ring-sand transition hover:ring-primary"
+        >
+          <div class="mb-3 text-2xl">
+            <svg class="w-8 h-8 text-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M3 3v18h18M7.5 15.75l3.25-3.25 2.5 2.5 4.25-6.5" />
+              <path stroke-linecap="round" stroke-linejoin="round" d="M17.5 8.5h-3m3 0v3" />
+            </svg>
+          </div>
+          <h2 class="text-lg font-semibold text-foreground group-hover:text-primary transition-colors">Analytics</h2>
+          <p class="mt-1 text-sm text-muted">Track visitor and order totals for today, this week, and this month.</p>
+        </RouterLink>
+
+        <RouterLink
           to="/admin/chat"
           class="group block rounded-lg bg-surface p-6 ring-1 ring-sand transition hover:ring-primary"
         >

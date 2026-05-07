@@ -1,6 +1,6 @@
 # Frontend Design And Structure
 
-Last updated: 2026-04-30
+Last updated: 2026-05-07
 
 ## Scope
 
@@ -34,4 +34,8 @@ Discount code inputs are label-addressable and intentionally avoid example-code 
 
 ## Admin Resource Pattern
 
-`useAdminResource<T>()` centralizes the common admin pattern of loading data, tracking loading/error state, running a mutating action, and reloading after success. It is intentionally small and currently used by review moderation; larger products/discounts/product-line pages should only migrate when their workflows match the same shape cleanly.
+`useAdminResource<T>()` centralizes the common admin pattern of loading data, tracking loading/error state, running a mutating action, and reloading after success. It is intentionally small and currently used by review moderation and the analytics report; larger products/discounts/product-line pages should only migrate when their workflows match the same shape cleanly.
+
+## Admin Analytics
+
+`AdminAnalyticsPage.vue` displays the current day, week, and month totals for visitors and orders. Orders come from D1 through `/api/admin/reports/analytics`. Visitor counts are also returned by that endpoint after the Worker is configured with Cloudflare analytics credentials; until then the page shows a clear "not configured" state instead of failing the report.

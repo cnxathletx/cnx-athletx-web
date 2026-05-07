@@ -14,7 +14,215 @@ interface MonthlyTotalRow {
   total_orders: number
 }
 
+interface CountRow {
+  count: number
+}
+
+interface AnalyticsPeriodStarts {
+  today: Date
+  week: Date
+  month: Date
+  nextDay: Date
+}
+
+interface CloudflareAnalyticsRow {
+  sum?: {
+    visits?: number | null
+  } | null
+  dimensions?: {
+    date?: string | null
+  } | null
+}
+
+interface CloudflareAnalyticsResponse {
+  data?: {
+    viewer?: {
+      zones?: Array<{
+        today?: CloudflareAnalyticsRow[]
+        week?: CloudflareAnalyticsRow[]
+        month?: CloudflareAnalyticsRow[]
+      }>
+    }
+  }
+  errors?: Array<{ message?: string }>
+}
+
+function getBangkokDateParts(date: Date) {
+  const parts = new Intl.DateTimeFormat('en-CA', {
+    timeZone: 'Asia/Bangkok',
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+    weekday: 'short',
+  }).formatToParts(date)
+
+  const value = (type: string) => parts.find((part) => part.type === type)?.value ?? ''
+
+  return {
+    year: Number(value('year')),
+    month: Number(value('month')),
+    day: Number(value('day')),
+    weekday: value('weekday'),
+  }
+}
+
+function bangkokDateToUtc(year: number, month: number, day: number): Date {
+  return new Date(Date.UTC(year, month - 1, day, -7, 0, 0, 0))
+}
+
+function addUtcDays(date: Date, days: number): Date {
+  const next = new Date(date)
+  next.setUTCDate(next.getUTCDate() + days)
+  return next
+}
+
+function getAnalyticsPeriodStarts(now = new Date()): AnalyticsPeriodStarts {
+  const parts = getBangkokDateParts(now)
+  const today = bangkokDateToUtc(parts.year, parts.month, parts.day)
+  const weekdayIndex = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'].indexOf(parts.weekday)
+  const daysSinceMonday = weekdayIndex >= 0 ? weekdayIndex : 0
+
+  return {
+    today,
+    week: addUtcDays(today, -daysSinceMonday),
+    month: bangkokDateToUtc(parts.year, parts.month, 1),
+    nextDay: addUtcDays(today, 1),
+  }
+}
+
+async function countOrders(env: Env, start: Date, end: Date): Promise<number> {
+  const row = await env.DB.prepare(
+    `SELECT COUNT(*) AS count
+     FROM orders
+     WHERE created_at >= ? AND created_at < ?`
+  )
+    .bind(start.toISOString(), end.toISOString())
+    .first<CountRow>()
+
+  return row?.count ?? 0
+}
+
+export async function fetchCloudflareVisitors(env: Env, periods: AnalyticsPeriodStarts): Promise<{
+  status: 'ok' | 'unconfigured' | 'error'
+  today: number | null
+  week: number | null
+  month: number | null
+}> {
+  if (!env.CLOUDFLARE_API_TOKEN || !env.CLOUDFLARE_ZONE_ID) {
+    return { status: 'unconfigured', today: null, week: null, month: null }
+  }
+
+  const query = `
+    query ZoneTraffic($zoneTag: string, $todayStart: Time, $weekStart: Time, $monthStart: Time, $end: Time) {
+      viewer {
+        zones(filter: { zoneTag: $zoneTag }) {
+          today: httpRequestsAdaptiveGroups(
+            limit: 1
+            filter: {
+              datetime_geq: $todayStart
+              datetime_lt: $end
+              requestSource: "eyeball"
+            }
+          ) {
+            sum {
+              visits
+            }
+          }
+          week: httpRequestsAdaptiveGroups(
+            limit: 1
+            filter: {
+              datetime_geq: $weekStart
+              datetime_lt: $end
+              requestSource: "eyeball"
+            }
+          ) {
+            sum {
+              visits
+            }
+          }
+          month: httpRequestsAdaptiveGroups(
+            limit: 1
+            filter: {
+              datetime_geq: $monthStart
+              datetime_lt: $end
+              requestSource: "eyeball"
+            }
+          ) {
+            sum {
+              visits
+            }
+          }
+        }
+      }
+    }
+  `
+
+  try {
+    const response = await fetch('https://api.cloudflare.com/client/v4/graphql', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${env.CLOUDFLARE_API_TOKEN}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        query,
+        variables: {
+          zoneTag: env.CLOUDFLARE_ZONE_ID,
+          todayStart: periods.today.toISOString(),
+          weekStart: periods.week.toISOString(),
+          monthStart: periods.month.toISOString(),
+          end: periods.nextDay.toISOString(),
+        },
+      }),
+    })
+
+    if (!response.ok) {
+      return { status: 'error', today: null, week: null, month: null }
+    }
+
+    const payload = await response.json() as CloudflareAnalyticsResponse
+    if (payload.errors?.length) {
+      return { status: 'error', today: null, week: null, month: null }
+    }
+
+    const zone = payload.data?.viewer?.zones?.[0]
+
+    return {
+      status: 'ok',
+      today: zone?.today?.[0]?.sum?.visits ?? 0,
+      week: zone?.week?.[0]?.sum?.visits ?? 0,
+      month: zone?.month?.[0]?.sum?.visits ?? 0,
+    }
+  } catch {
+    return { status: 'error', today: null, week: null, month: null }
+  }
+}
+
 export function registerAdminReportRoutes(router: RouterType) {
+  router.get('/api/admin/reports/analytics', requireAdmin(async (_request, env) => {
+    const periods = getAnalyticsPeriodStarts()
+
+    try {
+      const [ordersToday, ordersWeek, ordersMonth, visitors] = await Promise.all([
+        countOrders(env, periods.today, periods.nextDay),
+        countOrders(env, periods.week, periods.nextDay),
+        countOrders(env, periods.month, periods.nextDay),
+        fetchCloudflareVisitors(env, periods),
+      ])
+
+      return Response.json({
+        visitors,
+        orders: {
+          today: ordersToday,
+          week: ordersWeek,
+          month: ordersMonth,
+        },
+      })
+    } catch {
+      return Response.json({ error: 'Database error' }, { status: 500 })
+    }
+  }))
+
   router.get('/api/admin/reports/income', requireAdmin(async (request, env) => {
     const url = new URL(request.url)
     const year = parseInt(url.searchParams.get('year') || '', 10)

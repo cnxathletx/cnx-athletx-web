@@ -11,6 +11,7 @@ Update this file with every user-visible or operationally-relevant change. Group
 Everything below is in-flight on `main` and has not been cut into a versioned release.
 
 ### Added
+- **Admin Analytics page** added with visitor and order totals for today, this week, and this month. Orders come from D1; visitor totals use Cloudflare GraphQL Analytics when `CLOUDFLARE_API_TOKEN` and `CLOUDFLARE_ZONE_ID` are configured.
 - **CrossFit Chiang Mai partner logo** added to the site-wide partner section with a linked, fitted 3:2 web asset and the supplied logo's white outer layout removed.
 - **Training Box Chiang Mai partner logo** added to the site-wide partner section with a linked, fitted 3:2 web asset.
 - **The Green Athlete in Chiang Mai partner logo** added to the site-wide partner section with a linked, fitted 3:2 web asset.

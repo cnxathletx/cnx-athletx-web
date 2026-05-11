@@ -168,6 +168,12 @@
     "selectSubdistrict": "Select sub-district",
     "autoFilled": "Auto-filled",
     "discountCode": "Discount Code (Optional)",
+    "redeemPoints": "Use AthletX Points",
+    "pointsAvailable": "Available points",
+    "pointsMax": "You can use up to {points} pts on this order.",
+    "pointsDiscount": "AthletX Points",
+    "pointsDiscountPreview": "Points will reduce this order by {amount}.",
+    "pointsLoadError": "Unable to load AthletX Points right now.",
     "apply": "Apply",
     "placeOrder": "Place Order",
     "placing": "Placing Order...",
@@ -218,6 +224,11 @@
     "next": "Next",
     "page": "Page {page} of {total}",
     "itemsCount": "{count} item(s)",
+    "loyalty": {
+      "title": "AthletX Points",
+      "subtitle": "Earn points on every paid order and use them at checkout.",
+      "points": "pts"
+    },
     "tabs": {
       "reviews": "My Reviews"
     },

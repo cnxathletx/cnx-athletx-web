@@ -168,6 +168,12 @@
     "selectSubdistrict": "เลือกตำบล/แขวง",
     "autoFilled": "กรอกอัตโนมัติ",
     "discountCode": "รหัสส่วนลด (ไม่บังคับ)",
+    "redeemPoints": "ใช้คะแนน AthletX",
+    "pointsAvailable": "คะแนนที่มี",
+    "pointsMax": "ใช้ได้สูงสุด {points} คะแนนสำหรับคำสั่งซื้อนี้",
+    "pointsDiscount": "คะแนน AthletX",
+    "pointsDiscountPreview": "คะแนนจะลดราคาคำสั่งซื้อนี้ {amount}",
+    "pointsLoadError": "ไม่สามารถโหลดคะแนน AthletX ได้ในขณะนี้",
     "apply": "ใช้",
     "placeOrder": "สั่งซื้อ",
     "placing": "กำลังสั่งซื้อ...",
@@ -218,6 +224,11 @@
     "next": "ถัดไป",
     "page": "หน้า {page} จาก {total}",
     "itemsCount": "{count} ชิ้น",
+    "loyalty": {
+      "title": "คะแนน AthletX",
+      "subtitle": "รับคะแนนจากทุกคำสั่งซื้อที่ชำระเงินแล้ว และใช้คะแนนได้ตอนชำระเงิน",
+      "points": "คะแนน"
+    },
     "tabs": {
       "reviews": "รีวิวของฉัน"
     },

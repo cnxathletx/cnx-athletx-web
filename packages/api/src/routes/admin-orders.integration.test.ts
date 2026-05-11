@@ -118,6 +118,29 @@ describe('Order state transitions', () => {
     expect(p1After.stock_count).toBe(95)
   })
 
+  it('awards points when an authenticated order is marked paid', async () => {
+    const email = 'earn@example.com'
+    const cookie = await loginAs(email)
+    const checkoutRes = await workerFetch('/api/checkout', {
+      cookie,
+      body: checkoutBody({
+        customer: {
+          name: 'Earn User',
+          email,
+          phone: '+66812345678',
+          address: { line1: '123 Test Street, Apt 4', district: 'Mueang', province: 'Chiang Mai', postal_code: '50200' },
+        },
+      }),
+    })
+    const { order_id } = await checkoutRes.json() as { order_id: string }
+
+    await workerFetch(`/api/admin/orders/${order_id}/mark-paid`, { method: 'POST', admin: true })
+
+    const summary = await workerFetch('/api/account/loyalty', { cookie })
+    const data = await summary.json() as { balance_points: number }
+    expect(data.balance_points).toBe(89)
+  })
+
   it('pack: paid → packed', async () => {
     const orderId = await createOrder()
     await workerFetch(`/api/admin/orders/${orderId}/mark-paid`, { method: 'POST', admin: true })
@@ -191,6 +214,35 @@ describe('Order state transitions', () => {
     const p1 = after.inventory.find((i) => i.product_id === 1)!
     expect(p1.reserved_count).toBe(0)
     expect(p1.stock_count).toBe(100) // stock unchanged
+  })
+
+  it('restores redeemed points when unpaid order is cancelled', async () => {
+    const email = 'restore@example.com'
+    const cookie = await loginAs(email)
+    await workerFetch('/api/__test-loyalty-ledger', {
+      method: 'POST',
+      admin: true,
+      body: { email, points_delta: 100, kind: 'manual_adjustment', reason: 'test seed' },
+    })
+    const checkoutRes = await workerFetch('/api/checkout', {
+      cookie,
+      body: checkoutBody({
+        customer: {
+          name: 'Restore User',
+          email,
+          phone: '+66812345678',
+          address: { line1: '123 Test Street, Apt 4', district: 'Mueang', province: 'Chiang Mai', postal_code: '50200' },
+        },
+        redeem_points: 44,
+      }),
+    })
+    const { order_id } = await checkoutRes.json() as { order_id: string }
+
+    await workerFetch(`/api/admin/orders/${order_id}/cancel`, { method: 'POST', admin: true })
+
+    const summary = await workerFetch('/api/account/loyalty', { cookie })
+    const data = await summary.json() as { balance_points: number }
+    expect(data.balance_points).toBe(100)
   })
 
   it('cancel from paid restores stock (not reserved)', async () => {
@@ -281,4 +333,3 @@ describe('POST /api/admin/orders/:id/ship — review prompt', () => {
     expect(await emailLogCount(order_id)).toBe(0)
   })
 })
-

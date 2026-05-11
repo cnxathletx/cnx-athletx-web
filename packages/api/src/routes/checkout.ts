@@ -22,6 +22,7 @@ import { getProvider, listEnabledProviders } from '../services/payments/registry
 import type { PaymentIntent, SiteSettingsMap } from '../lib/types'
 import { loadSettingsMap, parseSettings, type TypedSettings } from '../services/settings'
 import { applyDiscountCode, type AppliedDiscount } from '../services/discounts'
+import { getLoyaltyBalance, normalizeRedeemPoints, redeemPointsStatement } from '../services/loyalty'
 import {
   inventoryFailureDetail,
   inventoryReservationFailure,
@@ -62,7 +63,8 @@ export function registerCheckoutRoutes(router: RouterType) {
     // --- Idempotency check ---
     try {
       const existing = await env.DB.prepare(
-        `SELECT id, subtotal_thb, shipping_thb, discount_thb, total_thb FROM orders WHERE idempotency_key = ? LIMIT 1`
+        `SELECT id, subtotal_thb, shipping_thb, discount_thb, points_redeemed, points_discount_thb, total_thb
+         FROM orders WHERE idempotency_key = ? LIMIT 1`
       )
         .bind(data.idempotency_key)
         .first<ExistingOrderRow>()
@@ -74,6 +76,8 @@ export function registerCheckoutRoutes(router: RouterType) {
             subtotal_thb: existing.subtotal_thb,
             shipping_thb: existing.shipping_thb,
             discount_thb: existing.discount_thb,
+            points_redeemed: existing.points_redeemed,
+            points_discount_thb: existing.points_discount_thb,
             total_thb: existing.total_thb,
             message: 'Order already created (idempotent response)',
           },
@@ -224,8 +228,34 @@ export function registerCheckoutRoutes(router: RouterType) {
       return Response.json({ error: 'Database error validating discount code' }, { status: 500 })
     }
 
+    // --- AthletX Points ---
+    let pointsRedeemed = 0
+    let pointsDiscountThb = 0
+    if ((data.redeem_points ?? 0) > 0) {
+      if (!sessionUser) {
+        return Response.json(
+          { error: 'Validation failed', details: [{ field: 'redeem_points', message: 'Log in to redeem points' }] },
+          { status: 400 },
+        )
+      }
+
+      try {
+        const balance = await getLoyaltyBalance(env, sessionUser.id)
+        const redemption = normalizeRedeemPoints({
+          requestedPoints: data.redeem_points ?? 0,
+          availablePoints: balance,
+          subtotalThb: subtotal,
+        })
+        pointsRedeemed = redemption.points
+        pointsDiscountThb = redemption.discountThb
+      } catch {
+        return Response.json({ error: 'Database error validating points' }, { status: 500 })
+      }
+    }
+
     // --- Final total ---
-    const discountThb = discount.discountThb
+    const discountCodeThb = discount.discountThb
+    const discountThb = discountCodeThb + pointsDiscountThb
     const total = subtotal + shipping - discountThb
 
     // --- Generate order ID ---
@@ -281,10 +311,11 @@ export function registerCheckoutRoutes(router: RouterType) {
           id, user_id, customer_name, customer_email, customer_phone,
           shipping_address_line1, shipping_address_line2,
           district, province, postal_code,
-          subtotal_thb, shipping_thb, discount_thb, total_thb,
+          subtotal_thb, shipping_thb, discount_thb, discount_code_thb,
+          points_redeemed, points_discount_thb, total_thb,
           status, locale, idempotency_key, discount_code, payment_method,
           created_at, updated_at
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
       ).bind(
         orderId,
         sessionUser?.id ?? null,
@@ -299,6 +330,9 @@ export function registerCheckoutRoutes(router: RouterType) {
         subtotal,
         shipping,
         discountThb,
+        discountCodeThb,
+        pointsRedeemed,
+        pointsDiscountThb,
         total,
         ORDER_STATUS.pendingPayment,
         orderLocale,
@@ -309,6 +343,11 @@ export function registerCheckoutRoutes(router: RouterType) {
         now
       )
     )
+
+    const redeemStatement = sessionUser
+      ? redeemPointsStatement(env, { userId: sessionUser.id, orderId, points: pointsRedeemed, now })
+      : null
+    if (redeemStatement) orderStatements.push(redeemStatement)
 
     if (sessionUser) {
       orderStatements.push(
@@ -358,6 +397,8 @@ export function registerCheckoutRoutes(router: RouterType) {
       subtotal_thb: subtotal,
       shipping_thb: shipping,
       discount_thb: discountThb,
+      points_redeemed: pointsRedeemed,
+      points_discount_thb: pointsDiscountThb,
       total_thb: total,
       locale: orderLocale,
     }
@@ -408,6 +449,8 @@ export function registerCheckoutRoutes(router: RouterType) {
         subtotal_thb: subtotal,
         shipping_thb: shipping,
         discount_thb: discountThb,
+        points_redeemed: pointsRedeemed,
+        points_discount_thb: pointsDiscountThb,
         total_thb: total,
         intent,
       },

@@ -8,6 +8,7 @@ import { enforcePolicyGlobalLimit, enforcePolicyLimit } from '../middleware/rate
 import { sendMagicLinkEmail } from '../services/email'
 import { generateULID } from '../lib/ulid'
 import { parseAcceptLanguage } from '../lib/locale'
+import { loyaltyStatementsForLinkedPaidOrders } from '../services/loyalty'
 
 const MAGIC_LINK_EXPIRY_MINUTES = 15
 const MAGIC_LINK_RATE_LIMIT_MAX = 3
@@ -138,6 +139,11 @@ export function registerAuthRoutes(router: RouterType) {
       await env.DB.prepare(`UPDATE orders SET user_id = ? WHERE customer_email = ? AND user_id IS NULL`)
         .bind(user.id, magicLink.email)
         .run()
+
+      const loyaltyStatements = await loyaltyStatementsForLinkedPaidOrders(env, user.id, now)
+      if (loyaltyStatements.length > 0) {
+        await env.DB.batch(loyaltyStatements)
+      }
 
       const sessionToken = randomHex(32)
       const sessionTokenHash = await sha256Hex(sessionToken)

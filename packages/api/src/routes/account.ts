@@ -3,8 +3,33 @@ import type { Env, AccountOrderRow, LastAddressRow, CountRow, UserRow, Validatio
 import { nowIso } from '../lib/utils'
 import { validateProfileBody } from '../lib/validation'
 import { getSessionUser, parseJsonBody } from '../middleware/auth'
+import { getLoyaltyBalance, listLoyaltyEntries } from '../services/loyalty'
 
 export function registerAccountRoutes(router: RouterType) {
+  router.get('/api/account/loyalty', async (request: Request, env: Env) => {
+    const user = await getSessionUser(request, env)
+    if (!user) {
+      return Response.json({ error: 'Authentication required. Please log in.' }, { status: 401 })
+    }
+
+    try {
+      const [balance, entries] = await Promise.all([
+        getLoyaltyBalance(env, user.id),
+        listLoyaltyEntries(env, user.id, 10),
+      ])
+
+      return Response.json({
+        balance_points: balance,
+        point_value_satang: 100,
+        earn_rate_label: '1 point per 10 THB',
+        max_redemption_percent: 5,
+        entries,
+      })
+    } catch {
+      return Response.json({ error: 'Database error' }, { status: 500 })
+    }
+  })
+
   router.get('/api/account/orders', async (request: Request, env: Env) => {
     const user = await getSessionUser(request, env)
     if (!user) {

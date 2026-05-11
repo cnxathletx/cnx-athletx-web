@@ -220,6 +220,22 @@ export function validateCheckoutBody(body: unknown): { errors: ValidationError[]
     }
   }
 
+  if (b.redeem_points !== undefined && b.redeem_points !== null) {
+    const redeemPoints = typeof b.redeem_points === 'number' ? b.redeem_points : Number.NaN
+    if (!Number.isInteger(redeemPoints) || redeemPoints < 0) {
+      errors.push({ field: 'redeem_points', message: 'redeem_points must be a non-negative integer' })
+    }
+  }
+
+  if (
+    typeof b.discount_code === 'string' &&
+    b.discount_code.trim() !== '' &&
+    typeof b.redeem_points === 'number' &&
+    b.redeem_points > 0
+  ) {
+    errors.push({ field: 'redeem_points', message: 'Points cannot be used with a discount code' })
+  }
+
   if (typeof b.payment_method !== 'string' || b.payment_method.trim() === '') {
     errors.push({ field: 'payment_method', message: 'payment_method is required' })
   } else if (!getProvider(b.payment_method)) {

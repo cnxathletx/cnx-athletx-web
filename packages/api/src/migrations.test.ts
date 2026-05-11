@@ -26,6 +26,16 @@ function columnNameFromCreateLine(line: string): string | null {
 }
 
 describe('D1 migrations', () => {
+  it('includes the loyalty points migration after order locale', () => {
+    const files = readdirSync(migrationsDir)
+      .filter((file) => file.endsWith('.sql'))
+      .sort((a, b) => a.localeCompare(b))
+
+    expect(files).toContain('0010_orders_locale.sql')
+    expect(files).toContain('0011_loyalty_points.sql')
+    expect(files.indexOf('0011_loyalty_points.sql')).toBeGreaterThan(files.indexOf('0010_orders_locale.sql'))
+  })
+
   it('does not add columns already created by earlier migrations', () => {
     const knownColumns = new Map<string, Set<string>>()
     const duplicates: string[] = []

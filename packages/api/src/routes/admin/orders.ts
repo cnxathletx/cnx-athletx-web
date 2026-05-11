@@ -16,6 +16,7 @@ import { ORDER_STATUS, canTransition, isOrderStatus } from '../../lib/orderStatu
 import { parseAdminPagination, validateShipmentBody } from '../../lib/validation'
 import { requireAdmin, parseJsonBody } from '../../middleware/auth'
 import { sendOrderEmail, fetchOrderEmailData, sendReviewPromptEmail } from '../../services/email'
+import { loyaltyStatementsForPaidOrder, loyaltyStatementsForTerminalReversal } from '../../services/loyalty'
 
 export function registerAdminOrderRoutes(router: RouterType) {
   router.get('/api/admin/orders', requireAdmin(async (request, env) => {
@@ -243,6 +244,8 @@ export function registerAdminOrderRoutes(router: RouterType) {
         )
       }
 
+      statements.push(...await loyaltyStatementsForPaidOrder(env, orderId, now))
+
       statements.push(
         env.DB.prepare(
           `INSERT INTO admin_audit_log (admin_email, action, order_id, details_json, created_at)
@@ -437,6 +440,8 @@ export function registerAdminOrderRoutes(router: RouterType) {
           )
         }
       }
+
+      statements.push(...await loyaltyStatementsForTerminalReversal(env, orderId, now))
 
       statements.push(
         env.DB.prepare(

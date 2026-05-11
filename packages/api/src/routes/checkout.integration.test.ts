@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeAll, afterAll, beforeEach } from 'vitest'
-import { startWorker, stopWorker, resetDb, workerFetch, checkoutBody } from '../test/helpers'
+import { startWorker, stopWorker, resetDb, workerFetch, checkoutBody, loginAs } from '../test/helpers'
 
 beforeAll(async () => { await startWorker() })
 afterAll(async () => { await stopWorker() })
@@ -250,6 +250,71 @@ describe('POST /api/checkout', () => {
 
     const data = await res.json() as { details: Array<{ field: string }> }
     expect(data.details).toContainEqual(expect.objectContaining({ field: 'locale' }))
+  })
+
+  it('rejects points redemption for guests', async () => {
+    const res = await workerFetch('/api/checkout', { body: checkoutBody({ redeem_points: 10 }) })
+    expect(res.status).toBe(400)
+
+    const data = await res.json() as { details: Array<{ field: string; message: string }> }
+    expect(data.details).toContainEqual(expect.objectContaining({ field: 'redeem_points' }))
+  })
+
+  it('rejects using discount code and points together', async () => {
+    const email = 'stacking@example.com'
+    const cookie = await loginAs(email)
+    const res = await workerFetch('/api/checkout', {
+      cookie,
+      body: checkoutBody({
+        customer: {
+          name: 'Stacking User',
+          email,
+          phone: '+66812345678',
+          address: { line1: '123 Test Street, Apt 4', district: 'Mueang', province: 'Chiang Mai', postal_code: '50200' },
+        },
+        discount_code: 'WELCOME',
+        redeem_points: 10,
+      }),
+    })
+    expect(res.status).toBe(400)
+
+    const data = await res.json() as { details: Array<{ field: string }> }
+    expect(data.details).toContainEqual(expect.objectContaining({ field: 'redeem_points' }))
+  })
+
+  it('redeems points up to 5 percent of subtotal', async () => {
+    const email = 'redeem@example.com'
+    const cookie = await loginAs(email)
+    await workerFetch('/api/__test-loyalty-ledger', {
+      method: 'POST',
+      admin: true,
+      body: { email, points_delta: 200, kind: 'manual_adjustment', reason: 'test seed' },
+    })
+
+    const res = await workerFetch('/api/checkout', {
+      cookie,
+      body: checkoutBody({
+        customer: {
+          name: 'Redeem User',
+          email,
+          phone: '+66812345678',
+          address: { line1: '123 Test Street, Apt 4', district: 'Mueang', province: 'Chiang Mai', postal_code: '50200' },
+        },
+        redeem_points: 999,
+      }),
+    })
+
+    expect(res.status).toBe(201)
+    const data = await res.json() as {
+      discount_thb: number
+      points_redeemed: number
+      points_discount_thb: number
+      total_thb: number
+    }
+    expect(data.points_redeemed).toBe(44)
+    expect(data.points_discount_thb).toBe(4400)
+    expect(data.discount_thb).toBe(4400)
+    expect(data.total_thb).toBe(89900 + 10000 - 4400)
   })
 })
 

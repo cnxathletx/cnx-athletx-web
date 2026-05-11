@@ -3,10 +3,12 @@ import type { Env, WebhookOutcome } from '../lib/types'
 import { getProvider } from '../services/payments/registry'
 import { nowIso } from '../lib/utils'
 import {
+  ORDER_STATUS,
   allowedWebhookTransitionSources,
   mapWebhookOutcomeToOrderStatus,
   orderStatusSqlList,
 } from '../lib/orderStatus'
+import { loyaltyStatementsForPaidOrder, loyaltyStatementsForTerminalReversal } from '../services/loyalty'
 
 export function mapWebhookToOrderStatus(outcome: WebhookOutcome): 'paid' | 'failed' | 'refunded' {
   return mapWebhookOutcomeToOrderStatus(outcome)
@@ -60,6 +62,12 @@ export function registerPaymentsRoutes(router: RouterType) {
     const now = nowIso()
 
     try {
+      const loyaltyStatements = newStatus === ORDER_STATUS.paid
+        ? await loyaltyStatementsForPaidOrder(env, envelope.orderId, now)
+        : newStatus === ORDER_STATUS.refunded
+          ? await loyaltyStatementsForTerminalReversal(env, envelope.orderId, now)
+          : []
+
       await env.DB.batch([
         env.DB.prepare(
           `INSERT INTO payments (order_id, method, provider, provider_txn_id, status, payload_json, amount_thb, created_at)
@@ -78,6 +86,7 @@ export function registerPaymentsRoutes(router: RouterType) {
           `UPDATE orders SET status = ?, updated_at = ?
            WHERE id = ? AND status IN ${orderStatusSqlList(allowed)}`
         ).bind(newStatus, now, envelope.orderId),
+        ...loyaltyStatements,
       ])
     } catch (e) {
       if (isUniqueViolation(e)) {

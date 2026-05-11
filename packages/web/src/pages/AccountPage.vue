@@ -4,14 +4,17 @@ import { useRouter } from 'vue-router'
 import {
   AuthApiErrorResponse,
   fetchAccountOrders,
+  fetchLoyaltySummary,
   fetchSavedAddress,
   updateAddress,
   updateProfile,
   type AccountOrder,
+  type LoyaltySummary,
   type SavedAddress,
 } from '../api/auth'
 import PrimaryButton from '../components/ui/PrimaryButton.vue'
 import SecondaryButton from '../components/ui/SecondaryButton.vue'
+import AthletXPointsToken from '../components/ui/AthletXPointsToken.vue'
 import ReviewableProductCard from '../components/reviews/ReviewableProductCard.vue'
 import ReviewForm from '../components/reviews/ReviewForm.vue'
 import {
@@ -41,6 +44,7 @@ const page = ref(1)
 const limit = 10
 const total = ref(0)
 const orders = ref<AccountOrder[]>([])
+const loyalty = ref<LoyaltySummary | null>(null)
 
 const profile = ref({
   name: '',
@@ -111,6 +115,14 @@ async function loadOrders() {
       return
     }
     fetchError.value = 'Unable to load your account data.'
+  }
+}
+
+async function loadLoyalty() {
+  try {
+    loyalty.value = await fetchLoyaltySummary()
+  } catch {
+    loyalty.value = null
   }
 }
 
@@ -268,6 +280,7 @@ onMounted(async () => {
   }
 
   await loadOrders()
+  await loadLoyalty()
   await loadReviews()
   loading.value = false
 })
@@ -289,6 +302,30 @@ onMounted(async () => {
             <p class="text-muted mt-1">{{ auth.user.email }}</p>
           </div>
           <SecondaryButton size="sm" @click="handleLogout">{{ t('account.logOut') }}</SecondaryButton>
+        </div>
+
+        <div v-if="loyalty" class="bg-surface rounded-lg ring-1 ring-[var(--card-ring)] p-6 space-y-4">
+          <div class="flex items-center justify-between gap-4">
+            <div class="flex items-center gap-3">
+              <AthletXPointsToken />
+              <div>
+                <h2 class="text-xl font-bold text-foreground">{{ t('account.loyalty.title') }}</h2>
+                <p class="text-sm text-muted">{{ t('account.loyalty.subtitle') }}</p>
+              </div>
+            </div>
+            <div class="text-right">
+              <p class="text-3xl font-bold text-foreground">{{ loyalty.balance_points }}</p>
+              <p class="text-xs text-muted">{{ t('account.loyalty.points') }}</p>
+            </div>
+          </div>
+          <div v-if="loyalty.entries.length" class="space-y-2 border-t border-sand/60 pt-3">
+            <div v-for="entry in loyalty.entries.slice(0, 3)" :key="entry.id" class="flex justify-between gap-4 text-sm">
+              <span class="text-muted truncate">{{ entry.reason }}</span>
+              <span :class="entry.points_delta > 0 ? 'text-primary' : 'text-error'">
+                {{ entry.points_delta > 0 ? '+' : '' }}{{ entry.points_delta }}
+              </span>
+            </div>
+          </div>
         </div>
 
         <div class="bg-surface rounded-lg ring-1 ring-[var(--card-ring)] p-6 space-y-4">

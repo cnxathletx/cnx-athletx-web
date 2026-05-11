@@ -32,6 +32,12 @@ Domain interfaces live in `src/types/` and are re-exported from existing API mod
 
 Discount code inputs are label-addressable and intentionally avoid example-code placeholders. Showing a fake code can imply an active promotion exists when no customer-facing discount has been published.
 
+Logged-in customers see AthletX Points redemption in checkout. The UI previews the 5% capped point discount and disables discount-code entry while points are selected; the API remains authoritative for the final redemption amount.
+
+## Account UX
+
+The account page includes a compact AthletX Points card using the existing `X` mark inside a sage token. It shows the current points balance and recent activity without making the loyalty system feel like a separate wallet.
+
 ## Admin Resource Pattern
 
 `useAdminResource<T>()` centralizes the common admin pattern of loading data, tracking loading/error state, running a mutating action, and reloading after success. It is intentionally small and currently used by review moderation and the analytics report; larger products/discounts/product-line pages should only migrate when their workflows match the same shape cleanly.

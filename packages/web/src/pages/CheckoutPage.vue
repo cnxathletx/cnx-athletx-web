@@ -4,11 +4,12 @@ import { useRouter } from 'vue-router'
 import { useCartStore, lineTotalFor } from '../stores/cart'
 import { formatPrice } from '../api/products'
 import { submitCheckout, CheckoutError } from '../api/checkout'
-import { fetchLastAddress } from '../api/auth'
+import { fetchLastAddress, fetchLoyaltySummary } from '../api/auth'
 import { fetchPaymentMethods, type PaymentMethod } from '../api/paymentMethods'
 import PrimaryButton from '../components/ui/PrimaryButton.vue'
 import CheckoutStepper from '../components/ui/CheckoutStepper.vue'
 import PaymentMethodPicker from '../components/payment/PaymentMethodPicker.vue'
+import AthletXPointsToken from '../components/ui/AthletXPointsToken.vue'
 import { useAuthStore } from '../stores/auth'
 import { useHead } from '../composables/useHead'
 import { useThaiAddress } from '../composables/useThaiAddress'
@@ -69,10 +70,20 @@ watch(thaiAddr.postalCode, (v) => { form.value.postal_code = v })
 const submitting = ref(false)
 const apiError = ref('')
 const fieldErrors = ref<Record<string, string>>({})
+const loyaltyBalance = ref(0)
+const redeemPoints = ref(0)
+const loyaltyError = ref('')
 
 const paymentMethods = ref<PaymentMethod[]>([])
 const selectedMethod = ref('')
 const methodsError = ref('')
+
+const maxRedeemablePoints = computed(() => {
+  const subtotalCap = Math.floor((cart.subtotalSatang * 5) / 10_000)
+  return Math.min(loyaltyBalance.value, subtotalCap)
+})
+
+const pointsDiscountPreview = computed(() => redeemPoints.value * 100)
 
 // Generate idempotency key once per page load
 const idempotencyKey = crypto.randomUUID()
@@ -149,6 +160,16 @@ function validate(): boolean {
 
 const canSubmit = computed(() => cart.items.length > 0 && !submitting.value)
 
+watch(() => form.value.discount_code, (code) => {
+  if (code.trim()) redeemPoints.value = 0
+})
+
+watch([redeemPoints, maxRedeemablePoints], ([points, max]) => {
+  if (points > 0) form.value.discount_code = ''
+  if (!Number.isFinite(points) || points < 0) redeemPoints.value = 0
+  if (points > max) redeemPoints.value = max
+})
+
 onMounted(async () => {
   try {
     paymentMethods.value = await fetchPaymentMethods()
@@ -170,6 +191,13 @@ onMounted(async () => {
   if (!form.value.name) form.value.name = auth.user.name ?? ''
   if (!form.value.email) form.value.email = auth.user.email
   if (auth.user.phone) setPhoneFromExisting(auth.user.phone)
+
+  try {
+    const loyalty = await fetchLoyaltySummary()
+    loyaltyBalance.value = loyalty.balance_points
+  } catch {
+    loyaltyError.value = t('checkout.pointsLoadError')
+  }
 
   try {
     const address = await fetchLastAddress()
@@ -221,6 +249,7 @@ async function handleSubmit() {
       },
       idempotency_key: idempotencyKey,
       discount_code: form.value.discount_code.trim() || undefined,
+      redeem_points: redeemPoints.value > 0 ? redeemPoints.value : undefined,
       payment_method: selectedMethod.value,
       locale: locale.value === 'th' ? 'th' : 'en',
     })
@@ -440,13 +469,50 @@ async function handleSubmit() {
                 id="discount-code"
                 v-model="form.discount_code"
                 type="text"
+                :disabled="redeemPoints > 0"
                 :class="[
-                  'flex-1 rounded-md border px-4 py-3 text-sm bg-surface-alt text-foreground uppercase transition-colors focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent',
+                  'flex-1 rounded-md border px-4 py-3 text-sm bg-surface-alt text-foreground uppercase transition-colors focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent disabled:opacity-60 disabled:cursor-not-allowed',
                   fieldErrors.discount_code ? 'border-error' : 'border-sand',
                 ]"
               />
             </div>
             <p v-if="fieldErrors.discount_code" class="text-xs text-error">{{ fieldErrors.discount_code }}</p>
+          </div>
+
+          <!-- AthletX Points -->
+          <div v-if="auth.user" class="space-y-2">
+            <label for="redeem-points" class="block text-sm font-medium text-foreground">
+              {{ t('checkout.redeemPoints') }}
+            </label>
+            <div class="max-w-sm rounded-md border border-sand bg-surface-alt p-3 space-y-3">
+              <div class="flex items-center justify-between gap-3 text-sm">
+                <span class="inline-flex items-center gap-2 text-muted">
+                  <AthletXPointsToken size="sm" />
+                  {{ t('checkout.pointsAvailable') }}
+                </span>
+                <span class="font-semibold text-foreground">{{ loyaltyBalance }}</span>
+              </div>
+              <input
+                id="redeem-points"
+                v-model.number="redeemPoints"
+                type="number"
+                min="0"
+                :max="maxRedeemablePoints"
+                :disabled="!!form.discount_code.trim() || maxRedeemablePoints === 0"
+                :class="[
+                  'w-full rounded-md border px-4 py-3 text-sm bg-surface text-foreground transition-colors focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent disabled:opacity-60 disabled:cursor-not-allowed',
+                  fieldErrors.redeem_points ? 'border-error' : 'border-sand',
+                ]"
+              />
+              <p class="text-xs text-muted">
+                {{ t('checkout.pointsMax', { points: maxRedeemablePoints }) }}
+              </p>
+              <p v-if="pointsDiscountPreview > 0" class="text-xs text-primary">
+                {{ t('checkout.pointsDiscountPreview', { amount: formatPrice(pointsDiscountPreview) }) }}
+              </p>
+              <p v-if="fieldErrors.redeem_points" class="text-xs text-error">{{ fieldErrors.redeem_points }}</p>
+              <p v-if="loyaltyError" class="text-xs text-error">{{ loyaltyError }}</p>
+            </div>
           </div>
         </div>
 
@@ -479,6 +545,10 @@ async function handleSubmit() {
               <div class="flex justify-between">
                 <span class="text-muted">{{ t('checkout.shipping') }}</span>
                 <span class="text-muted">{{ t('checkout.calculatedOnSubmit') }}</span>
+              </div>
+              <div v-if="pointsDiscountPreview > 0" class="flex justify-between">
+                <span class="text-muted">{{ t('checkout.pointsDiscount') }}</span>
+                <span class="font-semibold text-primary">-{{ formatPrice(pointsDiscountPreview) }}</span>
               </div>
             </div>
 

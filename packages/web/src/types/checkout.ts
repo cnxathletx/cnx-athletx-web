@@ -14,6 +14,7 @@ export interface CheckoutPayload {
   }
   idempotency_key: string
   discount_code?: string
+  redeem_points?: number
   payment_method: string
   locale?: 'en' | 'th'
 }
@@ -55,6 +56,8 @@ export interface CheckoutResponse {
   subtotal_thb: number
   shipping_thb: number
   discount_thb: number
+  points_redeemed: number
+  points_discount_thb: number
   total_thb: number
   intent: PaymentIntent
   message?: string

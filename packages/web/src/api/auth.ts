@@ -1,7 +1,7 @@
 import { ApiClientError, apiFetch, type ApiErrorDetails, type ApiErrorPayload } from './client'
-import type { AccountOrder, AuthUser, SavedAddress } from '../types/auth'
+import type { AccountOrder, AuthUser, LoyaltySummary, SavedAddress } from '../types/auth'
 
-export type { AccountOrder, AuthUser, SavedAddress } from '../types/auth'
+export type { AccountOrder, AuthUser, LoyaltySummary, SavedAddress } from '../types/auth'
 
 export class AuthApiErrorResponse extends ApiClientError {
   constructor(message: string, status: number, details?: ApiErrorDetails[]) {
@@ -48,6 +48,10 @@ export async function fetchAccountOrders(page = 1, limit = 10): Promise<{
   pagination: { page: number; limit: number; total: number }
 }> {
   return apiFetch(`/api/account/orders?page=${page}&limit=${limit}`, { parseError: authError })
+}
+
+export async function fetchLoyaltySummary(): Promise<LoyaltySummary> {
+  return apiFetch('/api/account/loyalty', { parseError: authError })
 }
 
 export async function fetchLastAddress(): Promise<{

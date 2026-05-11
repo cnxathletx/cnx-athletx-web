@@ -88,6 +88,29 @@ export interface LastAddressRow {
   postal_code: string
 }
 
+export interface LoyaltyBalanceRow {
+  balance: number | null
+}
+
+export interface LoyaltyLedgerRow {
+  id: number
+  order_id: string | null
+  points_delta: number
+  kind: 'earn' | 'redeem' | 'restore' | 'reverse_earn' | 'manual_adjustment'
+  reason: string
+  created_at: string
+}
+
+export interface LoyaltyOrderRow {
+  id: string
+  user_id: string | null
+  subtotal_thb: number
+  discount_thb: number
+  points_redeemed: number
+  points_earned: number
+  status: OrderStatus
+}
+
 // --- Checkout types ---
 
 export interface CheckoutItem {
@@ -115,6 +138,7 @@ export interface CheckoutBody {
   customer: CheckoutCustomer
   idempotency_key: string
   discount_code?: string
+  redeem_points?: number
   payment_method: ProviderId
   locale?: 'en' | 'th'
 }
@@ -149,6 +173,8 @@ export interface ExistingOrderRow {
   subtotal_thb: number
   shipping_thb: number
   discount_thb: number
+  points_redeemed: number
+  points_discount_thb: number
   total_thb: number
 }
 

@@ -57,6 +57,51 @@ describe('GET /api/account/orders', () => {
   })
 })
 
+describe('GET /api/account/loyalty', () => {
+  it('returns 401 without authentication', async () => {
+    const res = await workerFetch('/api/account/loyalty')
+    expect(res.status).toBe(401)
+  })
+
+  it('returns balance and recent ledger entries', async () => {
+    const email = 'loyalty@example.com'
+    const cookie = await loginAs(email)
+    await workerFetch('/api/__test-loyalty-ledger', {
+      method: 'POST',
+      admin: true,
+      body: { email, points_delta: 25, kind: 'manual_adjustment', reason: 'test seed' },
+    })
+
+    const res = await workerFetch('/api/account/loyalty', { cookie })
+    expect(res.status).toBe(200)
+    const data = await res.json() as { balance_points: number; entries: Array<{ points_delta: number; reason: string }> }
+    expect(data.balance_points).toBe(25)
+    expect(data.entries[0].points_delta).toBe(25)
+    expect(data.entries[0].reason).toBe('test seed')
+  })
+
+  it('awards missing points for paid guest orders when the customer logs in later', async () => {
+    const email = 'latepoints@example.com'
+    const checkout = await workerFetch('/api/checkout', {
+      body: checkoutBody({
+        customer: {
+          name: 'Late Points',
+          email,
+          phone: '+66812345678',
+          address: { line1: '123 Test Street, Apt 4', district: 'Mueang', province: 'Chiang Mai', postal_code: '50200' },
+        },
+      }),
+    })
+    const { order_id } = await checkout.json() as { order_id: string }
+    await workerFetch(`/api/admin/orders/${order_id}/mark-paid`, { method: 'POST', admin: true })
+
+    const cookie = await loginAs(email)
+    const summary = await workerFetch('/api/account/loyalty', { cookie })
+    const data = await summary.json() as { balance_points: number }
+    expect(data.balance_points).toBe(89)
+  })
+})
+
 describe('PATCH /api/account/address', () => {
   it('returns 401 without authentication', async () => {
     const res = await workerFetch('/api/account/address', {

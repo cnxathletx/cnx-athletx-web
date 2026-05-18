@@ -25,6 +25,8 @@ const monthNames = [
 ]
 
 const displayMonth = computed(() => `${monthNames[selectedMonth.value - 1]} ${selectedYear.value}`)
+const PLATFORM_CUT_RATE = 0.10
+const platformCut = computed(() => report.value ? calculatePlatformCut(report.value.total_revenue) : 0)
 
 async function loadReport() {
   error.value = ''
@@ -119,11 +121,16 @@ function nextMonth() {
   }
 }
 
+function calculatePlatformCut(totalRevenue: number): number {
+  return Math.round(totalRevenue * PLATFORM_CUT_RATE)
+}
+
 async function exportPdf() {
   if (!report.value) return
 
   const r = report.value
   const total = r.total_revenue
+  const pdfPlatformCut = calculatePlatformCut(total)
 
   // Build SVG pie chart for PDF
   const svgSize = 200
@@ -192,6 +199,10 @@ async function exportPdf() {
     <div class="stat-card">
       <div class="stat-value">&#3647;${r.total_revenue.toLocaleString()}</div>
       <div class="stat-label">Total Revenue</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-value">&#3647;${pdfPlatformCut.toLocaleString()}</div>
+      <div class="stat-label">Platform Cut</div>
     </div>
     <div class="stat-card">
       <div class="stat-value">${r.total_orders}</div>
@@ -284,10 +295,14 @@ onMounted(() => loadReport())
       <!-- Report content -->
       <template v-else-if="report">
         <!-- Summary cards -->
-        <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
           <div class="bg-surface rounded-lg ring-1 ring-[var(--card-ring)] p-5">
             <p class="text-sm text-muted">Total Revenue</p>
             <p class="text-2xl font-bold text-foreground mt-1">&#3647;{{ report.total_revenue.toLocaleString() }}</p>
+          </div>
+          <div class="bg-surface rounded-lg ring-1 ring-[var(--card-ring)] p-5">
+            <p class="text-sm text-muted">Platform Cut</p>
+            <p class="text-2xl font-bold text-foreground mt-1">&#3647;{{ platformCut.toLocaleString() }}</p>
           </div>
           <div class="bg-surface rounded-lg ring-1 ring-[var(--card-ring)] p-5">
             <p class="text-sm text-muted">Orders</p>

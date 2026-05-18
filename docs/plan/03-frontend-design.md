@@ -45,3 +45,7 @@ The account page includes a compact AthletX Points card using the existing `X` m
 ## Admin Analytics
 
 `AdminAnalyticsPage.vue` displays the current day, week, and month totals for visitors and orders. Orders come from D1 through `/api/admin/reports/analytics`. Visitor counts are also returned by that endpoint after the Worker is configured with Cloudflare analytics credentials; until then the page shows a clear "not configured" state instead of failing the report.
+
+## Admin Income Report
+
+`AdminIncomePage.vue` displays monthly revenue, platform cut, orders, and products sold, plus product-level revenue share. Platform cut is a dashboard-only derived metric calculated as 10% of total revenue and is included in the PDF export.

@@ -1,7 +1,7 @@
 import { apiFetch } from './client'
 import { formatMoney } from '../utils/money'
 import i18n from '../i18n'
-import type { ApiProduct, ProductDetailResponse } from '../types/products'
+import type { ApiProduct, ProductDetailResponse, ProductWaitlistSignupResponse } from '../types/products'
 
 export type {
   ApiLabTestContentType,
@@ -52,6 +52,21 @@ export function prefetchProductBySlug(slug: string): void {
   ).catch(() => {
     prefetched.delete(key)
   })
+}
+
+export async function joinProductWaitlist(
+  slug: string,
+  payload: { email: string; marketing_consent: boolean },
+): Promise<ProductWaitlistSignupResponse> {
+  return apiFetch<ProductWaitlistSignupResponse>(
+    `/api/products/${encodeURIComponent(slug)}/waitlist?locale=${encodeURIComponent(currentLocale())}`,
+    {
+      method: 'POST',
+      body: payload,
+      parseError: (_payload, response) =>
+        response.status === 409 ? new Error('Product is in stock') : new Error('Failed to join waitlist'),
+    },
+  )
 }
 
 export const formatPrice = formatMoney

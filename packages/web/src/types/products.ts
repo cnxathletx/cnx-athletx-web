@@ -56,3 +56,7 @@ export interface ProductDetailResponse {
   product: ApiProduct
   related: ApiRelatedProduct | null
 }
+
+export interface ProductWaitlistSignupResponse {
+  success: true
+}

@@ -137,7 +137,15 @@
     "perUnit": "per unit",
     "lineTotal": "Line total {total}",
     "addMoreForDiscount": "Add {needed} more for {price} each",
-    "tierApplied": "Volume discount applied"
+    "tierApplied": "Volume discount applied",
+    "waitlistTitle": "Notify me when back in stock",
+    "waitlistEmailLabel": "Email",
+    "waitlistEmailPlaceholder": "you@example.com",
+    "waitlistMarketingConsent": "Send me product updates and offers by email",
+    "waitlistSubmit": "Notify when back in stock",
+    "waitlistSuccess": "We'll email you when this product is back in stock.",
+    "waitlistInvalidEmail": "Enter a valid email address.",
+    "waitlistError": "Could not save your request. Please try again."
   },
   "cart": {
     "title": "Shopping Cart",

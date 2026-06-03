@@ -5,6 +5,7 @@ import { brand } from './brand'
 import {
   orderTemplates,
   adminTemplates,
+  backInStockTemplate,
   magicLinkTemplate,
   reviewPromptTemplate,
   type OrderEvent,
@@ -36,6 +37,13 @@ export interface ReviewPromptEmailInput {
   customer_email: string
   product_lines: { name: string }[]
   review_url: string
+  locale: Locale
+}
+
+export interface BackInStockEmailInput {
+  customer_email: string
+  product_name: string
+  product_url: string
   locale: Locale
 }
 
@@ -218,6 +226,26 @@ export async function sendReviewPromptEmail(env: Env, input: ReviewPromptEmailIn
   } catch (err) {
     const message = err instanceof Error ? err.message : 'Unknown error'
     await logEmail(env, input.order_id, 'review_prompt', input.customer_email, 'failed', message)
+  }
+}
+
+export async function sendBackInStockEmail(env: Env, input: BackInStockEmailInput): Promise<boolean> {
+  try {
+    const { subject, html } = backInStockTemplate[input.locale]({
+      product_name: input.product_name,
+      product_url: input.product_url,
+    })
+    if (!env.RESEND_API_KEY) {
+      await logEmail(env, null, 'back_in_stock', input.customer_email, 'sent')
+      return true
+    }
+    const ok = await sendResendEmail(env, input.customer_email, subject, html)
+    await logEmail(env, null, 'back_in_stock', input.customer_email, ok ? 'sent' : 'failed', ok ? undefined : 'Resend API returned non-OK')
+    return ok
+  } catch (err) {
+    const message = err instanceof Error ? err.message : 'Unknown error'
+    await logEmail(env, null, 'back_in_stock', input.customer_email, 'failed', message)
+    return false
   }
 }
 

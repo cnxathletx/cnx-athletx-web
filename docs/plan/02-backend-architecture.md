@@ -170,8 +170,9 @@
 - `packages/api/src/services/inventory.ts` builds inventory reserve/release statements and maps conditional update failures back to checkout validation details.
 - `packages/api/src/services/discounts.ts` owns discount lookup, validation, amount calculation, use-count commit statements, and rollback statements.
 - `packages/api/src/services/loyalty.ts` owns AthletX Points balance reads, checkout redemption caps, ledger statements, paid-order earning, and cancellation/refund reversal helpers.
-- `packages/api/src/middleware/rate-limit-registry.ts` defines named rate-limit policies for checkout, magic-link, and chat-create scopes, with optional `site_settings` overrides.
+- `packages/api/src/middleware/rate-limit-registry.ts` defines named rate-limit policies for checkout, magic-link, chat-create, and waitlist-signup scopes, with optional `site_settings` overrides.
 - `packages/api/src/routes/payments.ts` exposes canonical webhook dispatch at `/api/payments/webhook/:providerId` and keeps `/api/payments/:provider/webhook` as a compatibility alias.
+- Back-in-stock waitlist uses `product_waitlist_signups` for SKU-level requests with optional marketing consent. Public signup is `POST /api/products/:slug/waitlist`; admin listing is `GET /api/admin/waitlist`. Admin inventory adjustment sends `back_in_stock` emails when available stock transitions from zero or below to positive.
 
 ### Cloudflare Access Protection
 

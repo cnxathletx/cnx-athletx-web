@@ -2,7 +2,7 @@ import type { Env, SiteSettingsMap } from '../lib/types'
 import { loadSettingsMap } from '../services/settings'
 import { enforceGlobalLimit, enforceLimit, type LimitResult } from './rate-limit'
 
-export type RateLimitPolicyId = 'checkout' | 'magic_link' | 'chat_create'
+export type RateLimitPolicyId = 'checkout' | 'magic_link' | 'chat_create' | 'waitlist_signup'
 
 export interface RateLimitBucket {
   max: number
@@ -30,6 +30,11 @@ export const RATE_LIMITS: Record<RateLimitPolicyId, RateLimitPolicy> = {
     scope: 'chat_create',
     perIp: { max: 10, windowSec: 24 * 60 * 60 },
     global: { max: 500, windowSec: 24 * 60 * 60 },
+  },
+  waitlist_signup: {
+    scope: 'waitlist_signup',
+    perIp: { max: 20, windowSec: 60 * 60 },
+    global: { max: 1000, windowSec: 60 * 60 },
   },
 }
 

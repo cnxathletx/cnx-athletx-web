@@ -1,6 +1,17 @@
 import type { RouterType } from 'itty-router'
-import type { Env, ProductImageRow, PriceTierRow, LabTestFileRow, LabTestContentType } from '../lib/types'
+import type {
+  Env,
+  ProductImageRow,
+  PriceTierRow,
+  LabTestFileRow,
+  LabTestContentType,
+  ProductWaitlistProductRow,
+} from '../lib/types'
 import { resolveQueryLocale, type Locale } from '../lib/locale'
+import { validateProductWaitlistSignupBody } from '../lib/validation'
+import { parseJsonBody } from '../middleware/auth'
+import { getClientIp, rateLimitedResponse } from '../middleware/rate-limit'
+import { enforcePolicyGlobalLimit, enforcePolicyLimit } from '../middleware/rate-limit-registry'
 
 interface PublicProductRow {
   id: number
@@ -211,6 +222,85 @@ export function registerProductRoutes(router: RouterType) {
         { products },
         { headers: { 'Cache-Control': 'public, max-age=300' } },
       )
+    } catch {
+      return Response.json({ error: 'Database error' }, { status: 500 })
+    }
+  })
+
+  router.post('/api/products/:slug/waitlist', async (request: Request, env: Env) => {
+    const url = new URL(request.url)
+    const parts = url.pathname.split('/')
+    const slug = parts[parts.length - 2] || ''
+
+    if (!/^[a-z0-9-]+$/.test(slug)) {
+      return Response.json({ error: 'Invalid slug format' }, { status: 400 })
+    }
+
+    const key = getClientIp(request)
+    const ipLimit = await enforcePolicyLimit(env, 'waitlist_signup', key)
+    if (!ipLimit.ok) return rateLimitedResponse(ipLimit.retryAfterSec)
+
+    const globalLimit = await enforcePolicyGlobalLimit(env, 'waitlist_signup')
+    if (!globalLimit.ok) return rateLimitedResponse(globalLimit.retryAfterSec)
+
+    const parsed = await parseJsonBody(request)
+    if (!parsed.ok) return parsed.response
+
+    const { errors, data } = validateProductWaitlistSignupBody(parsed.data)
+    if (errors.length > 0 || !data) {
+      return Response.json({ error: 'Validation failed', details: errors }, { status: 400 })
+    }
+
+    const locale = resolveQueryLocale(url.searchParams.get('locale'))
+
+    try {
+      const product = await env.DB.prepare(
+        `SELECT p.id, p.slug, p.name, (i.stock_count - i.reserved_count) AS available_stock
+         FROM products p
+         JOIN inventory i ON i.product_id = p.id
+         WHERE p.slug = ? AND p.active = 1 AND p.archived = 0
+         LIMIT 1`
+      )
+        .bind(slug)
+        .first<ProductWaitlistProductRow>()
+
+      if (!product) {
+        return Response.json({ error: 'Product not found' }, { status: 404 })
+      }
+
+      if (product.available_stock > 0) {
+        return Response.json({ error: 'Product is in stock' }, { status: 409 })
+      }
+
+      const now = new Date().toISOString()
+      const existing = await env.DB.prepare(
+        `SELECT id FROM product_waitlist_signups
+         WHERE product_id = ? AND email = ? AND notified_at IS NULL
+         LIMIT 1`
+      )
+        .bind(product.id, data.email)
+        .first<{ id: number }>()
+
+      if (existing) {
+        await env.DB.prepare(
+          `UPDATE product_waitlist_signups
+           SET marketing_consent = ?, locale = ?, updated_at = ?
+           WHERE id = ?`
+        )
+          .bind(data.marketing_consent ? 1 : 0, locale, now, existing.id)
+          .run()
+        return Response.json({ success: true })
+      }
+
+      await env.DB.prepare(
+        `INSERT INTO product_waitlist_signups
+           (product_id, email, locale, marketing_consent, created_at, updated_at)
+         VALUES (?, ?, ?, ?, ?, ?)`
+      )
+        .bind(product.id, data.email, locale, data.marketing_consent ? 1 : 0, now, now)
+        .run()
+
+      return Response.json({ success: true }, { status: 201 })
     } catch {
       return Response.json({ error: 'Database error' }, { status: 500 })
     }

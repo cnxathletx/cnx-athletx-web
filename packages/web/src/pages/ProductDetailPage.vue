@@ -7,6 +7,7 @@ import AppBadge from '../components/ui/AppBadge.vue'
 import ProductCard from '../components/ui/ProductCard.vue'
 import {
   fetchProductBySlug,
+  joinProductWaitlist,
   formatPrice,
   formatWeight,
   type ApiProduct,
@@ -37,6 +38,13 @@ const activeImageIndex = ref(0)
 const lightboxOpen = ref(false)
 const labTestOpen = ref(false)
 const labTestIndex = ref(0)
+const waitlistEmail = ref('')
+const waitlistMarketingConsent = ref(false)
+const waitlistLoading = ref(false)
+const waitlistError = ref('')
+const waitlistSuccess = ref(false)
+
+const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
 
 function openLightbox() {
   if (!activeImageUrl.value || productImageError.value) return
@@ -253,6 +261,10 @@ async function loadProduct(slug: string) {
   activeTab.value = 'nutrition'
   productImageError.value = false
   activeImageIndex.value = 0
+  waitlistEmail.value = ''
+  waitlistMarketingConsent.value = false
+  waitlistError.value = ''
+  waitlistSuccess.value = false
   closeLightbox()
 
   try {
@@ -273,6 +285,31 @@ function increment() {
 
 function decrement() {
   if (quantity.value > 1) quantity.value--
+}
+
+async function submitWaitlist() {
+  const email = waitlistEmail.value.trim().toLowerCase()
+  waitlistError.value = ''
+  waitlistSuccess.value = false
+
+  if (!emailPattern.test(email)) {
+    waitlistError.value = t('product.waitlistInvalidEmail')
+    return
+  }
+
+  waitlistLoading.value = true
+  try {
+    await joinProductWaitlist(productSlug.value, {
+      email,
+      marketing_consent: waitlistMarketingConsent.value,
+    })
+    waitlistEmail.value = email
+    waitlistSuccess.value = true
+  } catch {
+    waitlistError.value = t('product.waitlistError')
+  } finally {
+    waitlistLoading.value = false
+  }
 }
 
 watch(
@@ -491,62 +528,101 @@ const {
 
             <p class="text-muted leading-relaxed">{{ product.description }}</p>
 
-            <!-- Quantity Selector -->
-            <div class="flex items-center space-x-4">
-              <span class="text-sm font-medium text-muted">{{ t('product.quantity') }}</span>
-              <div class="flex items-center space-x-3">
-                <button
-                  @click="decrement"
-                  :disabled="quantity <= 1"
-                  class="w-10 h-10 rounded-md border border-sand flex items-center justify-center text-foreground hover:bg-surface-alt transition-colors disabled:opacity-50"
-                >
-                  <svg
-                    class="w-4 h-4"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
+            <div v-if="product.available_stock > 0" class="space-y-6">
+              <!-- Quantity Selector -->
+              <div class="flex items-center space-x-4">
+                <span class="text-sm font-medium text-muted">{{ t('product.quantity') }}</span>
+                <div class="flex items-center space-x-3">
+                  <button
+                    @click="decrement"
+                    :disabled="quantity <= 1"
+                    class="w-10 h-10 rounded-md border border-sand flex items-center justify-center text-foreground hover:bg-surface-alt transition-colors disabled:opacity-50"
                   >
-                    <path
-                      stroke-linecap="round"
-                      stroke-linejoin="round"
-                      stroke-width="2"
-                      d="M20 12H4"
-                    />
-                  </svg>
-                </button>
-                <span class="text-lg font-semibold text-foreground w-8 text-center">
-                  {{ quantity }}
-                </span>
-                <button
-                  @click="increment"
-                  :disabled="quantity >= 10"
-                  class="w-10 h-10 rounded-md border border-sand flex items-center justify-center text-foreground hover:bg-surface-alt transition-colors disabled:opacity-50"
-                >
-                  <svg
-                    class="w-4 h-4"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
+                    <svg
+                      class="w-4 h-4"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                        stroke-width="2"
+                        d="M20 12H4"
+                      />
+                    </svg>
+                  </button>
+                  <span class="text-lg font-semibold text-foreground w-8 text-center">
+                    {{ quantity }}
+                  </span>
+                  <button
+                    @click="increment"
+                    :disabled="quantity >= 10"
+                    class="w-10 h-10 rounded-md border border-sand flex items-center justify-center text-foreground hover:bg-surface-alt transition-colors disabled:opacity-50"
                   >
-                    <path
-                      stroke-linecap="round"
-                      stroke-linejoin="round"
-                      stroke-width="2"
-                      d="M12 4v16m8-8H4"
-                    />
-                  </svg>
-                </button>
+                    <svg
+                      class="w-4 h-4"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                        stroke-width="2"
+                        d="M12 4v16m8-8H4"
+                      />
+                    </svg>
+                  </button>
+                </div>
               </div>
+
+              <!-- Add to Cart -->
+              <PrimaryButton
+                full-width
+                @click="cart.addItem({ productId: product.id, slug: product.slug, name: product.name, weightLabel: formatWeight(product.weight_g), priceSatang: product.price_thb, imageUrl: product.image_url, priceTiers: sortedTiers }, quantity)"
+              >
+                {{ t('product.addToCart') }}
+              </PrimaryButton>
             </div>
 
-            <!-- Add to Cart -->
-            <PrimaryButton
-              full-width
-              :disabled="product.available_stock <= 0"
-              @click="cart.addItem({ productId: product.id, slug: product.slug, name: product.name, weightLabel: formatWeight(product.weight_g), priceSatang: product.price_thb, imageUrl: product.image_url, priceTiers: sortedTiers }, quantity)"
+            <form
+              v-else
+              class="rounded-md border border-sand bg-surface-alt p-4 space-y-4"
+              @submit.prevent="submitWaitlist"
             >
-              {{ product.available_stock > 0 ? t('product.addToCart') : t('product.soldOut') }}
-            </PrimaryButton>
+              <div class="space-y-1">
+                <h2 class="text-base font-semibold text-foreground">{{ t('product.waitlistTitle') }}</h2>
+                <label class="block text-sm font-medium text-muted" for="waitlist-email">
+                  {{ t('product.waitlistEmailLabel') }}
+                </label>
+                <input
+                  id="waitlist-email"
+                  v-model="waitlistEmail"
+                  type="email"
+                  :placeholder="t('product.waitlistEmailPlaceholder')"
+                  class="w-full rounded-md border border-sand px-4 py-3 text-sm bg-surface text-foreground placeholder:text-muted focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
+                  :disabled="waitlistLoading || waitlistSuccess"
+                />
+              </div>
+
+              <label class="flex items-start gap-3 text-sm text-muted">
+                <input
+                  v-model="waitlistMarketingConsent"
+                  type="checkbox"
+                  class="mt-1 h-4 w-4 rounded border-sand text-primary focus:ring-primary"
+                  :disabled="waitlistLoading || waitlistSuccess"
+                />
+                <span>{{ t('product.waitlistMarketingConsent') }}</span>
+              </label>
+
+              <PrimaryButton full-width :disabled="waitlistLoading || waitlistSuccess">
+                {{ t('product.waitlistSubmit') }}
+              </PrimaryButton>
+
+              <p v-if="waitlistError" class="text-sm text-error">{{ waitlistError }}</p>
+              <p v-if="waitlistSuccess" class="text-sm text-success">{{ t('product.waitlistSuccess') }}</p>
+            </form>
 
             <!-- Stock Indicator -->
             <p

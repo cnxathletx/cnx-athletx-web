@@ -2,6 +2,7 @@ import { isValidEmail, isValidPhoneNumber, isValidProductSlug, isValidProductIma
 import { getProvider } from '../services/payments/registry'
 import type {
   ValidationError,
+  ProductWaitlistSignupBody,
   RequestLinkBody,
   VerifyLinkBody,
   UpdateProfileBody,
@@ -60,6 +61,40 @@ export function validateRequestLinkBody(body: unknown): { errors: ValidationErro
   }
 
   return { errors: [], data: { email } }
+}
+
+export function validateProductWaitlistSignupBody(body: unknown): {
+  errors: ValidationError[]
+  data: ProductWaitlistSignupBody | null
+} {
+  const errors: ValidationError[] = []
+
+  if (!body || typeof body !== 'object') {
+    return { errors: [{ field: 'body', message: 'Request body must be a JSON object' }], data: null }
+  }
+
+  const b = body as Record<string, unknown>
+  const email = typeof b.email === 'string' ? b.email.trim().toLowerCase() : ''
+
+  if (!isValidEmail(email)) {
+    errors.push({ field: 'email', message: 'email must be a valid email address' })
+  }
+
+  if (b.marketing_consent !== undefined && typeof b.marketing_consent !== 'boolean') {
+    errors.push({ field: 'marketing_consent', message: 'marketing_consent must be a boolean' })
+  }
+
+  if (errors.length > 0) {
+    return { errors, data: null }
+  }
+
+  return {
+    errors: [],
+    data: {
+      email,
+      marketing_consent: b.marketing_consent === true,
+    },
+  }
 }
 
 export function validateVerifyBody(body: unknown): { errors: ValidationError[]; data: VerifyLinkBody | null } {

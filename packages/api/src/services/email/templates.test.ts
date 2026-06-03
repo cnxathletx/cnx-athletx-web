@@ -2,6 +2,7 @@ import { describe, it, expect } from 'vitest'
 import {
   orderTemplates,
   adminTemplates,
+  backInStockTemplate,
   magicLinkTemplate,
   reviewPromptTemplate,
   type OrderEvent,
@@ -108,5 +109,19 @@ describe('reviewPromptTemplate', () => {
     const out = reviewPromptTemplate.th(baseInput)
     expect(out.subject).toContain('โปรตีน')
     expect(out.html).toContain(baseInput.review_url)
+  })
+})
+
+describe('backInStockTemplate', () => {
+  it('renders escaped product name and product URL', () => {
+    const out = backInStockTemplate.en({
+      product_name: '<Protein>',
+      product_url: 'https://www.cnxnature.com/product/plant-protein-500g?x=<bad>',
+    })
+
+    expect(out.subject).toContain('<Protein>')
+    expect(out.html).toContain('&lt;Protein&gt;')
+    expect(out.html).not.toContain('<Protein>')
+    expect(out.html).toContain('https://www.cnxnature.com/product/plant-protein-500g?x=&lt;bad&gt;')
   })
 })

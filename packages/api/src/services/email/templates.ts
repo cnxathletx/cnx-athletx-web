@@ -356,3 +356,29 @@ export const reviewPromptTemplate: Record<Locale, (ctx: ReviewPromptCtx) => Rend
   en: reviewPromptEn,
   th: reviewPromptTh,
 }
+
+export interface BackInStockTemplateInput {
+  product_name: string
+  product_url: string
+}
+
+const backInStockEn = (input: BackInStockTemplateInput): RenderedEmail => {
+  const safeName = escapeHtml(input.product_name)
+  const safeUrl = escapeHtml(input.product_url)
+  const body = `<h2 style="margin: 0 0 8px; font-size: 20px; color: ${brand.palette.text};">Back in Stock</h2>
+    <p style="margin: 0 0 20px; font-size: 15px; color: ${brand.palette.muted};">${safeName} is available again.</p>
+    <div style="margin: 24px 0;">
+      <a href="${safeUrl}" style="display: inline-block; background: ${brand.palette.primary}; color: #ffffff; text-decoration: none; border-radius: 8px; padding: 12px 18px; font-weight: 700;">View Product</a>
+    </div>
+    <p style="margin: 24px 0 0; font-size: 13px; color: ${brand.palette.muted};">You are receiving this because you asked us to notify you when this product returned.</p>`
+
+  return {
+    subject: `${input.product_name} is back in stock`,
+    html: emailLayout(`Back in Stock — ${brand.name}`, body),
+  }
+}
+
+export const backInStockTemplate: Record<Locale, (ctx: BackInStockTemplateInput) => RenderedEmail> = {
+  en: backInStockEn,
+  th: (ctx) => backInStockEn(ctx),
+}

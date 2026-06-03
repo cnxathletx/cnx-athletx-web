@@ -305,4 +305,29 @@ describe('PATCH /api/admin/inventory/:productId', () => {
     })
     expect(res.status).toBe(404)
   })
+
+  it('marks waitlist rows notified when stock transitions from out of stock to available', async () => {
+    await workerFetch('/api/admin/inventory/1', { admin: true, method: 'PATCH', body: { adjustment: -100 } })
+    await workerFetch('/api/products/plant-protein-500g/waitlist', {
+      body: { email: 'notify@example.com', marketing_consent: true },
+    })
+
+    const restock = await workerFetch('/api/admin/inventory/1', {
+      admin: true,
+      method: 'PATCH',
+      body: { adjustment: 5 },
+    })
+
+    expect(restock.status).toBe(200)
+    const restockData = await restock.json() as { waitlist_notified_count: number }
+    expect(restockData.waitlist_notified_count).toBe(1)
+
+    const waitlistRes = await workerFetch('/api/admin/waitlist?status=notified', { admin: true })
+    expect(waitlistRes.status).toBe(200)
+    const waitlistData = await waitlistRes.json() as {
+      waitlist: Array<{ email: string; notified_at: string | null }>
+    }
+    const row = waitlistData.waitlist.find((item) => item.email === 'notify@example.com')
+    expect(row?.notified_at).toBeTruthy()
+  })
 })

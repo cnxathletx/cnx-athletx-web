@@ -9,6 +9,7 @@ const links = [
   { to: '/admin/products', label: 'Products' },
   { to: '/admin/product-lines', label: 'Product Lines' },
   { to: '/admin/inventory', label: 'Inventory' },
+  { to: '/admin/waitlist', label: 'Waitlist' },
   { to: '/admin/discounts', label: 'Discounts' },
   { to: '/admin/income', label: 'Income' },
   { to: '/admin/analytics', label: 'Analytics' },

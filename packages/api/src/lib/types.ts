@@ -59,6 +59,11 @@ export interface RequestLinkBody {
   email: string
 }
 
+export interface ProductWaitlistSignupBody {
+  email: string
+  marketing_consent: boolean
+}
+
 export interface VerifyLinkBody {
   token: string
 }
@@ -149,6 +154,24 @@ export interface ProductRow {
   price_thb: number
   stock_count: number
   reserved_count: number
+}
+
+export interface ProductWaitlistProductRow {
+  id: number
+  slug: string
+  name: string
+  available_stock: number
+}
+
+export interface ProductWaitlistRow {
+  id: number
+  product_id: number
+  email: string
+  locale: 'en' | 'th'
+  marketing_consent: number
+  notified_at: string | null
+  created_at: string
+  updated_at: string
 }
 
 export interface SiteSettings {
@@ -255,6 +278,19 @@ export interface AdminOrderListRow {
 
 export interface AdminOrderListCountRow {
   total: number
+}
+
+export interface AdminWaitlistRow {
+  id: number
+  product_id: number
+  product_slug: string
+  product_name: string
+  email: string
+  locale: 'en' | 'th'
+  marketing_consent: number
+  notified_at: string | null
+  created_at: string
+  updated_at: string
 }
 
 export interface AdminOrderItemForStockRow {

@@ -13,6 +13,7 @@ export {
 export {
   orderTemplates,
   adminTemplates,
+  backInStockTemplate,
   magicLinkTemplate,
   reviewPromptTemplate,
   type OrderEvent,
@@ -23,8 +24,10 @@ export {
   type AdminNewChatCtx,
   type MagicLinkCtx,
   type ReviewPromptCtx,
+  type BackInStockTemplateInput,
 } from './templates'
 export {
+  sendBackInStockEmail,
   sendOrderEmail,
   sendAdminNewOrderEmail,
   sendAdminNewChatEmail,
@@ -35,6 +38,7 @@ export {
   type ShipmentData,
   type NewChatEmailData,
   type ReviewPromptEmailInput,
+  type BackInStockEmailInput,
 } from './send'
 
 // --- Back-compat wrappers for existing email.test.ts ---

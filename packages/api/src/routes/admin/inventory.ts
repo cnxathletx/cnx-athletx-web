@@ -1,8 +1,9 @@
 import type { RouterType } from 'itty-router'
-import type { Env, AdminInventoryRow, AdminInventorySingleRow } from '../../lib/types'
+import type { Env, AdminInventoryRow, AdminInventorySingleRow, ProductWaitlistRow } from '../../lib/types'
 import { nowIso } from '../../lib/utils'
 import { validateInventoryUpdateBody } from '../../lib/validation'
 import { requireAdmin, parseJsonBody } from '../../middleware/auth'
+import { sendBackInStockEmail } from '../../services/email'
 
 export function registerAdminInventoryRoutes(router: RouterType) {
   router.get('/api/admin/inventory', requireAdmin(async (_request, env) => {
@@ -50,11 +51,23 @@ export function registerAdminInventoryRoutes(router: RouterType) {
     }
 
     try {
-      const product = await env.DB.prepare(`SELECT id, name FROM products WHERE id = ? LIMIT 1`)
+      const product = await env.DB.prepare(`SELECT id, slug, name FROM products WHERE id = ? LIMIT 1`)
         .bind(productId)
-        .first<{ id: number; name: string }>()
+        .first<{ id: number; slug: string; name: string }>()
       if (!product) {
         return Response.json({ error: 'Product not found' }, { status: 404 })
+      }
+
+      const previousInventory = await env.DB.prepare(
+        `SELECT stock_count, reserved_count
+         FROM inventory
+         WHERE product_id = ? LIMIT 1`
+      )
+        .bind(productId)
+        .first<AdminInventorySingleRow>()
+
+      if (!previousInventory) {
+        return Response.json({ error: 'Inventory row not found' }, { status: 404 })
       }
 
       const now = nowIso()
@@ -87,6 +100,40 @@ export function registerAdminInventoryRoutes(router: RouterType) {
         return Response.json({ error: 'Inventory row not found' }, { status: 404 })
       }
 
+      const previousAvailable = previousInventory.stock_count - previousInventory.reserved_count
+      const newAvailable = inventory.stock_count - inventory.reserved_count
+      let waitlistNotifiedCount = 0
+
+      if (previousAvailable <= 0 && newAvailable > 0) {
+        const { results } = await env.DB.prepare(
+          `SELECT id, product_id, email, locale, marketing_consent, notified_at, created_at, updated_at
+           FROM product_waitlist_signups
+           WHERE product_id = ? AND notified_at IS NULL
+           ORDER BY created_at ASC`
+        )
+          .bind(productId)
+          .all<ProductWaitlistRow>()
+
+        for (const row of results) {
+          const ok = await sendBackInStockEmail(env, {
+            customer_email: row.email,
+            product_name: product.name,
+            product_url: `https://www.cnxnature.com/product/${product.slug}`,
+            locale: row.locale,
+          })
+          if (!ok) continue
+
+          await env.DB.prepare(
+            `UPDATE product_waitlist_signups
+             SET notified_at = ?, updated_at = ?
+             WHERE id = ?`
+          )
+            .bind(now, now, row.id)
+            .run()
+          waitlistNotifiedCount++
+        }
+      }
+
       return Response.json({
         success: true,
         inventory: {
@@ -95,6 +142,7 @@ export function registerAdminInventoryRoutes(router: RouterType) {
           reserved_count: inventory.reserved_count,
           available_count: inventory.stock_count - inventory.reserved_count,
         },
+        waitlist_notified_count: waitlistNotifiedCount,
       })
     } catch {
       return Response.json({ error: 'Database error' }, { status: 500 })

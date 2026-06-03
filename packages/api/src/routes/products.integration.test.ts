@@ -55,6 +55,30 @@ describe('GET /api/products/:slug', () => {
   })
 })
 
+describe('POST /api/products/:slug/waitlist', () => {
+  it('creates a waitlist signup for an out-of-stock product', async () => {
+    await workerFetch('/api/admin/inventory/1', { admin: true, method: 'PATCH', body: { adjustment: -100 } })
+
+    const res = await workerFetch('/api/products/plant-protein-500g/waitlist?locale=th', {
+      body: { email: ' Notify@Example.COM ', marketing_consent: true },
+    })
+
+    expect(res.status).toBe(201)
+    const data = await res.json() as { success: true }
+    expect(data.success).toBe(true)
+  })
+
+  it('rejects waitlist signup while product is in stock', async () => {
+    const res = await workerFetch('/api/products/plant-protein-500g/waitlist', {
+      body: { email: 'stock@example.com', marketing_consent: false },
+    })
+
+    expect(res.status).toBe(409)
+    const data = await res.json() as { error: string }
+    expect(data.error).toBe('Product is in stock')
+  })
+})
+
 describe('price_tiers in public product APIs', () => {
   it('exposes empty price_tiers array when none configured', async () => {
     const res = await workerFetch('/api/products')
@@ -96,4 +120,3 @@ describe('price_tiers in public product APIs', () => {
     expect(detailData.product.price_tiers[0].min_quantity).toBe(5)
   })
 })
-

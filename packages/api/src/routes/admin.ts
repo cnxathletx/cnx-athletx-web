@@ -11,6 +11,7 @@ import { registerAdminChatRoutes } from './admin/chat'
 import { registerAdminUploadRoutes } from './admin/uploads'
 import { registerAdminReviewsRoutes } from './admin/reviews'
 import { registerAdminCleanupRoutes } from './admin/cleanup'
+import { registerAdminWaitlistRoutes } from './admin/waitlist'
 
 export function registerAdminRoutes(router: RouterType) {
   registerAdminOrderRoutes(router)
@@ -25,4 +26,5 @@ export function registerAdminRoutes(router: RouterType) {
   registerAdminUploadRoutes(router)
   registerAdminReviewsRoutes(router)
   registerAdminCleanupRoutes(router)
+  registerAdminWaitlistRoutes(router)
 }

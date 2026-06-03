@@ -77,6 +77,30 @@ describe('POST /api/products/:slug/waitlist', () => {
     const data = await res.json() as { error: string }
     expect(data.error).toBe('Product is in stock')
   })
+
+  it('updates an existing active signup instead of duplicating it', async () => {
+    await workerFetch('/api/admin/inventory/1', { admin: true, method: 'PATCH', body: { adjustment: -100 } })
+
+    const first = await workerFetch('/api/products/plant-protein-500g/waitlist', {
+      body: { email: 'dup@example.com', marketing_consent: false },
+    })
+    expect(first.status).toBe(201)
+
+    const second = await workerFetch('/api/products/plant-protein-500g/waitlist?locale=th', {
+      body: { email: 'dup@example.com', marketing_consent: true },
+    })
+    expect(second.status).toBe(200)
+
+    const adminRes = await workerFetch('/api/admin/waitlist?status=active', { admin: true })
+    expect(adminRes.status).toBe(200)
+    const data = await adminRes.json() as {
+      waitlist: Array<{ email: string; marketing_consent: boolean; locale: string }>
+    }
+    const rows = data.waitlist.filter((row) => row.email === 'dup@example.com')
+    expect(rows).toHaveLength(1)
+    expect(rows[0].marketing_consent).toBe(true)
+    expect(rows[0].locale).toBe('th')
+  })
 })
 
 describe('price_tiers in public product APIs', () => {

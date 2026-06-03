@@ -1,75 +1,53 @@
 # Repository Guidelines
 
-## Project Structure & Module Organization
-This repository is an npm workspace monorepo.
+## Structure
+- npm workspace monorepo.
+- `packages/web`: Vue 3, Vite, Tailwind v4 frontend.
+- `packages/api`: Cloudflare Worker API in TypeScript.
+- `docs/plan`: current product, architecture, and frontend notes.
+- `assets`: reference product/design assets.
+- Generated: `packages/web/dist`, `.wrangler`. Do not edit generated output.
 
-- `packages/web`: Vue 3 + Vite + Tailwind v4 frontend (`src/` for app code, `dist/` build output).
-- `packages/api`: Cloudflare Worker API in TypeScript (`src/index.ts`, `wrangler.toml` for env/bindings).
-- `docs/plan`: implementation plans by phase.
-- `assets/`: reference design/product assets.
+## Commands
+Run from repo root unless a workspace flag is shown.
 
-Treat `packages/web/dist` and `.wrangler/` as generated artifacts; do not edit them directly.
+- Install: `npm ci`
+- Web dev: `npm run dev:web` (Vite on `0.0.0.0:5171`)
+- API dev: `npm run dev:api` (Wrangler on `8787`)
+- Unit tests: `npm test`
+- API integration tests: `npm run test:integration -w @cnx-athletx/api`
+- E2E tests: `npm run test:e2e` (Playwright starts API and web servers)
+- Typecheck: `npm run typecheck`
+- Build: `npm run build`
+- Deploy: `npm run deploy:web`, `npm run deploy:api`, or `npm run deploy`
 
-## Build, Test, and Development Commands
-Run from repo root unless noted.
+Note: root `npm run lint` is currently a no-op unless workspace lint scripts are added.
 
-- `npm ci`: install workspace dependencies cleanly.
-- `npm run dev:web`: run Vite dev server on `0.0.0.0:5171`.
-- `npm run dev:api`: run Worker locally with Wrangler on port `8787`.
-- `npm run typecheck`: run strict TypeScript checks across workspaces.
-- `npm run build`: build validation for both web and api packages.
-- `npm run lint`: runs workspace lint scripts if present.
-- `npm run deploy:web` / `npm run deploy:api`: deploy to Cloudflare Pages/Workers.
-- you have access to wrangler cli locally.
-- you have access to gh command for github.
+## Tests
+- Add or update focused tests for feature work and bug fixes.
+- API unit tests live beside source as `packages/api/src/**/*.test.ts`.
+- API integration tests live as `packages/api/src/**/*.integration.test.ts` and use `packages/api/src/test/helpers.ts`.
+- Web component/unit tests live as `packages/web/src/**/*.test.ts` and run with Vitest + happy-dom.
+- E2E tests live in `e2e/*.spec.ts`; Playwright runs Chromium with one worker.
+- For happy-dom tests that touch browser storage, stub `localStorage`.
 
-## Testing Guidelines
-This project follows **TDD (Test-Driven Development)**. Every feature and bug fix must have an associated test — write the test first, see it fail, then implement the code to make it pass. Do not consider work complete until tests cover the change.
+## Code Style
+- TypeScript strict mode; 2-space indentation, semicolons, single quotes, trailing commas where valid.
+- Vue component filenames use PascalCase.
+- Keep modules small and package-local unless shared use is real.
 
-### Running tests
-- `npm test`: run unit tests across all workspaces.
-- `npm run test:integration -w @cnx-athletx/api`: run API integration tests (uses `wrangler unstable_dev` to spin up a local Worker).
-- `npm run test:all -w @cnx-athletx/api`: run API unit + integration tests together.
-- `npm run test:e2e`: run Playwright E2E browser tests (auto-starts dev servers).
-- Single file: `cd packages/api && npx vitest run src/routes/checkout.integration.test.ts`
-- Watch mode: `npm run test:watch -w @cnx-athletx/api` or `-w @cnx-athletx/web`.
+## i18n
+- Customer-facing Vue text uses `vue-i18n`; do not hardcode visible customer copy.
+- Add new customer copy to both `packages/web/src/i18n/en.json` and `packages/web/src/i18n/th.json`.
+- Use `computed()` for translation-dependent arrays.
+- Admin UI is English-only.
 
-### Test organization
-- **API unit tests** (`packages/api/src/**/*.test.ts`): colocated with source, run with default vitest config.
-- **API integration tests** (`packages/api/src/**/*.integration.test.ts`): use `vitest.integration.config.ts`, spin up a real Worker via `unstable_dev`, and share helpers from `src/test/helpers.ts`.
-- **Vue component tests** (`packages/web/src/**/*.test.ts`): use `@vue/test-utils` + `happy-dom`. Require `vi.stubGlobal('localStorage', ...)` since happy-dom's localStorage is limited.
-- **E2E tests** (`e2e/*.spec.ts`): Playwright with Chromium, single worker (tests share DB state). Config auto-starts both API (port 8787) and web (port 5171) dev servers.
+## Secrets and Deploy
+- Never commit `.env`, `.dev.vars`, tokens, or credentials.
+- Manage Worker secrets through Wrangler or GitHub Secrets.
+- Check `packages/api/wrangler.toml` bindings and target environment before deploy.
 
-### CI quality gates
-- `npm run lint`
-- `npm run typecheck`
-- `npm run build`
-
-## Coding Principles
-- **DRY (Don't Repeat Yourself)**: extract shared logic into reusable helpers, composables, or services. If the same data structure is built in multiple places, build it once and pass it around. If the same pattern appears three or more times, refactor it into a shared function.
-- Language: TypeScript (strict mode enabled in both packages).
-- 2-space indentation, semicolons, single quotes, trailing commas where valid.
-- Vue components: PascalCase filenames (e.g. `ProductCard.vue`).
-- Prefer small, composable modules under each package's `src/`.
-
-## Internationalization (i18n)
-- **All customer-facing text must be localized.** Never hardcode user-visible strings in Vue templates — always use `t()` from vue-i18n.
-- Setup: `const { t } = useI18n({ useScope: 'global' })` in each component's `<script setup>`.
-- Translation files: `packages/web/src/i18n/en.json` (English) and `packages/web/src/i18n/th.json` (Thai).
-- When adding new text, add keys to **both** locale files in the same commit.
-- Use parameterized messages for dynamic values: `t('key', { count: 5 })`.
-- For translation-dependent arrays (e.g. tab labels, step lists), use `computed()` so they stay reactive to locale changes.
-- Locale is persisted in `localStorage` under the `cnx-locale` key.
-- Admin pages are **not** localized (English only).
-
-## Security & Configuration Tips
-- Never commit `.env`, `.dev.vars`, or secrets.
-- Manage Worker secrets via Wrangler/GitHub Secrets, not source control.
-- Confirm D1 bindings and environment targets in `packages/api/wrangler.toml` before deploy.
-
-## Documentation discipline
-- Update this @project-guidelines.md file as the project evolves.
-- Update @docs/plan/02-backend-architecture.md when change are made to backend architecture.
-- Update @docs/plan/03-frontend-design.md when change are made to frontend design.
-- Make sure to keep @docs/plan/01-executive-summary.md up to date with the current state of the project.
-- **Changelog discipline**: every user-visible or operationally-relevant change must add an entry to @docs/changelog.md under the `[Unreleased]` section in the same commit as the change. Use [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) categories: `Added`, `Changed`, `Deprecated`, `Removed`, `Fixed`, `Security`. One bullet per change, reference the commit hash. The project is **pre-release** — there is no GitHub release or git tag yet, so all entries currently live under `[Unreleased]`. When the first release is cut (via `gh release create` and a matching git tag), rename `[Unreleased]` to the semver version with the release date and start a fresh `[Unreleased]` section. Skip entries only for pure refactors, internal test changes, doc-only edits, or formatting.
+## Docs
+- Update `docs/changelog.md` under `[Unreleased]` for user-visible or operational changes.
+- Skip changelog entries for doc-only edits, formatting, pure refactors, and internal test-only changes.
+- Update `docs/plan/*` only when product, backend architecture, or frontend design changes.

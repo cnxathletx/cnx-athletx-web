@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, onMounted, onBeforeUnmount, watch } from 'vue'
+import { computed, ref, onMounted, onBeforeUnmount, watch } from 'vue'
 import { RouterLink } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import PrimaryButton from '../components/ui/PrimaryButton.vue'
@@ -123,6 +123,9 @@ useJsonLd(() => ({
 
 const products = ref<ApiProduct[]>([])
 const productsLoaded = ref(false)
+const allProductsOutOfStock = computed(() =>
+  products.value.length > 0 && products.value.every((product) => product.available_stock <= 0)
+)
 
 async function loadProducts() {
   try {
@@ -192,6 +195,14 @@ onBeforeUnmount(() => {
             <p class="text-lg text-muted max-w-lg leading-relaxed">
               {{ t('home.heroSubtitle') }}
             </p>
+            <div
+              v-if="productsLoaded && allProductsOutOfStock"
+              role="status"
+              aria-live="polite"
+              class="max-w-lg rounded-md border border-sand bg-surface-alt px-4 py-3 text-sm font-medium text-foreground"
+            >
+              {{ t('home.outOfStockNotice') }}
+            </div>
             <RouterLink to="/shop">
               <PrimaryButton size="lg">{{ t('home.shopNow') }}</PrimaryButton>
             </RouterLink>

@@ -51,6 +51,20 @@ import { RouterLink } from 'vue-router'
         </RouterLink>
 
         <RouterLink
+          to="/admin/waitlist"
+          class="group block rounded-lg bg-surface p-6 ring-1 ring-sand transition hover:ring-primary"
+        >
+          <div class="mb-3 text-2xl">
+            <svg class="w-8 h-8 text-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M21.75 6.75v10.5a2.25 2.25 0 01-2.25 2.25h-15a2.25 2.25 0 01-2.25-2.25V6.75m19.5 0A2.25 2.25 0 0019.5 4.5h-15a2.25 2.25 0 00-2.25 2.25m19.5 0v.243a2.25 2.25 0 01-1.07 1.916l-7.5 4.615a2.25 2.25 0 01-2.36 0l-7.5-4.615a2.25 2.25 0 01-1.07-1.916V6.75" />
+              <path stroke-linecap="round" stroke-linejoin="round" d="M16.5 14.25l2.25 2.25m0 0L21 14.25m-2.25 2.25V11.25" />
+            </svg>
+          </div>
+          <h2 class="text-lg font-semibold text-foreground group-hover:text-primary transition-colors">Waitlist</h2>
+          <p class="mt-1 text-sm text-muted">Review back-in-stock requests and export customer marketing consent.</p>
+        </RouterLink>
+
+        <RouterLink
           to="/admin/product-lines"
           class="group block rounded-lg bg-surface p-6 ring-1 ring-sand transition hover:ring-primary"
         >

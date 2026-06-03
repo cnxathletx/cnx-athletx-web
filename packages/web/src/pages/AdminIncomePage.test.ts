@@ -23,10 +23,10 @@ function incomeReport(overrides: Partial<IncomeReport> = {}): IncomeReport {
   return {
     year: 2026,
     month: 5,
-    total_revenue: 1000,
+    total_revenue: 200000,
     total_orders: 4,
     products: [
-      { product_name: 'Whey Protein', total_revenue: 1000, total_quantity: 2 },
+      { product_name: 'Whey Protein', total_revenue: 200000, total_quantity: 2 },
     ],
     ...overrides,
   }
@@ -57,6 +57,15 @@ describe('AdminIncomePage', () => {
     await flushPromises()
 
     expect(wrapper.text()).toContain('Platform Cut')
-    expect(wrapper.text()).toContain('฿100')
+    expect(wrapper.text()).toContain('฿200')
+  })
+
+  it('renders income report revenue in baht instead of raw satang', async () => {
+    const wrapper = mountPage()
+
+    await flushPromises()
+
+    expect(wrapper.text()).toContain('฿2,000')
+    expect(wrapper.text()).not.toContain('฿200,000')
   })
 })

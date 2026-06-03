@@ -3,6 +3,7 @@ import { onMounted, ref, computed, watch, nextTick } from 'vue'
 import { fetchAdminIncomeReport, type IncomeReport, AdminApiErrorResponse } from '../api/admin'
 import SecondaryButton from '../components/ui/SecondaryButton.vue'
 import AdminNav from '../components/admin/AdminNav.vue'
+import { formatMoney } from '../utils/money'
 
 const loading = ref(true)
 const error = ref('')
@@ -27,6 +28,7 @@ const monthNames = [
 const displayMonth = computed(() => `${monthNames[selectedMonth.value - 1]} ${selectedYear.value}`)
 const PLATFORM_CUT_RATE = 0.10
 const platformCut = computed(() => report.value ? calculatePlatformCut(report.value.total_revenue) : 0)
+const formatThb = formatMoney
 
 async function loadReport() {
   error.value = ''
@@ -100,7 +102,7 @@ function drawChart() {
   ctx.font = 'bold 18px Inter, sans-serif'
   ctx.textAlign = 'center'
   ctx.textBaseline = 'middle'
-  ctx.fillText(`฿${total.toLocaleString()}`, cx, cy)
+  ctx.fillText(formatThb(total), cx, cy)
 }
 
 function prevMonth() {
@@ -165,7 +167,7 @@ async function exportPdf() {
     return `<tr>
       <td style="padding:6px 10px"><span style="display:inline-block;width:14px;height:14px;border-radius:3px;background:${color};vertical-align:middle"></span></td>
       <td style="padding:6px 10px">${escapeHtml(p.product_name)}</td>
-      <td style="padding:6px 10px;text-align:right">&#3647;${p.total_revenue.toLocaleString()}</td>
+      <td style="padding:6px 10px;text-align:right">${formatThb(p.total_revenue)}</td>
       <td style="padding:6px 10px;text-align:right">${p.total_quantity}</td>
       <td style="padding:6px 10px;text-align:right">${pct}%</td>
     </tr>`
@@ -197,11 +199,11 @@ async function exportPdf() {
   <p class="subtitle">${displayMonth.value} &mdash; CNX AthletX</p>
   <div class="stats">
     <div class="stat-card">
-      <div class="stat-value">&#3647;${r.total_revenue.toLocaleString()}</div>
+      <div class="stat-value">${formatThb(r.total_revenue)}</div>
       <div class="stat-label">Total Revenue</div>
     </div>
     <div class="stat-card">
-      <div class="stat-value">&#3647;${pdfPlatformCut.toLocaleString()}</div>
+      <div class="stat-value">${formatThb(pdfPlatformCut)}</div>
       <div class="stat-label">Platform Cut</div>
     </div>
     <div class="stat-card">
@@ -298,11 +300,11 @@ onMounted(() => loadReport())
         <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
           <div class="bg-surface rounded-lg ring-1 ring-[var(--card-ring)] p-5">
             <p class="text-sm text-muted">Total Revenue</p>
-            <p class="text-2xl font-bold text-foreground mt-1">&#3647;{{ report.total_revenue.toLocaleString() }}</p>
+            <p class="text-2xl font-bold text-foreground mt-1">{{ formatThb(report.total_revenue) }}</p>
           </div>
           <div class="bg-surface rounded-lg ring-1 ring-[var(--card-ring)] p-5">
             <p class="text-sm text-muted">Platform Cut</p>
-            <p class="text-2xl font-bold text-foreground mt-1">&#3647;{{ platformCut.toLocaleString() }}</p>
+            <p class="text-2xl font-bold text-foreground mt-1">{{ formatThb(platformCut) }}</p>
           </div>
           <div class="bg-surface rounded-lg ring-1 ring-[var(--card-ring)] p-5">
             <p class="text-sm text-muted">Orders</p>
@@ -370,7 +372,7 @@ onMounted(() => loadReport())
                       {{ product.product_name }}
                     </div>
                   </td>
-                  <td class="px-4 py-3 text-right font-semibold text-foreground">&#3647;{{ product.total_revenue.toLocaleString() }}</td>
+                  <td class="px-4 py-3 text-right font-semibold text-foreground">{{ formatThb(product.total_revenue) }}</td>
                   <td class="px-4 py-3 text-right text-muted">{{ product.total_quantity }}</td>
                   <td class="px-4 py-3 text-right text-muted">
                     {{ report.total_revenue > 0 ? ((product.total_revenue / report.total_revenue) * 100).toFixed(1) : '0.0' }}%
@@ -380,7 +382,7 @@ onMounted(() => loadReport())
               <tfoot class="border-t-2 border-sand font-semibold">
                 <tr>
                   <td class="px-4 py-3 text-foreground">Total</td>
-                  <td class="px-4 py-3 text-right text-foreground">&#3647;{{ report.total_revenue.toLocaleString() }}</td>
+                  <td class="px-4 py-3 text-right text-foreground">{{ formatThb(report.total_revenue) }}</td>
                   <td class="px-4 py-3 text-right text-muted">{{ report.products.reduce((sum, p) => sum + p.total_quantity, 0) }}</td>
                   <td class="px-4 py-3 text-right text-muted">100%</td>
                 </tr>

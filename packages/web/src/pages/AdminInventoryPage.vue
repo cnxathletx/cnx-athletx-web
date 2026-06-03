@@ -9,11 +9,15 @@ const loading = ref(true)
 const error = ref('')
 const inventory = ref<AdminInventoryItem[]>([])
 
-const adjustments = reactive<Record<number, string>>({})
+const adjustments = reactive<Record<number, string | number>>({})
 const notes = reactive<Record<number, string>>({})
 const rowLoading = reactive<Record<number, boolean>>({})
 const rowError = reactive<Record<number, string>>({})
 const rowSuccess = reactive<Record<number, string>>({})
+
+function formText(value: unknown): string {
+  return value === null || value === undefined ? '' : String(value).trim()
+}
 
 async function loadInventory() {
   loading.value = true
@@ -32,7 +36,7 @@ async function loadInventory() {
 }
 
 async function applyAdjustment(item: AdminInventoryItem) {
-  const raw = adjustments[item.product_id]?.trim() ?? ''
+  const raw = formText(adjustments[item.product_id])
   const amount = Number(raw)
 
   rowError[item.product_id] = ''
@@ -47,7 +51,7 @@ async function applyAdjustment(item: AdminInventoryItem) {
   try {
     const updated = await adjustInventory(item.product_id, {
       adjustment: amount,
-      notes: notes[item.product_id]?.trim() || undefined,
+      notes: formText(notes[item.product_id]) || undefined,
     })
 
     inventory.value = inventory.value.map((entry) =>

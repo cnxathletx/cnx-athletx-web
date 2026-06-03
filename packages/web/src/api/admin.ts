@@ -5,6 +5,8 @@ import type {
   AdminChatStatus,
   AdminDiscountCode,
   AdminInventoryItem,
+  AdminWaitlistRow,
+  AdminWaitlistStatus,
   AdminLabTestContentType,
   AdminLabTestFile,
   AdminOrderDetail,
@@ -35,6 +37,8 @@ export type {
   AdminChatStatus,
   AdminDiscountCode,
   AdminInventoryItem,
+  AdminWaitlistRow,
+  AdminWaitlistStatus,
   AdminLabTestContentType,
   AdminLabTestFile,
   AdminOrderDetail,
@@ -234,6 +238,14 @@ export async function fetchInventory(): Promise<AdminInventoryItem[]> {
     parseError: adminError,
   })
   return data.inventory
+}
+
+export async function fetchAdminWaitlist(status: AdminWaitlistStatus = 'active'): Promise<AdminWaitlistRow[]> {
+  const data = await apiFetch<{ waitlist: AdminWaitlistRow[] }>(
+    `/api/admin/waitlist?status=${encodeURIComponent(status)}`,
+    { parseError: adminError },
+  )
+  return data.waitlist
 }
 
 export async function adjustInventory(

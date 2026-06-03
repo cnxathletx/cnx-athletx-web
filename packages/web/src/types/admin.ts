@@ -66,6 +66,21 @@ export interface AdminInventoryItem {
   available_count: number
 }
 
+export type AdminWaitlistStatus = 'active' | 'notified' | 'all'
+
+export interface AdminWaitlistRow {
+  id: number
+  product_id: number
+  product_slug: string
+  product_name: string
+  email: string
+  locale: 'en' | 'th'
+  marketing_consent: boolean
+  notified_at: string | null
+  created_at: string
+  updated_at: string
+}
+
 export interface AdminProductScreenshot {
   id: number
   url: string

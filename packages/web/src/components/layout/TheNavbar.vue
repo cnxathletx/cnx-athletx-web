@@ -35,14 +35,14 @@ async function handleLogout() {
     <div class="mx-auto max-w-[1280px] px-4 sm:px-6 lg:px-8">
       <div class="flex items-center justify-between h-16">
         <!-- Logo -->
-        <RouterLink to="/" class="flex items-center gap-3 shrink-0 leading-none">
+        <RouterLink to="/" class="flex min-w-0 items-center gap-2 sm:gap-3 shrink leading-none">
           <BrandMark class="w-8 h-8 text-foreground" />
-          <div class="flex flex-col">
-            <div class="flex items-center gap-2">
-              <span class="text-xl font-bold tracking-tight text-foreground">CNX</span>
-              <span class="text-xl font-bold tracking-tight text-primary">AthletX</span>
+          <div class="flex min-w-0 flex-col">
+            <div class="flex items-center gap-1.5 sm:gap-2">
+              <span class="text-lg sm:text-xl font-bold tracking-tight text-foreground">CNX</span>
+              <span class="text-lg sm:text-xl font-bold tracking-tight text-primary">AthletX</span>
             </div>
-            <span class="mt-1 text-[10px] font-medium uppercase tracking-[0.15em] text-muted">
+            <span class="mt-1 text-[9px] sm:text-[10px] font-medium uppercase tracking-[0.12em] sm:tracking-[0.15em] text-muted truncate">
               {{ t('brand.slogan') }}
             </span>
           </div>
@@ -71,7 +71,7 @@ async function handleLogout() {
         </nav>
 
         <!-- Actions: Theme Toggle + Cart + Mobile Menu -->
-        <div class="flex items-center space-x-2">
+        <div data-testid="navbar-actions" class="flex shrink-0 items-center gap-1 sm:gap-2">
           <RouterLink
             v-if="!auth.loading && !auth.isAuthenticated"
             to="/login"
@@ -102,7 +102,7 @@ async function handleLogout() {
           <!-- Language Toggle -->
           <button
             @click="toggleLocale"
-            class="px-2 py-1.5 text-xs font-bold text-foreground hover:text-primary transition-colors rounded-md"
+            class="max-[420px]:hidden px-2 py-1.5 text-xs font-bold text-foreground hover:text-primary transition-colors rounded-md"
             :title="t('common.language')"
           >
             {{ locale === 'en' ? 'TH' : 'EN' }}
@@ -111,7 +111,7 @@ async function handleLogout() {
           <!-- Theme Toggle -->
           <button
             @click="toggle"
-            class="p-2.5 text-foreground hover:text-primary transition-colors rounded-md"
+            class="max-[420px]:hidden p-2 text-foreground hover:text-primary transition-colors rounded-md"
             aria-label="Toggle theme"
           >
             <!-- Sun icon (shown in dark mode) -->
@@ -143,7 +143,7 @@ async function handleLogout() {
           <!-- Cart Icon -->
           <RouterLink
             to="/cart"
-            class="relative p-2.5 text-foreground hover:text-primary transition-colors"
+            class="relative shrink-0 p-2 sm:p-2.5 text-foreground hover:text-primary transition-colors"
             :aria-label="t('nav.cart')"
           >
             <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -165,7 +165,7 @@ async function handleLogout() {
 
           <!-- Mobile Menu Button -->
           <button
-            class="md:hidden p-2.5 text-foreground hover:text-primary transition-colors"
+            class="md:hidden shrink-0 p-2 sm:p-2.5 text-foreground hover:text-primary transition-colors"
             @click="mobileOpen = !mobileOpen"
             :aria-label="mobileOpen ? 'Close menu' : 'Open menu'"
           >

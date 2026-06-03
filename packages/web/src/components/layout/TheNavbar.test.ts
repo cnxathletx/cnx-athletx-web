@@ -136,4 +136,16 @@ describe('TheNavbar', () => {
     const menuBtn = wrapper.find('[aria-label="Open menu"]')
     expect(menuBtn.exists()).toBe(true)
   })
+
+  it('keeps the mobile menu button in a compact header action group', () => {
+    const wrapper = mountNavbar()
+    const actions = wrapper.get('[data-testid="navbar-actions"]')
+    const menuBtn = wrapper.get('[aria-label="Open menu"]')
+
+    expect(actions.classes()).toContain('gap-1')
+    expect(actions.classes()).toContain('shrink-0')
+    expect(actions.classes()).not.toContain('space-x-2')
+    expect(menuBtn.classes()).toContain('p-2')
+    expect(menuBtn.classes()).toContain('shrink-0')
+  })
 })

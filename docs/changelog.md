@@ -60,6 +60,7 @@ Everything below is in-flight on `main` and has not been cut into a versioned re
 - **Rate limiting**: per-IP and global limits on public write endpoints (checkout, payment-proof, magic-link, chat, reviews) (`3482e70`).
 
 ### Fixed
+- Mobile navbar controls now stay reachable on iPhone SE-sized screens by keeping cart and menu visible in a compact action group.
 - Storefront free-shipping thresholds and product preview prices now use shared baht formatting instead of page-local currency formatting.
 - Admin inventory stock adjustments now accept numeric input values without crashing when Apply is clicked.
 - Admin income report now formats revenue and platform cut values as baht instead of displaying raw satang amounts.

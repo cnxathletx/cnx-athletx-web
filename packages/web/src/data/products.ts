@@ -1,3 +1,5 @@
+import { formatMoney } from '../utils/money'
+
 export interface Product {
   id: string
   name: string
@@ -22,7 +24,7 @@ export const products: Product[] = [
     weight: '500g',
     weightLabel: '500g',
     price: 89900,
-    priceFormatted: '฿899',
+    priceFormatted: formatMoney(89900),
     description:
       'Premium plant-based protein powder crafted for the active Chiang Mai community. A clean blend of pea and rice protein delivering 25g of complete protein per serving with no artificial sweeteners or fillers.',
     features: [
@@ -53,7 +55,7 @@ export const products: Product[] = [
     weight: '1000g',
     weightLabel: '1kg',
     price: 159900,
-    priceFormatted: '฿1,599',
+    priceFormatted: formatMoney(159900),
     description:
       'Premium plant-based protein powder crafted for the active Chiang Mai community. A clean blend of pea and rice protein delivering 25g of complete protein per serving with no artificial sweeteners or fillers. The 1kg size is our best value for committed athletes.',
     features: [

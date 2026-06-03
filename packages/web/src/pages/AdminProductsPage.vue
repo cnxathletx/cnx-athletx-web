@@ -25,7 +25,7 @@ import { SUPPORTED_LOCALES, LOCALE_LABELS, type SupportedLocale } from '../i18n'
 import PrimaryButton from '../components/ui/PrimaryButton.vue'
 import SecondaryButton from '../components/ui/SecondaryButton.vue'
 import AdminNav from '../components/admin/AdminNav.vue'
-import { formatMoney } from '../utils/money'
+import { formatMoney, toSatang } from '../utils/money'
 
 const PRIMARY_LOCALE: SupportedLocale = 'en'
 
@@ -294,7 +294,7 @@ const createImagePreview = computed(() => createForm.image_url.trim())
 const editImagePreview = computed(() => editForm.image_url.trim())
 const showCreatePreview = computed(() => createBuffer.value.name.trim() || createImagePreview.value)
 const createPreviewWeight = computed(() => createForm.weight_g ? `${createForm.weight_g >= 1000 ? `${createForm.weight_g / 1000}kg` : `${createForm.weight_g}g`}` : '')
-const createPreviewPrice = computed(() => createForm.price_thb ? `฿${Number(createForm.price_thb).toLocaleString()}` : '฿0')
+const createPreviewPrice = computed(() => formatMoney(toSatang(Number(createForm.price_thb) || 0)))
 
 // Per-product display-locale selector
 const displayLocales = reactive<Record<number, SupportedLocale>>({})

@@ -5,14 +5,14 @@ import ProductCard from '../components/ui/ProductCard.vue'
 import { fetchProducts, formatPrice, formatWeight, type ApiProduct } from '../api/products'
 import { fetchPublicSettings } from '../api/settings'
 import { useHead } from '../composables/useHead'
+import { formatMoney } from '../utils/money'
 
 const { t, locale } = useI18n({ useScope: 'global' })
 
 const freeShippingThresholdSatang = ref<number>(0)
 const freeShippingLabel = computed(() => {
   if (freeShippingThresholdSatang.value <= 0) return t('shop.freeDelivery')
-  const thb = Math.round(freeShippingThresholdSatang.value / 100)
-  return t('shop.freeShipping', { amount: thb.toLocaleString() })
+  return t('shop.freeShipping', { amount: formatMoney(freeShippingThresholdSatang.value) })
 })
 
 useHead({

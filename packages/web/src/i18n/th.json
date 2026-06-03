@@ -140,7 +140,7 @@
     "tierApplied": "ได้รับส่วนลดตามปริมาณ",
     "waitlistTitle": "แจ้งเตือนเมื่อสินค้ากลับมาพร้อมจำหน่าย",
     "waitlistEmailLabel": "อีเมล",
-    "waitlistEmailPlaceholder": "you@example.com",
+    "waitlistEmailPlaceholder": "you{'@'}example.com",
     "waitlistMarketingConsent": "ส่งข่าวสารสินค้าและโปรโมชันทางอีเมลให้ฉัน",
     "waitlistSubmit": "แจ้งเตือนเมื่อมีสินค้า",
     "waitlistSuccess": "เราจะส่งอีเมลเมื่อสินค้านี้กลับมาพร้อมจำหน่าย",

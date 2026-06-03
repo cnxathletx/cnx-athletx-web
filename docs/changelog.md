@@ -11,6 +11,7 @@ Update this file with every user-visible or operationally-relevant change. Group
 Everything below is in-flight on `main` and has not been cut into a versioned release.
 
 ### Added
+- **Back-in-stock waitlist** added with SKU-level customer signup, optional marketing consent capture, automatic restock notifications, and admin CSV export.
 - **Storefront out-of-stock notice** added to the homepage hero when all listed products are unavailable.
 - **Admin income report Platform Cut metric** added at 10% of total revenue, shown in the dashboard summary and PDF export.
 - **AthletX Points loyalty program** added with account balances, paid-order earning, checkout redemption capped at 5%, and mutual exclusion with discount codes.

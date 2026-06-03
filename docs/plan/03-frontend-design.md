@@ -34,6 +34,10 @@ Discount code inputs are label-addressable and intentionally avoid example-code 
 
 Logged-in customers see AthletX Points redemption in checkout. The UI previews the 5% capped point discount and disables discount-code entry while points are selected; the API remains authoritative for the final redemption amount.
 
+## Out-Of-Stock UX
+
+Out-of-stock product detail pages show a localized back-in-stock waitlist form instead of purchase controls. Product cards stay compact with the existing sold-out state and route customers to the detail page for signup. Admin includes a Waitlist page with active, notified, and all filters plus client-side CSV export.
+
 ## Account UX
 
 The account page includes a compact AthletX Points card using the existing `X` mark inside a sage token. It shows the current points balance and recent activity without making the loyalty system feel like a separate wallet.

@@ -86,7 +86,9 @@ describe('ProductDetailPage waitlist', () => {
   it('shows waitlist form when product is out of stock', async () => {
     const wrapper = await mountPage(0)
     expect(wrapper.text()).toContain('Notify me when back in stock')
-    expect(wrapper.find('input[type="email"]').exists()).toBe(true)
+    const emailInput = wrapper.find('input[type="email"]')
+    expect(emailInput.exists()).toBe(true)
+    expect(emailInput.attributes('placeholder')).toBe('you@example.com')
   })
 
   it('keeps add to cart when product is in stock', async () => {

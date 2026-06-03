@@ -140,7 +140,7 @@
     "tierApplied": "Volume discount applied",
     "waitlistTitle": "Notify me when back in stock",
     "waitlistEmailLabel": "Email",
-    "waitlistEmailPlaceholder": "you@example.com",
+    "waitlistEmailPlaceholder": "you{'@'}example.com",
     "waitlistMarketingConsent": "Send me product updates and offers by email",
     "waitlistSubmit": "Notify when back in stock",
     "waitlistSuccess": "We'll email you when this product is back in stock.",
